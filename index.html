@@ -1761,12 +1761,15 @@
         function toggleOrder(instanceId) {
             const idx = battleOrder.indexOf(instanceId);
             if (idx >= 0) {
+                // 已在出战顺序中 → 移除（不自动补回，允许少于3张）
                 battleOrder.splice(idx, 1);
             } else {
+                // 不在出战顺序中 → 添加（超过3张则替换最后一张）
                 if (battleOrder.length >= 3) battleOrder.pop();
                 battleOrder.push(instanceId);
             }
             updateSortArea();
+            updateUI(); // 刷新卡牌格上的 #序号 标记
         }
 
         function getBattleOrderCards() {
@@ -1990,7 +1993,8 @@
                 return;
             }
 
-            if (battleOrder.length < 3) updateBattleOrder();
+            // 仅在 battleOrder 完全为空时才自动初始化（不每次补回3张）
+            if (battleOrder.length === 0) updateBattleOrder();
 
             const orderCards = battleOrder.map(id => userCards.find(c => c.instance_id === id)).filter(Boolean);
 
@@ -2001,19 +2005,28 @@
 
             container.innerHTML = orderCards.map((c, i) => {
                 const safeId = c.instance_id.replace(/'/g, "\\'");
-                return `<span class="slot" onclick="toggleOrder('${safeId}')">
+                return `<span class="slot" onclick="toggleOrder('${safeId}')" style="cursor:pointer;">
                     <span class="idx">#${i+1}</span>
                     <span class="name">${c.name}</span>
                     <span class="power">⚡${getCardPower(c)}</span>
-                    <span style="color:#666;">⇅</span>
+                    <span style="color:#666;">✕</span>
                 </span>`;
             }).join(' &nbsp;→&nbsp; ');
 
+            // 备用卡牌也可点击添加到出战顺序
             const usedIds = new Set(battleOrder);
             const remaining = userCards.filter(c => !usedIds.has(c.instance_id));
             if (remaining.length > 0) {
-                const tip = currentLang === 'zh' ? '备用' : 'Reserve';
-                container.innerHTML += ` &nbsp; <span style="color:#6a5a4a;font-size:10px;">| ${tip}: ${remaining.slice(0, 3).map(c => c.name).join(', ')}</span>`;
+                const tip = currentLang === 'zh' ? '备用（点击加入）' : 'Reserve (click to add)';
+                const reserveHtml = remaining.slice(0, 6).map(c => {
+                    const safeId = c.instance_id.replace(/'/g, "\\'");
+                    return `<span class="slot" onclick="toggleOrder('${safeId}')" style="cursor:pointer;opacity:0.7;border-style:dashed;">
+                        <span class="name">${c.name}</span>
+                        <span class="power">⚡${getCardPower(c)}</span>
+                        <span style="color:#6a5a4a;">＋</span>
+                    </span>`;
+                }).join(' ');
+                container.innerHTML += ` &nbsp; <span style="color:#6a5a4a;font-size:10px;">| ${tip}:</span> ${reserveHtml}`;
             }
         }
 
