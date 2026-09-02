@@ -52,6 +52,12 @@ pub enum ContractError {
     #[error("Invalid rarity: {0}")]
     InvalidRarity(String),
 
+    #[error("Player has duplicate card: {0}")]
+    DuplicateCard(String),
+
+    #[error("Feature temporarily disabled (safety first): {0}")]
+    FeatureDisabled(String),
+
     // ------ 碎片系统 ------
     #[error("Insufficient fragments: need {needed}, have {have}")]
     InsufficientFragments { needed: u64, have: u64 },

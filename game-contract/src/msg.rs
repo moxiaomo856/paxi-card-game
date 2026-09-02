@@ -1,5 +1,6 @@
 // 三国卡牌游戏合约 - 消息定义
 
+use cosmwasm_std::Binary;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
@@ -13,7 +14,7 @@ pub struct InstantiateMsg {
     pub token_contract: String,
     pub burn_address: String,
     pub tap_addresses: Vec<String>,
-    pub admin: String,
+    // admin 已移除：合约完全无管理员，部署后即去中心化
     // 可选项：初始化时的卡牌模板（建议 30 张首发卡）
     pub initial_templates: Option<Vec<CardTemplate>>,
 }
@@ -47,8 +48,8 @@ pub enum ExecuteMsg {
     // ---- 需求五：卡牌提案系统 ----
     /// 提交新卡牌提案：质押 5 万 TKCC
     ProposeCard { template: CardTemplate },
-    /// 投票：1 TKCC = 1 票（使用玩家持有的 TKCC 余额）
-    VoteCard { proposal_id: u64, approve: bool, amount: String },
+    /// 投票：1 TKCC = 1 票（使用玩家「持有」的 TKCC 余额作为投票权重，无需转账）
+    VoteCard { proposal_id: u64, approve: bool },
     /// 提案到期后执行（赞成票 > 50%）
     ExecuteProposal { proposal_id: u64 },
     /// 提案者提前取消未到期的未通过提案
@@ -66,13 +67,14 @@ pub enum ExecuteMsg {
     /// 结束混战，分配奖金
     FinishRoyale { royale_id: String, winner: String, size: u8 },
 
-    // ---- 管理员功能 ----
-    WithdrawVault { recipient: String, amount: String },
-    UpdateConfig {
-        token_contract: Option<String>,
-        burn_address: Option<String>,
-        tap_addresses: Option<Vec<String>>,
-    },
+    // ---- CW20 Send + Receive（官方标准存款模式，修复费用共享漏洞）----
+    /// CW20 代币合约转账到本合约时自动回调（标准 Cw20ReceiveMsg）
+    /// 用户调用 cw20::Cw20ExecuteMsg::Send { contract, amount, msg } 即可存入
+    Receive(cw20::Cw20ReceiveMsg),
+
+    // ---- 玩家存款系统 ----
+    /// 从个人存款提取 TKCC（退回自己地址）
+    WithdrawDeposit { amount: String },
 
     // ---- 碎片系统 ----
     /// 合成卡牌：消耗碎片，随机获得对应稀有度卡牌
@@ -120,6 +122,9 @@ pub enum QueryMsg {
 
     // ---- 碎片系统 ----
     GetFragments { address: String },
+
+    // ---- 玩家存款系统 ----
+    GetDeposit { address: String },
 }
 
 // ============================================================
@@ -130,7 +135,7 @@ pub struct ConfigResponse {
     pub token_contract: String,
     pub burn_address: String,
     pub tap_addresses: Vec<String>,
-    pub admin: String,
+    // admin 已移除：合约完全无管理员
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -217,6 +222,10 @@ pub struct GameParamsResponse {
     pub ai_fee: [String; 4],
     pub ai_reward: [String; 4],
     pub upgrade_fees: [String; 4],
+    pub daily_ai_limit: u64,
+    pub ai_legend_boost_pct: u32,
+    pub pvp_fee: String,
+    pub royale_entry_fee: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -225,4 +234,10 @@ pub struct FragmentsResponse {
     pub rare: u64,
     pub epic: u64,
     pub legend: u64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct DepositResponse {
+    pub available: String,   // 可用存款（未锁定）
+    pub locked: String,      // 提案质押锁定金额
 }

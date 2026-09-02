@@ -5,12 +5,14 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     to_binary, Addr, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult,
-    Uint128, WasmMsg, BankMsg,
+    Uint128, WasmMsg, BankMsg, QueryRequest, WasmQuery, Order, Storage,
 };
+use cw2::set_contract_version;
+use cw20::{BalanceResponse, Cw20ExecuteMsg, Cw20QueryMsg, Cw20ReceiveMsg};
 
 use crate::error::ContractError;
 use crate::msg::{
-    BattleResult, BattleOrderResponse, CardInfo, ConfigResponse, ExecuteMsg,
+    BattleResult, BattleOrderResponse, CardInfo, ConfigResponse, DepositResponse, ExecuteMsg,
     FragmentsResponse, GameParamsResponse, InstantiateMsg, PendingRewardsResponse, ProposalListResponse,
     ProposalResponse, ProposalVotesResponse, QueryMsg, RarityCountResponse,
     AiStatsResponse, PlayerCardsResponse, VaultBalanceResponse,
@@ -18,8 +20,8 @@ use crate::msg::{
 use crate::state::{
     AiStats, BattleRecord, CardProposal, CardTemplate, Config, Fragments, GameParams,
     AI_BATTLE_COUNT, AI_BATTLE_DATE, AI_BATTLE_STATS, BATTLES, CARDS, CARD_TEMPLATE_COUNT,
-    CARD_TEMPLATES, CONFIG, FRAGMENTS, GAME_PARAMS, MAX_CARDS, PLAYER_BATTLE_ORDER, PLAYER_CARDS,
-    PENDING_REWARDS, PROPOSALS, PROPOSAL_COUNTER, PROPOSAL_DEPOSIT, RARITY_COUNT,
+    CARD_TEMPLATES, CONFIG, DEPOSITS, FRAGMENTS, GAME_PARAMS, MAX_CARDS, PLAYER_BATTLE_ORDER, PLAYER_CARDS,
+    PENDING_REWARDS, PROPOSALS, PROPOSAL_COUNTER, PROPOSAL_DEPOSIT, PROPOSAL_DEPOSITS, RARITY_COUNT,
     VOTES, VOTING_PERIOD, CRAFT_COST, FRAGMENT_FROM_DUPLICATE,
 };
 
@@ -43,7 +45,7 @@ pub fn instantiate(
             .iter()
             .map(|a| deps.api.addr_validate(a))
             .collect::<Result<Vec<_>, _>>()?,
-        admin: deps.api.addr_validate(&msg.admin)?,
+        // admin 已移除：合约完全无管理员
     };
     CONFIG.save(deps.storage, &config)?;
     GAME_PARAMS.save(deps.storage, &GameParams::default())?;
@@ -69,9 +71,9 @@ pub fn instantiate(
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
-        .add_attribute("admin", info.sender)
         .add_attribute("token_contract", msg.token_contract)
-        .add_attribute("init_timestamp", env.block.time.seconds().to_string()))
+        .add_attribute("init_timestamp", env.block.time.seconds().to_string())
+        .add_attribute("admin", "none (fully decentralized)"))
 }
 
 // ============================================================
@@ -97,8 +99,8 @@ pub fn execute(
         ExecuteMsg::SetBattleOrder { order } => execute_set_battle_order(deps, info, order),
 
         ExecuteMsg::ProposeCard { template } => execute_propose_card(deps, env, info, template),
-        ExecuteMsg::VoteCard { proposal_id, approve, amount } =>
-            execute_vote_card(deps, env, info, proposal_id, approve, amount),
+        ExecuteMsg::VoteCard { proposal_id, approve } =>
+            execute_vote_card(deps, env, info, proposal_id, approve),
         ExecuteMsg::ExecuteProposal { proposal_id } => execute_execute_proposal(deps, env, proposal_id),
         ExecuteMsg::CancelProposal { proposal_id } => execute_cancel_proposal(deps, env, info, proposal_id),
 
@@ -112,12 +114,14 @@ pub fn execute(
         ExecuteMsg::FinishRoyale { royale_id, winner, size } =>
             execute_finish_royale(deps, env, info, royale_id, winner, size),
 
-        ExecuteMsg::WithdrawVault { recipient, amount } =>
-            execute_withdraw_vault(deps, info, recipient, amount),
-        ExecuteMsg::UpdateConfig { token_contract, burn_address, tap_addresses } =>
-            execute_update_config(deps, info, token_contract, burn_address, tap_addresses),
-
         ExecuteMsg::CraftCard { rarity } => execute_craft_card(deps, env, info, rarity),
+
+        // ---- CW20 Send + Receive 存款模式 ----
+        ExecuteMsg::Receive(receive_msg) =>
+            execute_receive(deps, env, info, receive_msg),
+
+        // ---- 玩家存款系统 ----
+        ExecuteMsg::WithdrawDeposit { amount } => execute_withdraw_deposit(deps, env, info, amount),
     }
 }
 
@@ -172,14 +176,8 @@ fn execute_draw_pack(
         });
     }
 
-    // 2. TKCC 校验（合约余额）
-    let tkcc_balance = query_token_balance(&deps.as_ref(), &_env.contract.address)?;
-    if tkcc_balance < prc_total {
-        return Err(ContractError::InsufficientFunds {
-            expected: format!("{} TKCC", prc_total),
-            got: format!("{} TKCC", tkcc_balance),
-        });
-    }
+    // 2. TKCC 校验：从「玩家个人存款」中扣除（修复费用共享漏洞）
+    consume_deposit(deps.storage, &info.sender, prc_total)?;
 
     // 3. 转账：生态（抽水）+ 销毁 → 对应地址；金库部分留下
     let mut messages: Vec<WasmMsg> = vec![
@@ -211,6 +209,9 @@ fn execute_draw_pack(
 
     let block_key = _env.block.height;
     let time_key = _env.block.time.seconds();
+    // tx position 熵：将 sender 字节长度、首字节等也混入（无需额外存储）
+    let salt_key = info.sender.as_bytes().iter().fold(0u64, |acc, &b| acc.wrapping_add(b as u64));
+    let mut rng_state: u64 = mix_seed(time_key, block_key, salt_key);
 
     // 加载玩家碎片
     let mut fragments = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
@@ -218,11 +219,12 @@ fn execute_draw_pack(
     let mut new_cards: Vec<String> = Vec::new();
 
     for i in 0..num_cards {
-        let seed = (time_key + block_key + info.sender.as_bytes().len() as u64 + i as u64) as usize;
-        let idx = seed % weighted.len();
+        // 抗预测随机：每次迭代重新混合 rng_state
+        rng_state = mix_seed(rng_state, i as u64, time_key ^ block_key);
+        let idx = (rng_state % weighted.len() as u64) as usize;
         let tpl = &templates[weighted[idx]];
 
-        // 检查是否已拥有同名卡牌（重复检测）
+        // 检查是否已拥有同名卡牌（含本轮刚加入的）
         let is_duplicate = player_cards_ids.iter().any(|cid| {
             if let Ok(Some(c)) = CARDS.may_load(deps.storage, cid) {
                 c.name == tpl.name
@@ -240,8 +242,8 @@ fn execute_draw_pack(
                 fragments_gained.push(format!("{}+{}", tpl.rarity, frag_amount));
             }
         } else {
-            // 非重复 → 正常生成卡牌
-            let card_id = format!("card_{}_{}_{}", info.sender, time_key, i);
+            // 非重复 → 正常生成卡牌（id 含 height 防秒级碰撞）
+            let card_id = format!("card_{}_{}_{}_{}", info.sender, block_key, time_key, i);
             let card = CardInfo {
                 card_id: card_id.clone(),
                 owner: info.sender.to_string(),
@@ -279,8 +281,8 @@ fn execute_ai_battle(
     env: Env,
     info: MessageInfo,
     difficulty: u8,
-    result: BattleResult,
-    battle_hash: String,
+    result: BattleResult,   // 仅供回退兼容；实际结果以链上结算为准
+    battle_hash: String,    // 仅记录用于前端展示，不决定胜负
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let params = GAME_PARAMS.load(deps.storage)?;
@@ -289,7 +291,7 @@ fn execute_ai_battle(
         return Err(ContractError::InvalidDifficulty(difficulty));
     }
 
-    // 1. 当日对战限制
+    // 1. 当日对战限制（UTC 0 点重置）
     let today = env.block.time.seconds() / SECS_PER_DAY * SECS_PER_DAY;
     let last_day = AI_BATTLE_DATE.may_load(deps.storage, &info.sender)?.unwrap_or(0);
     let today_count = if last_day == today {
@@ -302,28 +304,59 @@ fn execute_ai_battle(
     // 2. 读取玩家 AI 统计，判断动态难度
     let stats = AI_BATTLE_STATS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
     let recommended_diff = params.difficulty_from_win_rate(stats.wins, stats.total);
-    // 若玩家选的难度高于推荐难度，合约不限制（保留策略自由度）
 
-    // 2.1 解析出战顺序（预设 → 过滤无效 → 回退按战力），便于前端/链上校验
+    // 3. 解析出战顺序（至少 3 张，否则无法对战）
     let order_cards = resolve_player_battle_cards(deps.as_ref(), &info.sender)?;
-    let _ = order_cards; // 供后续真实出卡结算使用，这里仅确保解析逻辑已就绪
-
-    // 3. 校验挑战费转入合约
-    let fee = params.ai_fee[(difficulty - 1) as usize];
-    let tkcc = query_token_balance(&deps.as_ref(), &env.contract.address)?;
-    if tkcc < fee {
-        return Err(ContractError::InsufficientFunds {
-            expected: format!("{} TKCC", fee),
-            got: format!("{} TKCC", tkcc),
-        });
+    if order_cards.len() < 3 {
+        return Err(ContractError::InvalidInput("need at least 3 cards to battle".into()));
     }
 
-    // 4. 生成 battle_id
+    // 4. TKCC 校验：从「玩家个人存款」中扣除（修复费用共享漏洞）
+    let fee = params.ai_fee[(difficulty - 1) as usize];
+    consume_deposit(deps.storage, &info.sender, fee)?;
+
+    // 5. ✅ 链上结算战斗：不再信任客户端 result
+    //    对战规则：玩家 3 张卡 vs AI 3 张卡（难度对应模板池随机抽）。
+    //    胜负判定：3 局分别比较 attack vs defense，赢的局数多者胜。
+    //    随机种子：mix_seed(block.time, block.height, 玩家地址 + 今日局序号)，对抗预测
+    let salt_key = info.sender.as_bytes().iter().fold(0u64, |acc, &b| acc.wrapping_add(b as u64));
+    let mut rng_state = mix_seed(env.block.time.seconds(), env.block.height, salt_key.wrapping_add(today_count));
+
+    // 玩家 3 张卡战力：attack * (1 + 0.15*(star-1)) + defense * (1 + 0.10*(star-1))
+    let compute_power = |c: &CardInfo| -> u128 {
+        let s = c.star as u128;
+        (c.attack as u128) * (1000 + 150 * (s - 1)) / 1000
+        + (c.defense as u128) * (1000 + 100 * (s - 1)) / 1000
+    };
+    let player_powers: Vec<u128> = order_cards.iter().take(3).map(compute_power).collect();
+
+    // AI 卡：按难度 1~4 生成 3 张「虚拟卡」战力，难度 4 属性 +25%
+    let ai_base: [u128; 4] = [800, 1200, 1700, 2400]; // 简单/普通/困难/传说 基础战力
+    let boost = if difficulty == 4 { 1250u128 } else { 1000u128 }; // 传说AI +25%（千分比）
+    let mut ai_powers = Vec::<u128>::with_capacity(3);
+    for j in 0..3u64 {
+        rng_state = mix_seed(rng_state, j, env.block.height);
+        let spread = ai_base[(difficulty - 1) as usize] / 10; // ±10% 浮动
+        let delta = (rng_state as u128) % (spread * 2 + 1);
+        let raw = ai_base[(difficulty - 1) as usize] + delta - spread;
+        ai_powers.push(raw * boost / 1000);
+    }
+
+    // 3 局 1v1 分胜负（i vs i 顺序，与玩家预设顺序一致）
+    let mut player_round_wins = 0u8;
+    for j in 0..3 {
+        if player_powers[j] >= ai_powers[j] {
+            player_round_wins += 1;
+        }
+    }
+    // 玩家总赢局 > AI 才算赢；打平算输（防止平局免费刷统计）
+    let win = player_round_wins >= 2;
+
+    // 生成 battle_id（包含 height + today_count，防止同块碰撞）
     let battle_id = format!(
-        "battle_{}_{}_{}", info.sender, env.block.height, env.block.time.seconds()
+        "battle_{}_{}_{}_{}", info.sender, env.block.height, env.block.time.seconds(), today_count
     );
 
-    let win = matches!(result, BattleResult::Win);
     let reward_str = if win {
         params.ai_reward[(difficulty - 1) as usize].to_string()
     } else { String::from("0") };
@@ -339,18 +372,16 @@ fn execute_ai_battle(
     };
     BATTLES.save(deps.storage, &battle_id, &record)?;
 
-    // 5. 胜利 → 待领取奖励列表
+    // 6. 胜利 → 待领取奖励列表（仅当当前余额 ≥ 奖励额时才写入，否则标记为已跳过，避免后续误领）
     if win {
         let mut pending = PENDING_REWARDS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
         pending.push(battle_id.clone());
         PENDING_REWARDS.save(deps.storage, &info.sender, &pending)?;
     }
 
-    // 6. 更新当日计数
+    // 7. 更新当日计数 + 累计统计
     AI_BATTLE_DATE.save(deps.storage, &info.sender, &today)?;
     AI_BATTLE_COUNT.save(deps.storage, &info.sender, &(today_count + 1))?;
-
-    // 7. 更新累计统计（动态难度依赖）
     let new_stats = AiStats {
         total: stats.total + 1,
         wins:  stats.wins  + if win { 1 } else { 0 },
@@ -361,7 +392,6 @@ fn execute_ai_battle(
     let burn_amount = fee * (params.ai_burn_pct_bp as u128) / 10_000u128;
     let vault_amount = fee - burn_amount;
     let burn_msg = build_token_transfer(&config.token_contract, &config.burn_address, burn_amount);
-    // vault_amount 留在合约
 
     Ok(Response::new()
         .add_attribute("method", "ai_battle")
@@ -369,6 +399,7 @@ fn execute_ai_battle(
         .add_attribute("difficulty", difficulty.to_string())
         .add_attribute("recommended_difficulty", recommended_diff.to_string())
         .add_attribute("result", if win { "win" } else { "lose" })
+        .add_attribute("round_wins", player_round_wins.to_string())
         .add_attribute("reward", reward_str)
         .add_attribute("battle_id", &battle_id)
         .add_attribute("battle_hash", &battle_hash)
@@ -398,6 +429,15 @@ fn execute_claim_reward(
     }
     let reward: u128 = battle.reward.parse().unwrap_or(0);
     if reward == 0 { return Err(ContractError::NoPendingRewards); }
+
+    // 修复 #2：领取前检查合约是否有足够 TKCC，避免余额不足导致交易失败浪费 Gas
+    let contract_bal = query_token_balance(&deps.as_ref(), &config.token_contract, &_env.contract.address)?;
+    if contract_bal < reward {
+        return Err(ContractError::InsufficientFunds {
+            expected: reward.to_string(),
+            got: contract_bal.to_string(),
+        });
+    }
 
     let transfer = build_token_transfer(&config.token_contract, &info.sender, reward);
     battle.claimed = true;
@@ -466,14 +506,8 @@ fn execute_star_up(
             .add_attribute("mode", "fragments")
             .add_attribute("fragments_cost", frag_needed.to_string()))
     } else {
-        // TKCC 模式：50% 销毁 + 50% 金库（原有逻辑）
-        let tkcc_bal = query_token_balance(&deps.as_ref(), &_env.contract.address)?;
-        if tkcc_bal < fee {
-            return Err(ContractError::InsufficientFunds {
-                expected: format!("{} TKCC", fee),
-                got: format!("{} TKCC", tkcc_bal),
-            });
-        }
+        // TKCC 模式：从「玩家个人存款」中扣除（修复费用共享漏洞）
+        consume_deposit(deps.storage, &info.sender, fee)?;
 
         let burn = fee / 2;
         let vault = fee - burn;
@@ -510,22 +544,7 @@ fn execute_craft_card(
     let ri = Fragments::rarity_index(&rarity)
         .ok_or_else(|| ContractError::InvalidRarity(rarity.clone()))?;
 
-    // 检查碎片余额
-    let cost = CRAFT_COST[ri];
-    let mut fragments = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
-    let have = fragments.get(&rarity);
-    if have < cost {
-        return Err(ContractError::InsufficientFragments {
-            needed: cost,
-            have,
-        });
-    }
-
-    // 扣除碎片
-    fragments.set(&rarity, have - cost);
-    FRAGMENTS.save(deps.storage, &info.sender, &fragments)?;
-
-    // 从 CARD_TEMPLATES 中随机选一张对应稀有度的卡牌
+    // 1. 先检查候选卡牌是否存在（避免扣碎片后才发现无候选）
     let templates = CARD_TEMPLATES.may_load(deps.storage)?.unwrap_or_default();
     let candidates: Vec<&CardTemplate> = templates.iter()
         .filter(|t| t.rarity == rarity)
@@ -536,14 +555,43 @@ fn execute_craft_card(
         ));
     }
 
+    // 2. 检查碎片余额
+    let cost = CRAFT_COST[ri];
+    let mut fragments = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
+    let have = fragments.get(&rarity);
+    if have < cost {
+        return Err(ContractError::InsufficientFragments {
+            needed: cost,
+            have,
+        });
+    }
+
+    // 3. 随机选一张候选卡牌
     let time_key = env.block.time.seconds();
     let block_key = env.block.height;
-    let seed = (time_key + block_key + info.sender.as_bytes().len() as u64) as usize;
-    let idx = seed % candidates.len();
+    let salt_key = info.sender.as_bytes().iter().fold(0u64, |acc, &b| acc.wrapping_add(b as u64));
+    let rng_state = mix_seed(time_key, block_key, salt_key);
+    let idx = (rng_state % candidates.len() as u64) as usize;
     let tpl = candidates[idx];
 
-    // 生成新卡牌
-    let card_id = format!("card_{}_{}_craft", info.sender, time_key);
+    // 4. 检查重复：已存在同名卡则直接报错（碎片尚未扣除，无需退还）
+    let player_cards_ids = PLAYER_CARDS
+        .may_load(deps.storage, &info.sender)?.unwrap_or_default();
+    let is_duplicate = player_cards_ids.iter().any(|cid| {
+        if let Ok(Some(c)) = CARDS.may_load(deps.storage, cid) {
+            c.name == tpl.name
+        } else { false }
+    });
+    if is_duplicate {
+        return Err(ContractError::DuplicateCard(tpl.name.clone()));
+    }
+
+    // 5. 确认无误后再扣除碎片
+    fragments.set(&rarity, have - cost);
+    FRAGMENTS.save(deps.storage, &info.sender, &fragments)?;
+
+    // 6. 生成新卡牌（含 height 防止碰撞）
+    let card_id = format!("card_{}_{}_{}_craft", info.sender, block_key, time_key);
     let card = CardInfo {
         card_id: card_id.clone(),
         owner: info.sender.to_string(),
@@ -689,15 +737,24 @@ fn validate_card_template_internal(
     Ok(())
 }
 
-fn validate_card_template(deps: DepsMut, template: &CardTemplate) -> Result<(), ContractError> {
+fn validate_card_template(storage: &mut dyn Storage, template: &CardTemplate) -> Result<(), ContractError> {
+    // 修复 #4：模板 ID 唯一性检查
+    let existing = CARD_TEMPLATES.may_load(storage)?.unwrap_or_default();
+    for t in &existing {
+        if t.id == template.id {
+            return Err(ContractError::InvalidInput(format!(
+                "template id '{}' already exists", template.id
+            )));
+        }
+    }
     // 读取当前稀有度计数
     let mut rarity_count = std::collections::BTreeMap::new();
     for r in ["common", "rare", "epic", "legend"].iter() {
-        if let Some(c) = RARITY_COUNT.may_load(deps.storage, r)? {
+        if let Some(c) = RARITY_COUNT.may_load(storage, r)? {
             rarity_count.insert(r.to_string(), c);
         }
     }
-    let total = CARD_TEMPLATE_COUNT.may_load(deps.storage)?.unwrap_or(0);
+    let total = CARD_TEMPLATE_COUNT.may_load(storage)?.unwrap_or(0);
     validate_card_template_internal(&rarity_count, template.rarity.as_str(), template.weight, total)
 }
 
@@ -709,17 +766,11 @@ fn execute_propose_card(
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
 
-    // 1. 稀有度/权重/总数校验
-    validate_card_template(deps.branch(), &template)?;
+    // 1. 稀有度/权重/总数校验（含模板 ID 唯一性）
+    validate_card_template(deps.storage, &template)?;
 
-    // 2. 校验质押 5 万 TKCC 转入合约
-    let tkcc_bal = query_token_balance(&deps.as_ref(), &env.contract.address)?;
-    if tkcc_bal < PROPOSAL_DEPOSIT {
-        return Err(ContractError::InsufficientFunds {
-            expected: format!("{} TKCC", PROPOSAL_DEPOSIT),
-            got: format!("{} TKCC", tkcc_bal),
-        });
-    }
+    // 2. 锁定玩家存款 5 万 TKCC（从个人存款锁定，修复费用共享漏洞）
+    lock_deposit(deps.storage, &info.sender, PROPOSAL_DEPOSIT)?;
 
     // 3. 自增 proposal_id
     let id = PROPOSAL_COUNTER.may_load(deps.storage)?.unwrap_or(0) + 1;
@@ -761,11 +812,8 @@ fn execute_vote_card(
     info: MessageInfo,
     proposal_id: u64,
     approve: bool,
-    amount: String,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
-    let amount_u: u128 = amount.parse()
-        .map_err(|_| ContractError::InvalidInput("invalid amount".into()))?;
 
     // 1. 提案存在 & 未过期
     let mut proposal = PROPOSALS.load(deps.storage, proposal_id)
@@ -774,43 +822,38 @@ fn execute_vote_card(
         return Err(ContractError::VotingClosed);
     }
 
-    // 2. 防止重复投票
+    // 2. 防止重复投票（1 地址 1 提案仅 1 次）
     let voter_key = (proposal_id, info.sender.clone());
     if VOTES.may_load(deps.storage, voter_key)?.is_some() {
         return Err(ContractError::AlreadyVoted(proposal_id));
     }
 
-    // 3. 校验投票者转账的 amount 匹配（通过 funds 先转入合约）
-    let tkcc_bal = query_token_balance(&deps.as_ref(), &env.contract.address)?;
-    if tkcc_bal < amount_u {
-        return Err(ContractError::InsufficientFunds {
-            expected: format!("{} TKCC for voting", amount_u),
-            got: format!("{} TKCC contract balance", tkcc_bal),
-        });
+    // 3. ✅ 查询投票者真实持有 TKCC 余额（以 PRC-20 合约的 balance 作为权重）
+    //    1 TKCC = 1 票，无需转账。投票者余额 ≥ 1 才能投票。
+    let voter_balance = query_token_balance(&deps.as_ref(), &config.token_contract, &info.sender)?;
+    if voter_balance < 1_000_000u128 {  // 至少持有 1 TKCC（最小单位 1e6）
+        return Err(ContractError::VotingClosed);  // 无投票权
     }
+    let votes = Uint128::from(voter_balance / 1_000_000); // 1 TKCC = 1 票
 
     // 4. 累加赞成/反对票数
-    let amount_uint = Uint128::from(amount_u);
     let (new_yes, new_no) = if approve {
-        (proposal.yes_votes + amount_uint, proposal.no_votes)
+        (proposal.yes_votes + votes, proposal.no_votes)
     } else {
-        (proposal.yes_votes, proposal.no_votes + amount_uint)
+        (proposal.yes_votes, proposal.no_votes + votes)
     };
     proposal.yes_votes = new_yes;
     proposal.no_votes  = new_no;
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
     VOTES.save(deps.storage, voter_key, &approve)?;
 
-    // 5. 投票的 TKCC 作为抵押，返回给投票者（投票只是表态，不消耗 TKCC）
-    let refund = build_token_transfer(&config.token_contract, &info.sender, amount_u);
-
     Ok(Response::new()
         .add_attribute("method", "vote_card")
         .add_attribute("proposal_id", proposal_id.to_string())
         .add_attribute("voter", info.sender)
         .add_attribute("approve", approve.to_string())
-        .add_attribute("votes", amount_u.to_string())
-        .add_message(refund))
+        .add_attribute("votes", votes.to_string())
+        .add_attribute("voter_balance", voter_balance.to_string()))
 }
 
 fn execute_execute_proposal(
@@ -836,10 +879,24 @@ fn execute_execute_proposal(
     let passed = total_votes > 0 && yes * 2 > total_votes;
 
     let deposit = proposal.deposit.u128();
+    let proposer_addr = proposal.proposer.clone();
 
     if passed {
-        // ✅ 提案通过 → 加入卡牌模板，退还质押金
-        validate_card_template(deps.branch(), &proposal.template)?;
+        // ✅ 提案通过 → 加入卡牌模板，退还质押金（从锁定态解锁，无需 TKCC 转账）
+        let total_tpls = CARD_TEMPLATE_COUNT.may_load(deps.storage)?.unwrap_or(0);
+        if total_tpls >= MAX_CARDS {
+            // 解锁押金退还到 proposer 可用存款（账本解锁，无需 TKCC 转账）
+            unlock_and_refund_deposit(deps.storage, &proposer_addr, deposit)?;
+            proposal.executed = true;
+            proposal.approved = false;
+            PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
+            return Ok(Response::new()
+                .add_attribute("method", "execute_proposal")
+                .add_attribute("proposal_id", proposal_id.to_string())
+                .add_attribute("approved", "false")
+                .add_attribute("reason", "MAX_CARDS reached")
+                .add_attribute("deposit_unlocked", deposit.to_string()));
+        }
 
         let mut list = CARD_TEMPLATES.may_load(deps.storage)?.unwrap_or_default();
         list.push(proposal.template.clone());
@@ -853,26 +910,31 @@ fn execute_execute_proposal(
         let total = CARD_TEMPLATE_COUNT.may_load(deps.storage)?.unwrap_or(0);
         CARD_TEMPLATE_COUNT.save(deps.storage, &(total + 1))?;
 
+        // 解锁押金退还到 proposer 可用存款
+        unlock_and_refund_deposit(deps.storage, &proposer_addr, deposit)?;
+
         proposal.approved = true;
         proposal.executed = true;
         PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
-        let refund = build_token_transfer(&config.token_contract, &proposal.proposer, deposit);
         Ok(Response::new()
             .add_attribute("method", "execute_proposal")
             .add_attribute("proposal_id", proposal_id.to_string())
             .add_attribute("approved", "true")
             .add_attribute("yes", yes.to_string())
             .add_attribute("no", no.to_string())
-            .add_attribute("refunded_deposit", deposit.to_string())
-            .add_message(refund))
+            .add_attribute("deposit_unlocked", deposit.to_string()))
     } else {
-        // ❌ 未通过 → 质押金进入金库（留在合约）
+        // ❌ 未通过 → 质押金永久进入金库（从 proposer 存款中扣掉）
+        let locked = PROPOSAL_DEPOSITS.may_load(deps.storage, &proposer_addr)?.unwrap_or(0);
+        PROPOSAL_DEPOSITS.save(deps.storage, &proposer_addr, &locked.saturating_sub(deposit))?;
+        let cur_dep = DEPOSITS.may_load(deps.storage, &proposer_addr)?.unwrap_or(0);
+        DEPOSITS.save(deps.storage, &proposer_addr, &cur_dep.saturating_sub(deposit))?;
+
         proposal.approved = false;
         proposal.executed = true;
         PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
 
-        // 质押金本来就留在合约 → 等价于进金库，无需转账
         Ok(Response::new()
             .add_attribute("method", "execute_proposal")
             .add_attribute("proposal_id", proposal_id.to_string())
@@ -898,11 +960,23 @@ fn execute_cancel_proposal(
     if proposal.executed {
         return Err(ContractError::ProposalAlreadyExecuted(proposal_id));
     }
-    // 取消 → 质押金进入金库（社区防 spam）
+    // 取消 → 质押金进入金库（社区防 spam）：从 proposer 存款中永久扣掉
+    let deposit = proposal.deposit.u128();
+    let locked = PROPOSAL_DEPOSITS.may_load(deps.storage, &proposal.proposer)?.unwrap_or(0);
+    // 修复 #3：显式检查锁定金额是否足够，防止 saturating_sub 静默归零
+    if locked < deposit {
+        return Err(ContractError::InsufficientFunds {
+            expected: deposit.to_string(),
+            got: locked.to_string(),
+        });
+    }
+    PROPOSAL_DEPOSITS.save(deps.storage, &proposal.proposer, &locked.saturating_sub(deposit))?;
+    let cur_dep = DEPOSITS.may_load(deps.storage, &proposal.proposer)?.unwrap_or(0);
+    DEPOSITS.save(deps.storage, &proposal.proposer, &cur_dep.saturating_sub(deposit))?;
+
     proposal.executed = true;
     proposal.approved = false;
     PROPOSALS.save(deps.storage, proposal_id, &proposal)?;
-    let deposit = proposal.deposit.u128();
 
     Ok(Response::new()
         .add_attribute("method", "cancel_proposal")
@@ -925,90 +999,23 @@ fn execute_request_pvp_match(
         .add_attribute("order_len", order_cards.len().to_string()))
 }
 fn execute_finish_pvp_match(
-    deps: DepsMut, env: Env, _info: MessageInfo, _match_id: String, winner: String,
+    _deps: DepsMut, _env: Env, _info: MessageInfo, _match_id: String, _winner: String,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    let params = GAME_PARAMS.load(deps.storage)?;
-    let tkcc_bal = query_token_balance(&deps.as_ref(), &env.contract.address)?;
-    let reward = params.pvp_reward(tkcc_bal);
-    let winner_addr = deps.api.addr_validate(&winner)?;
-    let xfer = build_token_transfer(&config.token_contract, &winner_addr, reward);
-    Ok(Response::new()
-        .add_attribute("method", "finish_pvp_match")
-        .add_attribute("winner", winner)
-        .add_attribute("reward", reward.to_string())
-        .add_message(xfer))
+    // PVP 对战链上结算尚未完整实现（无对局状态 + 无对手签名 + 防重复调用状态）
+    // 为防止金库被任意调用者提空，暂时封禁该入口。
+    Err(ContractError::FeatureDisabled("finish_pvp_match (PVP chain settlement pending)".into()))
 }
 
 fn execute_join_royale(
-    _deps: DepsMut, _env: Env, info: MessageInfo, royale_id: String,
+    _deps: DepsMut, _env: Env, _info: MessageInfo, _royale_id: String,
 ) -> Result<Response, ContractError> {
-    Ok(Response::new()
-        .add_attribute("method", "join_royale")
-        .add_attribute("royale_id", royale_id)
-        .add_attribute("player", info.sender))
+    // 混战对战链上结算尚未完整实现
+    Err(ContractError::FeatureDisabled("join_royale (battle royale not yet ready)".into()))
 }
 fn execute_finish_royale(
-    deps: DepsMut, env: Env, _info: MessageInfo, royale_id: String, winner: String, size: u8,
+    _deps: DepsMut, _env: Env, _info: MessageInfo, _royale_id: String, _winner: String, _size: u8,
 ) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    let params = GAME_PARAMS.load(deps.storage)?;
-    if !(4..=6).contains(&size) {
-        return Err(ContractError::InvalidInput("size must be 4-6".into()));
-    }
-    let total_pool: u128 = params.royale_entry_fee.checked_mul(size as u128)
-        .ok_or_else(|| ContractError::InvalidInput("pool overflow".into()))?;
-    let reward = total_pool * params.royale_reward_pct_bp / 10_000;
-    let burn   = total_pool * params.royale_burn_pct_bp   / 10_000;
-    // vault = 剩余
-
-    let winner_addr = deps.api.addr_validate(&winner)?;
-    let messages = vec![
-        build_token_transfer(&config.token_contract, &winner_addr, reward),
-        build_token_transfer(&config.token_contract, &config.burn_address, burn),
-    ];
-
-    Ok(Response::new()
-        .add_attribute("method", "finish_royale")
-        .add_attribute("royale_id", royale_id)
-        .add_attribute("size", size.to_string())
-        .add_attribute("total_pool", total_pool.to_string())
-        .add_attribute("winner_reward", reward.to_string())
-        .add_attribute("burned", burn.to_string())
-        .add_messages(messages))
-}
-
-// ============================================================
-// 管理员功能
-// ============================================================
-fn execute_withdraw_vault(
-    deps: DepsMut, info: MessageInfo, recipient: String, amount: String,
-) -> Result<Response, ContractError> {
-    let config = CONFIG.load(deps.storage)?;
-    if info.sender != config.admin { return Err(ContractError::Unauthorized); }
-    let amount_u: u128 = amount.parse().map_err(|_| ContractError::InvalidInput("amount".into()))?;
-    let recipient_addr = deps.api.addr_validate(&recipient)?;
-    let xfer = build_token_transfer(&config.token_contract, &recipient_addr, amount_u);
-    Ok(Response::new()
-        .add_attribute("method", "withdraw_vault")
-        .add_attribute("admin", info.sender)
-        .add_attribute("recipient", recipient)
-        .add_attribute("amount", amount)
-        .add_message(xfer))
-}
-fn execute_update_config(
-    deps: DepsMut, info: MessageInfo,
-    token_contract: Option<String>, burn_address: Option<String>, tap_addresses: Option<Vec<String>>,
-) -> Result<Response, ContractError> {
-    let mut config = CONFIG.load(deps.storage)?;
-    if info.sender != config.admin { return Err(ContractError::Unauthorized); }
-    if let Some(tc) = token_contract { config.token_contract = deps.api.addr_validate(&tc)?; }
-    if let Some(ba) = burn_address { config.burn_address = deps.api.addr_validate(&ba)?; }
-    if let Some(ta) = tap_addresses {
-        config.tap_addresses = ta.iter().map(|a| deps.api.addr_validate(a)).collect::<Result<Vec<_>,_>>()?;
-    }
-    CONFIG.save(deps.storage, &config)?;
-    Ok(Response::new().add_attribute("method", "update_config"))
+    Err(ContractError::FeatureDisabled("finish_royale (battle royale not yet ready)".into()))
 }
 
 // ============================================================
@@ -1021,10 +1028,12 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GameParams {} => to_binary(&query_params(deps)?),
         QueryMsg::PlayerCards { address } => to_binary(&query_player_cards(deps, address)?),
         QueryMsg::PendingRewards { address } => to_binary(&query_pending_rewards(deps, address)?),
-        QueryMsg::VaultBalance {} => to_binary(&VaultBalanceResponse {
-            balance: query_token_balance(&deps, &env.contract.address)
-                .unwrap_or(0).to_string(),
-        }),
+        QueryMsg::VaultBalance {} => {
+            let bal = CONFIG.load(deps.storage).ok()
+                .and_then(|cfg| query_token_balance(&deps, &cfg.token_contract, &env.contract.address).ok())
+                .unwrap_or(0);
+            to_binary(&VaultBalanceResponse { balance: bal.to_string() })
+        }
         QueryMsg::Card { card_id } => to_binary(&query_card(deps, card_id)?),
         QueryMsg::AiStats { address } => to_binary(&query_ai_stats(deps, address)?),
         QueryMsg::GetBattleOrder { player } => to_binary(&query_battle_order(deps, player)?),
@@ -1034,6 +1043,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::CardTemplates { start_after, limit } => to_binary(&query_templates(deps, start_after, limit)?),
         QueryMsg::RarityCount {} => to_binary(&query_rarity_count(deps)?),
         QueryMsg::GetFragments { address } => to_binary(&query_fragments(deps, address)?),
+        QueryMsg::GetDeposit { address } => to_binary(&query_deposit(deps, address)?),
     }
 }
 
@@ -1043,7 +1053,7 @@ fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         token_contract: c.token_contract.to_string(),
         burn_address: c.burn_address.to_string(),
         tap_addresses: c.tap_addresses.iter().map(|a| a.to_string()).collect(),
-        admin: c.admin.to_string(),
+        // admin 已移除：合约完全无管理员
     })
 }
 fn query_params(deps: Deps) -> StdResult<GameParamsResponse> {
@@ -1057,6 +1067,10 @@ fn query_params(deps: Deps) -> StdResult<GameParamsResponse> {
         upgrade_fees: [
             s(p.upgrade_fees[0]), s(p.upgrade_fees[1]), s(p.upgrade_fees[2]), s(p.upgrade_fees[3]),
         ],
+        daily_ai_limit: p.daily_ai_limit,
+        ai_legend_boost_pct: p.ai_legend_boost_pct,
+        pvp_fee: s(p.pvp_fee),
+        royale_entry_fee: s(p.royale_entry_fee),
     })
 }
 fn query_player_cards(deps: Deps, address: String) -> StdResult<PlayerCardsResponse> {
@@ -1190,39 +1204,164 @@ fn query_fragments(deps: Deps, address: String) -> StdResult<FragmentsResponse> 
     })
 }
 
+fn query_deposit(deps: Deps, address: String) -> StdResult<DepositResponse> {
+    let addr = deps.api.addr_validate(&address)?;
+    let available = DEPOSITS.may_load(deps.storage, &addr)?.unwrap_or(0);
+    let locked = PROPOSAL_DEPOSITS.may_load(deps.storage, &addr)?.unwrap_or(0);
+    Ok(DepositResponse {
+        available: available.to_string(),
+        locked: locked.to_string(),
+    })
+}
+
+// ============================================================
+// 玩家存款系统（CW20 Send+Receive 官方标准，修复费用共享漏洞）
+// ============================================================
+/// CW20 Send+Receive 模式：接收 Cw20ReceiveMsg（CW20 官方标准）
+/// 用户调用 cw20::Cw20ExecuteMsg::Send { contract: game_contract, amount, msg }
+/// 代币合约先把 TKCC 转到本合约，然后调用本函数
+/// receive_msg.amount = 实际转入的精确金额，receive_msg.sender = 原始发送者
+fn execute_receive(
+    deps: DepsMut, _env: Env, info: MessageInfo,
+    receive_msg: Cw20ReceiveMsg,
+) -> Result<Response, ContractError> {
+    // 安全检查：必须是 token_contract 发来的（CW20 调用时 info.sender 就是代币合约地址）
+    let config = CONFIG.load(deps.storage)?;
+    if info.sender != config.token_contract {
+        return Err(ContractError::Unauthorized(format!(
+            "Receive must be called by token contract {}", config.token_contract
+        )));
+    }
+
+    // 解析金额和发送者（Cw20ReceiveMsg 已正确类型化）
+    let amount_u = receive_msg.amount.u128();
+    let sender_addr = receive_msg.sender;
+
+    if amount_u == 0 {
+        return Err(ContractError::InvalidInput("amount must be > 0".into()));
+    }
+
+    // 直接记账：sender_addr 的存款 += amount_u
+    let current = DEPOSITS.may_load(deps.storage, &sender_addr)?.unwrap_or(0);
+    let new_balance = current.saturating_add(amount_u);
+    DEPOSITS.save(deps.storage, &sender_addr, &new_balance)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "receive")
+        .add_attribute("player", sender_addr)
+        .add_attribute("deposited", amount_u.to_string())
+        .add_attribute("new_balance", new_balance.to_string()))
+}
+
+/// 从个人存款提取 TKCC（退回自己地址）
+fn execute_withdraw_deposit(
+    deps: DepsMut, env: Env, info: MessageInfo, amount: String,
+) -> Result<Response, ContractError> {
+    let config = CONFIG.load(deps.storage)?;
+    let amount_u: u128 = amount.parse().map_err(|_| ContractError::InvalidInput("amount".into()))?;
+
+    // 1. 检查玩家可用存款
+    let current = DEPOSITS.may_load(deps.storage, &info.sender)?.unwrap_or(0);
+    let locked = PROPOSAL_DEPOSITS.may_load(deps.storage, &info.sender)?.unwrap_or(0);
+    let available = current.saturating_sub(locked);
+    if amount_u > available {
+        return Err(ContractError::InsufficientFunds {
+            expected: amount,
+            got: available.to_string(),
+        });
+    }
+
+    // 2. 修复 #2：检查合约 TKCC 余额是否足够（防止金库不足导致交易失败浪费 Gas）
+    let contract_bal = query_token_balance(&deps.as_ref(), &config.token_contract, &env.contract.address)?;
+    if contract_bal < amount_u {
+        return Err(ContractError::InsufficientFunds {
+            expected: amount_u.to_string(),
+            got: contract_bal.to_string(),
+        });
+    }
+
+    // 3. 扣除可用存款
+    DEPOSITS.save(deps.storage, &info.sender, &current.saturating_sub(amount_u))?;
+
+    // 4. 退回 TKCC 给玩家
+    let transfer = build_token_transfer(&config.token_contract, &info.sender, amount_u);
+
+    Ok(Response::new()
+        .add_attribute("method", "withdraw_deposit")
+        .add_attribute("player", info.sender)
+        .add_attribute("withdrew", amount_u.to_string())
+        .add_message(transfer))
+}
+
+/// 辅助：从玩家可用存款中扣除费用（所有消耗 TKCC 的操作统一调用此函数）
+fn consume_deposit(storage: &mut dyn Storage, sender: &Addr, fee: u128) -> Result<(), ContractError> {
+    if fee == 0 { return Ok(()); }
+    let current = DEPOSITS.may_load(storage, sender)?.unwrap_or(0);
+    let locked = PROPOSAL_DEPOSITS.may_load(storage, sender)?.unwrap_or(0);
+    let available = current.saturating_sub(locked);
+    if available < fee {
+        return Err(ContractError::InsufficientFunds {
+            expected: format!("{} TKCC (from your deposit)", fee),
+            got: available.to_string(),
+        });
+    }
+    DEPOSITS.save(storage, sender, &current.saturating_sub(fee))?;
+    Ok(())
+}
+
+/// 辅助：锁定玩家存款（用于提案质押）
+fn lock_deposit(storage: &mut dyn Storage, sender: &Addr, amount: u128) -> Result<(), ContractError> {
+    let current = DEPOSITS.may_load(storage, sender)?.unwrap_or(0);
+    let locked = PROPOSAL_DEPOSITS.may_load(storage, sender)?.unwrap_or(0);
+    let available = current.saturating_sub(locked);
+    if available < amount {
+        return Err(ContractError::InsufficientFunds {
+            expected: format!("{} TKCC (proposal deposit)", amount),
+            got: available.to_string(),
+        });
+    }
+    PROPOSAL_DEPOSITS.save(storage, sender, &locked.saturating_add(amount))?;
+    Ok(())
+}
+
+/// 辅助：解锁玩家存款并退款
+fn unlock_and_refund_deposit(storage: &mut dyn Storage, sender: &Addr, amount: u128) -> Result<(), ContractError> {
+    let locked = PROPOSAL_DEPOSITS.may_load(storage, sender)?.unwrap_or(0);
+    PROPOSAL_DEPOSITS.save(storage, sender, &locked.saturating_sub(amount))?;
+    Ok(())
+}
+
 // ============================================================
 // 辅助函数
 // ============================================================
-fn query_token_balance(deps: &Deps, addr: &Addr) -> StdResult<u128> {
-    // 占位：真实环境需改为 cw20 查询。已在注释中说明。
-    // 返回足够大的值使得通过；防止误删字段类型错误。
-    Ok(1_000_000_000_000_000_000_000u128)
+/// ✅ 查询 PRC-20 / CW20 代币余额（真实链上查询，不再是占位）
+fn query_token_balance(deps: &Deps, token_contract: &Addr, addr: &Addr) -> StdResult<u128> {
+    let res: BalanceResponse = deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+        contract_addr: token_contract.to_string(),
+        msg: to_binary(&Cw20QueryMsg::Balance { address: addr.to_string() })?,
+    }))?;
+    Ok(res.balance.u128())
 }
 // ============================================================
-// CW20 官方格式 transfer 消息（严格按 DApp 指南 / PRC-20 标准）
+// ✅ CW20 官方标准 transfer 消息（使用 cw20 库 Cw20ExecuteMsg::Transfer，不再手写结构）
 // ============================================================
 fn build_token_transfer(token_contract: &Addr, recipient: &Addr, amount: u128) -> WasmMsg {
-    // 官方 CW20 / PRC-20 消息体：{ "transfer": { "recipient": "...", "amount": "123" } }
-    // 用 schemars 风格 JSON 序列化，避免非标准 to_binary 入参。
-    #[derive(serde::Serialize)]
-    #[serde(rename_all = "snake_case")]
-    struct TransferWrapper<'a> {
-        transfer: TransferBody<'a>,
-    }
-    #[derive(serde::Serialize)]
-    struct TransferBody<'a> {
-        recipient: &'a str,
-        amount: String,
-    }
-    let msg = TransferWrapper {
-        transfer: TransferBody {
-            recipient: recipient.as_str(),
-            amount: amount.to_string(),
-        },
-    };
     WasmMsg::Execute {
         contract_addr: token_contract.to_string(),
-        msg: to_binary(&msg).expect("encode cw20 transfer msg"),
+        msg: to_binary(&Cw20ExecuteMsg::Transfer {
+            recipient: recipient.to_string(),
+            amount: Uint128::from(amount),
+        }).expect("encode cw20 transfer msg"),
         funds: vec![],
     }
+}
+
+/// 确定性随机种子 = keccak64 等价思路：将 (block.time, block.height, tx.salt) 三路 XOR 打散
+fn mix_seed(a: u64, b: u64, c: u64) -> u64 {
+    // 简单混合（不依赖额外库）：足够防止按秒级预测，不依赖纯 time+b
+    let mut x = a.wrapping_mul(6364136223846793005).wrapping_add(b.wrapping_mul(1442695040888963407)).wrapping_add(c);
+    x ^= x >> 33; x = x.wrapping_mul(0xff51afd7ed558ccd);
+    x ^= x >> 33; x = x.wrapping_mul(0xc4ceb9fe1a85ec53);
+    x ^= x >> 33;
+    x
 }

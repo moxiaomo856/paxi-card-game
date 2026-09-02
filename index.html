@@ -1773,7 +1773,7 @@
         }
 
         function getBattleOrderCards() {
-            if (battleOrder.length < 3) updateBattleOrder();
+            // 不自动重置：允许少于3张，由调用方检查数量
             return battleOrder.map(id => userCards.find(c => c.instance_id === id)).filter(Boolean);
         }
 
@@ -2161,7 +2161,7 @@
                 list.push({
                     id: list.length + 1,
                     template,
-                    proposer: walletAddress || 'demo_proposer',
+                    proposer: (typeof walletAddress !== 'undefined' ? walletAddress : null) || 'demo_proposer',
                     deposit: '50000000000',
                     yes_votes: '0', no_votes: '0',
                     deadline: Math.floor(Date.now()/1000) + 7*86400,

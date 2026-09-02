@@ -34,14 +34,14 @@ pub const CRAFT_COST: [u64; 4] = [30, 60, 150, 400];
 /// 升星碎片替代：TKCC / 100（向上取整）
 
 // ============================================================
-// 合约配置
+// 合约配置（完全无管理员）
 // ============================================================
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
     pub token_contract: Addr,
     pub burn_address: Addr,
     pub tap_addresses: Vec<Addr>,
-    pub admin: Addr,
+    // admin 已移除：合约完全无管理员，部署后即去中心化
 }
 
 pub const CONFIG: Item<Config> = Item::new("config");
@@ -142,6 +142,15 @@ pub const AI_BATTLE_STATS: Map<&Addr, AiStats> = Map::new("ai_battle_stats");
 // ============================================================
 /// 玩家地址 -> 卡牌 card_id 顺序列表（String 与 CardInfo.card_id 一致）
 pub const PLAYER_BATTLE_ORDER: Map<&Addr, Vec<String>> = Map::new("player_battle_order");
+
+// ============================================================
+// 玩家存款系统（修复：一人付款全链共享漏洞）
+// 每个地址维护独立的 TKCC 存款，所有消耗 TKCC 的操作从此扣除
+// ============================================================
+/// 玩家地址 -> 当前可用 TKCC 存款（最小单位，1 TKCC = 1e6）
+pub const DEPOSITS: Map<&Addr, u128> = Map::new("deposits");
+/// 玩家地址 -> 提案中锁定的 TKCC（简化版直接记总额）
+pub const PROPOSAL_DEPOSITS: Map<&Addr, u128> = Map::new("proposal_deposits");
 
 // ============================================================
 // 需求五：卡牌提案系统
@@ -264,14 +273,17 @@ impl Default for GameParams {
 }
 
 impl GameParams {
-    // 根据金库余额计算 PVP 赢家奖励
+    // 根据金库余额计算 PVP 赢家奖励（四档递进：< 888万 → 10万，以此类推）
     pub fn pvp_reward(&self, vault_balance: u128) -> u128 {
-        for (threshold, reward) in &self.pvp_reward_tiers {
-            if vault_balance < *threshold {
-                return *reward;
+        // tiers 4 个：[(0,10万),(888万,15万),(3888万,20万),(6888万,25万)]
+        // 取值规则：如果 vault_balance < 下一阶阈值 → 返回当前阶 reward
+        for i in 0..self.pvp_reward_tiers.len() {
+            let (_, reward) = self.pvp_reward_tiers[i];
+            let next_threshold = self.pvp_reward_tiers.get(i + 1).map(|(t, _)| *t).unwrap_or(u128::MAX);
+            if vault_balance < next_threshold {
+                return reward;
             }
         }
-        // 超过最后阈值返回最高档
         self.pvp_reward_tiers.last().map(|(_, r)| *r).unwrap_or(self.pvp_reward_tiers[0].1)
     }
 
