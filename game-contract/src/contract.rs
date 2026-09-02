@@ -11,16 +11,16 @@ use cosmwasm_std::{
 use crate::error::ContractError;
 use crate::msg::{
     BattleResult, BattleOrderResponse, CardInfo, ConfigResponse, ExecuteMsg,
-    GameParamsResponse, InstantiateMsg, PendingRewardsResponse, ProposalListResponse,
+    FragmentsResponse, GameParamsResponse, InstantiateMsg, PendingRewardsResponse, ProposalListResponse,
     ProposalResponse, ProposalVotesResponse, QueryMsg, RarityCountResponse,
     AiStatsResponse, PlayerCardsResponse, VaultBalanceResponse,
 };
 use crate::state::{
-    AiStats, BattleRecord, CardProposal, CardTemplate, Config, GameParams,
+    AiStats, BattleRecord, CardProposal, CardTemplate, Config, Fragments, GameParams,
     AI_BATTLE_COUNT, AI_BATTLE_DATE, AI_BATTLE_STATS, BATTLES, CARDS, CARD_TEMPLATE_COUNT,
-    CARD_TEMPLATES, CONFIG, GAME_PARAMS, MAX_CARDS, PLAYER_BATTLE_ORDER, PLAYER_CARDS,
+    CARD_TEMPLATES, CONFIG, FRAGMENTS, GAME_PARAMS, MAX_CARDS, PLAYER_BATTLE_ORDER, PLAYER_CARDS,
     PENDING_REWARDS, PROPOSALS, PROPOSAL_COUNTER, PROPOSAL_DEPOSIT, RARITY_COUNT,
-    VOTES, VOTING_PERIOD,
+    VOTES, VOTING_PERIOD, CRAFT_COST, FRAGMENT_FROM_DUPLICATE,
 };
 
 const SECS_PER_DAY: u64 = 86_400;
@@ -92,7 +92,7 @@ pub fn execute(
             execute_ai_battle(deps, env, info, difficulty, result, battle_hash),
         ExecuteMsg::ClaimReward { battle_id } => execute_claim_reward(deps, env, info, battle_id),
 
-        ExecuteMsg::StarUp { card_id } => execute_star_up(deps, env, info, card_id),
+        ExecuteMsg::StarUp { card_id, use_fragments } => execute_star_up(deps, env, info, card_id, use_fragments),
 
         ExecuteMsg::SetBattleOrder { order } => execute_set_battle_order(deps, info, order),
 
@@ -116,6 +116,8 @@ pub fn execute(
             execute_withdraw_vault(deps, info, recipient, amount),
         ExecuteMsg::UpdateConfig { token_contract, burn_address, tap_addresses } =>
             execute_update_config(deps, info, token_contract, burn_address, tap_addresses),
+
+        ExecuteMsg::CraftCard { rarity } => execute_craft_card(deps, env, info, rarity),
     }
 }
 
@@ -210,25 +212,52 @@ fn execute_draw_pack(
     let block_key = _env.block.height;
     let time_key = _env.block.time.seconds();
 
+    // 加载玩家碎片
+    let mut fragments = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
+    let mut fragments_gained: Vec<String> = Vec::new();
+    let mut new_cards: Vec<String> = Vec::new();
+
     for i in 0..num_cards {
         let seed = (time_key + block_key + info.sender.as_bytes().len() as u64 + i as u64) as usize;
         let idx = seed % weighted.len();
         let tpl = &templates[weighted[idx]];
 
-        let card_id = format!("card_{}_{}_{}", info.sender, time_key, i);
-        let card = CardInfo {
-            card_id: card_id.clone(),
-            owner: info.sender.to_string(),
-            name: tpl.name.clone(),
-            rarity: tpl.rarity.clone(),
-            attack: tpl.attack,
-            defense: tpl.defense,
-            star: 1,
-        };
-        CARDS.save(deps.storage, &card_id, &card)?;
-        player_cards_ids.push(card_id);
+        // 检查是否已拥有同名卡牌（重复检测）
+        let is_duplicate = player_cards_ids.iter().any(|cid| {
+            if let Ok(Some(c)) = CARDS.may_load(deps.storage, cid) {
+                c.name == tpl.name
+            } else {
+                false
+            }
+        });
+
+        if is_duplicate {
+            // 重复 → 转化为碎片
+            if let Some(ri) = Fragments::rarity_index(&tpl.rarity) {
+                let frag_amount = FRAGMENT_FROM_DUPLICATE[ri].1;
+                let cur = fragments.get(&tpl.rarity);
+                fragments.set(&tpl.rarity, cur + frag_amount);
+                fragments_gained.push(format!("{}+{}", tpl.rarity, frag_amount));
+            }
+        } else {
+            // 非重复 → 正常生成卡牌
+            let card_id = format!("card_{}_{}_{}", info.sender, time_key, i);
+            let card = CardInfo {
+                card_id: card_id.clone(),
+                owner: info.sender.to_string(),
+                name: tpl.name.clone(),
+                rarity: tpl.rarity.clone(),
+                attack: tpl.attack,
+                defense: tpl.defense,
+                star: 1,
+            };
+            CARDS.save(deps.storage, &card_id, &card)?;
+            player_cards_ids.push(card_id.clone());
+            new_cards.push(format!("{}({})", tpl.name, tpl.rarity));
+        }
     }
     PLAYER_CARDS.save(deps.storage, &info.sender, &player_cards_ids)?;
+    FRAGMENTS.save(deps.storage, &info.sender, &fragments)?;
 
     Ok(Response::new()
         .add_attribute("method", if pack3 { "draw_pack_3" } else { "draw_pack" })
@@ -236,6 +265,8 @@ fn execute_draw_pack(
         .add_attribute("paxi_fee", paxi_fee.to_string())
         .add_attribute("prc_total", prc_total.to_string())
         .add_attribute("cards_drawn", num_cards.to_string())
+        .add_attribute("new_cards", new_cards.join(","))
+        .add_attribute("fragments_gained", fragments_gained.join(","))
         .add_message(paxi_to_tap)
         .add_messages(messages))
 }
@@ -384,13 +415,14 @@ fn execute_claim_reward(
 }
 
 // ============================================================
-// 升星（50% 销毁 + 50% 金库）
+// 升星（50% 销毁 + 50% 金库 / 碎片替代模式）
 // ============================================================
 fn execute_star_up(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
     card_id: String,
+    use_fragments: Option<bool>,
 ) -> Result<Response, ContractError> {
     let config = CONFIG.load(deps.storage)?;
     let params = GAME_PARAMS.load(deps.storage)?;
@@ -402,32 +434,139 @@ fn execute_star_up(
     let star_idx = (card.star - 1) as usize;
     let fee = params.upgrade_fees[star_idx];
 
-    let tkcc_bal = query_token_balance(&deps.as_ref(), &_env.contract.address)?;
-    if tkcc_bal < fee {
-        return Err(ContractError::InsufficientFunds {
-            expected: format!("{} TKCC", fee),
-            got: format!("{} TKCC", tkcc_bal),
+    let use_frag = use_fragments.unwrap_or(false);
+
+    if use_frag {
+        // 碎片替代模式：消耗碎片 = TKCC / 100（向上取整），不销毁 TKCC
+        // fee 的单位是最小单位（TKCC * 1e6），所以碎片 = fee / 1e6 / 100 = fee / 1e8
+        let frag_needed = (fee + 99_999_999) / 100_000_000; // 向上取整: ceil(fee / 1e8)
+        let rarity = card.rarity.as_str();
+        let mut fragments = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
+        let have = fragments.get(rarity);
+        if have < frag_needed {
+            return Err(ContractError::InsufficientFragments {
+                needed: frag_needed,
+                have,
+            });
+        }
+        fragments.set(rarity, have - frag_needed);
+        FRAGMENTS.save(deps.storage, &info.sender, &fragments)?;
+
+        card.star += 1;
+        card.attack += params.upgrade_atk_boost[star_idx];
+        card.defense += params.upgrade_def_boost[star_idx];
+        CARDS.save(deps.storage, &card_id, &card)?;
+
+        Ok(Response::new()
+            .add_attribute("method", "star_up")
+            .add_attribute("player", info.sender)
+            .add_attribute("card_id", card_id)
+            .add_attribute("new_star", card.star.to_string())
+            .add_attribute("fee", fee.to_string())
+            .add_attribute("mode", "fragments")
+            .add_attribute("fragments_cost", frag_needed.to_string()))
+    } else {
+        // TKCC 模式：50% 销毁 + 50% 金库（原有逻辑）
+        let tkcc_bal = query_token_balance(&deps.as_ref(), &_env.contract.address)?;
+        if tkcc_bal < fee {
+            return Err(ContractError::InsufficientFunds {
+                expected: format!("{} TKCC", fee),
+                got: format!("{} TKCC", tkcc_bal),
+            });
+        }
+
+        let burn = fee / 2;
+        let vault = fee - burn;
+        let burn_msg = build_token_transfer(&config.token_contract, &config.burn_address, burn);
+
+        card.star += 1;
+        card.attack += params.upgrade_atk_boost[star_idx];
+        card.defense += params.upgrade_def_boost[star_idx];
+        CARDS.save(deps.storage, &card_id, &card)?;
+
+        Ok(Response::new()
+            .add_attribute("method", "star_up")
+            .add_attribute("player", info.sender)
+            .add_attribute("card_id", card_id)
+            .add_attribute("new_star", card.star.to_string())
+            .add_attribute("fee", fee.to_string())
+            .add_attribute("mode", "tkcc")
+            .add_attribute("burned", burn.to_string())
+            .add_attribute("to_vault", vault.to_string())
+            .add_message(burn_msg))
+    }
+}
+
+// ============================================================
+// 碎片系统：合成卡牌
+// ============================================================
+fn execute_craft_card(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    rarity: String,
+) -> Result<Response, ContractError> {
+    // 验证稀有度
+    let ri = Fragments::rarity_index(&rarity)
+        .ok_or_else(|| ContractError::InvalidRarity(rarity.clone()))?;
+
+    // 检查碎片余额
+    let cost = CRAFT_COST[ri];
+    let mut fragments = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
+    let have = fragments.get(&rarity);
+    if have < cost {
+        return Err(ContractError::InsufficientFragments {
+            needed: cost,
+            have,
         });
     }
 
-    let burn = fee / 2;
-    let vault = fee - burn;
-    let burn_msg = build_token_transfer(&config.token_contract, &config.burn_address, burn);
+    // 扣除碎片
+    fragments.set(&rarity, have - cost);
+    FRAGMENTS.save(deps.storage, &info.sender, &fragments)?;
 
-    card.star += 1;
-    card.attack += params.upgrade_atk_boost[star_idx];
-    card.defense += params.upgrade_def_boost[star_idx];
+    // 从 CARD_TEMPLATES 中随机选一张对应稀有度的卡牌
+    let templates = CARD_TEMPLATES.may_load(deps.storage)?.unwrap_or_default();
+    let candidates: Vec<&CardTemplate> = templates.iter()
+        .filter(|t| t.rarity == rarity)
+        .collect();
+    if candidates.is_empty() {
+        return Err(ContractError::InvalidInput(
+            format!("No templates available for rarity: {}", rarity),
+        ));
+    }
+
+    let time_key = env.block.time.seconds();
+    let block_key = env.block.height;
+    let seed = (time_key + block_key + info.sender.as_bytes().len() as u64) as usize;
+    let idx = seed % candidates.len();
+    let tpl = candidates[idx];
+
+    // 生成新卡牌
+    let card_id = format!("card_{}_{}_craft", info.sender, time_key);
+    let card = CardInfo {
+        card_id: card_id.clone(),
+        owner: info.sender.to_string(),
+        name: tpl.name.clone(),
+        rarity: tpl.rarity.clone(),
+        attack: tpl.attack,
+        defense: tpl.defense,
+        star: 1,
+    };
     CARDS.save(deps.storage, &card_id, &card)?;
+    let mut player_cards_ids = PLAYER_CARDS
+        .may_load(deps.storage, &info.sender)?
+        .unwrap_or_default();
+    player_cards_ids.push(card_id.clone());
+    PLAYER_CARDS.save(deps.storage, &info.sender, &player_cards_ids)?;
 
     Ok(Response::new()
-        .add_attribute("method", "star_up")
+        .add_attribute("method", "craft_card")
         .add_attribute("player", info.sender)
-        .add_attribute("card_id", card_id)
-        .add_attribute("new_star", card.star.to_string())
-        .add_attribute("fee", fee.to_string())
-        .add_attribute("burned", burn.to_string())
-        .add_attribute("to_vault", vault.to_string())
-        .add_message(burn_msg))
+        .add_attribute("rarity", rarity)
+        .add_attribute("fragments_cost", cost.to_string())
+        .add_attribute("new_card_id", card_id)
+        .add_attribute("new_card_name", tpl.name.clone()))
 }
 
 // ============================================================
@@ -894,6 +1033,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetProposalVotes { proposal_id } => to_binary(&query_votes(deps, proposal_id)?),
         QueryMsg::CardTemplates { start_after, limit } => to_binary(&query_templates(deps, start_after, limit)?),
         QueryMsg::RarityCount {} => to_binary(&query_rarity_count(deps)?),
+        QueryMsg::GetFragments { address } => to_binary(&query_fragments(deps, address)?),
     }
 }
 
@@ -1036,6 +1176,17 @@ fn query_rarity_count(deps: Deps) -> StdResult<RarityCountResponse> {
     let l = RARITY_COUNT.may_load(deps.storage, "legend")?.unwrap_or(0);
     Ok(RarityCountResponse {
         common: c, rare: r, epic: e, legend: l, total: c + r + e + l,
+    })
+}
+
+fn query_fragments(deps: Deps, address: String) -> StdResult<FragmentsResponse> {
+    let addr = deps.api.addr_validate(&address)?;
+    let f = FRAGMENTS.may_load(deps.storage, &addr)?.unwrap_or_default();
+    Ok(FragmentsResponse {
+        common: f.common,
+        rare: f.rare,
+        epic: f.epic,
+        legend: f.legend,
     })
 }
 

@@ -1,0 +1,244 @@
+2. DApp 指南
+在此說明如何讓 DApp 開發者連接到 PaxiHub 應用程式：若在手機上 window.paxihub 未注入，會自動深度連結到 PaxiHub Explorer；若未安裝則跳轉至應用商店下載。
+
+Js
+// Check if PaxiHub is injected
+if (typeof window.paxihub !== 'undefined') {
+  // Initialize your dApp connection...
+  const hub = window.paxihub;
+  // ...
+} else if (/Mobi/.test(navigator.userAgent)) {
+  // Deep‑link into PaxiHub Explorer
+  window.location.href = `paxi://hub/explorer?url=${encodeURIComponent(window.location.href)}`;
+  // If not installed, go to store after 1s
+  setTimeout(() => {
+    window.location.href = 'https://paxinet.io/paxi_docs/paxihub#paxihub-application';
+  }, 1000);
+}
+3. DApp 範例
+示範各種常見操作：簽名純文字、構建並廣播交易、轉帳 PAXI、PRC20 代幣及 NFT。
+
+3.1 引用 Paxi 函式庫
+Html
+<script src="https://mainnet-api.paxinet.io/resources/js/paxi-cosmjs.umd.js"></script>
+3.2 全域變數與輔助函式
+Js
+// RPC / LCD endpoints
+const rpc  = 'https://mainnet-rpc.paxinet.io';
+const lcd  = 'https://mainnet-lcd.paxinet.io';
+const denom = 'upaxi';
+
+// base64 helper
+const toBase64 = bytes => btoa(String.fromCharCode(...bytes));
+
+// fetch accountNumber & sequence
+async function buildCommon(chainId, address) {
+  const res = await fetch(`${lcd}/cosmos/auth/v1beta1/accounts/${address}`);
+  const { account } = await res.json();
+  // some endpoints nest under base_account
+  const ba = account.base_account || account;
+  return {
+    accountNumber: Number(ba.account_number),
+    sequence:      Number(ba.sequence)
+  };
+}
+3.3 簽名文字訊息
+Js
+async function buildAndSignMessage() {
+  const result = await window.paxihub.paxi.signMessage(
+    "Sign this message to continue"
+  );
+  return result;
+}
+3.4 構建交易
+Js
+async function buildAndSendTx(messages, memo = "") {
+  // fetch chainId from RPC
+  const chainId = await fetch(`${rpc}/status`)
+    .then(r => r.json())
+    .then(d => d.result.node_info.network);
+
+  // get sender info
+  const sender = await window.paxihub.paxi.getAddress();
+  const { accountNumber, sequence } = await buildCommon(chainId, sender.address);
+
+  // TxBody
+  const txBody = PaxiCosmJS.TxBody.fromPartial({ messages, memo });
+
+  // Fee
+  const fee = {
+    amount: [ PaxiCosmJS.coins("30000", denom)[0] ],
+    gasLimit: 600_000
+  };
+
+  // PubKey Any
+  const pubkeyBytes = new Uint8Array(sender.public_key);
+  const pubkeyAny = {
+    typeUrl: "/cosmos.crypto.secp256k1.PubKey",
+    value: PaxiCosmJS.PubKey.encode({ key: pubkeyBytes }).finish()
+  };
+
+  // AuthInfo
+  const authInfo = PaxiCosmJS.AuthInfo.fromPartial({
+    signerInfos: [{
+      publicKey: pubkeyAny,
+      modeInfo:  { single: { mode: 1 } },
+      sequence:  BigInt(sequence)
+    }],
+    fee
+  });
+
+  // SignDoc
+  const signDoc = PaxiCosmJS.SignDoc.fromPartial({
+    bodyBytes:     PaxiCosmJS.TxBody.encode(txBody).finish(),
+    authInfoBytes: PaxiCosmJS.AuthInfo.encode(authInfo).finish(),
+    chainId,
+    accountNumber: BigInt(accountNumber)
+  });
+
+  // ask wallet to sign & send
+  const txObj = {
+    bodyBytes:     btoa(String.fromCharCode(...signDoc.bodyBytes)),
+    authInfoBytes: btoa(String.fromCharCode(...signDoc.authInfoBytes)),
+    chainId,
+    accountNumber: signDoc.accountNumber.toString()
+  };
+  const result = await window.paxihub.paxi.signAndSendTransaction(txObj);
+  const sigBytes = Uint8Array.from(atob(result.success), c => c.charCodeAt(0));
+
+  // assemble TxRaw
+  const txRaw = PaxiCosmJS.TxRaw.fromPartial({
+    bodyBytes:     signDoc.bodyBytes,
+    authInfoBytes: signDoc.authInfoBytes,
+    signatures:    [ sigBytes ]
+  });
+  const txBytes   = PaxiCosmJS.TxRaw.encode(txRaw).finish();
+  const base64Tx  = toBase64(txBytes);
+
+  // broadcast
+  const broadcastResult = await fetch(`${lcd}/cosmos/tx/v1beta1/txs`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tx_bytes: base64Tx, mode: "BROADCAST_MODE_SYNC" })
+  }).then(r => r.json());
+
+  document.getElementById("output").textContent =
+    JSON.stringify(broadcastResult, null, 2);
+}
+3.5 轉帳 PAXI
+Js
+async function buildAndSendMsgSend() {
+  const sender = await window.paxihub.paxi.getAddress();
+  const to     = sender.address;  // self-send for demo
+  const msg    = PaxiCosmJS.MsgSend.fromPartial({
+    fromAddress: sender.address,
+    toAddress:   to,
+    amount:      [PaxiCosmJS.coins("1234567", denom)[0]]
+  });
+  const anyMsg = PaxiCosmJS.Any.fromPartial({
+    typeUrl: "/cosmos.bank.v1beta1.MsgSend",
+    value:   PaxiCosmJS.MsgSend.encode(msg).finish()
+  });
+  await buildAndSendTx([ anyMsg ], "MsgSend Test");
+}
+3.6 轉帳 PRC-20 代幣
+Js
+async function buildAndSendMsgExecutePRC20() {
+  const sender   = await window.paxihub.paxi.getAddress();
+  const contract = "<YOUR_PRC20_CONTRACT_ADDR>";
+  const msgObj   = { transfer: { recipient: sender.address, amount: "<AMOUNT>" } };
+  const msg      = PaxiCosmJS.MsgExecuteContract.fromPartial({
+    sender, contract,
+    msg: new TextEncoder().encode(JSON.stringify(msgObj))
+  });
+  const anyMsg = PaxiCosmJS.Any.fromPartial({
+    typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+    value:   PaxiCosmJS.MsgExecuteContract.encode(msg).finish()
+  });
+  await buildAndSendTx([ anyMsg ], "Execute PRC-20 Transfer");
+}
+3.7 轉帳 NFT
+Js
+async function buildAndSendMsgExecuteNFT() {
+  const sender      = await window.paxihub.paxi.getAddress();
+  const nftContract = "<YOUR_NFT_CONTRACT_ADDR>";
+  const msgObj      = { transfer_nft: { recipient: sender.address, token_id: "<TOKEN_ID>" } };
+  const msg         = PaxiCosmJS.MsgExecuteContract.fromPartial({
+    sender, contract: nftContract,
+    msg: new TextEncoder().encode(JSON.stringify(msgObj))
+  });
+  const anyMsg = PaxiCosmJS.Any.fromPartial({
+    typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+    value:   PaxiCosmJS.MsgExecuteContract.encode(msg).finish()
+  });
+  await buildAndSendTx([ anyMsg ], "Execute NFT Transfer");
+}
+3.8 用 PRC-20 交換 PAXI
+Js
+async function fetchPool(contractAddress) {
+  try {
+    const url = `${lcd}/paxi/swap/pool/${contractAddress}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Fetch pool failed');
+    return res.json();
+  } catch (e) {
+    console.error('[fetchPool]', e);
+    return null;
+  }
+}
+
+async function buildAndSendSwapMsg() {
+  const prc20 = "<YOUR_PRC20_CONTRACT_ADDR>";
+  const swapModuleAddress = "paxi1mfru9azs5nua2wxcd4sq64g5nt7nn4n80r745t";
+  const offerDenom = prc20;
+  const offerAmount = "<AMOUNT>";
+  const senderInfo = await window.paxihub.paxi.getAddress();
+  const sender     = senderInfo.address;
+
+  // fecth pool inforamtion and calculate expected receive
+  const pool = await fetchPool(prc20);
+  const reservePaxi = parseFloat(pool['reserve_paxi']);
+  const reservePrc20 = parseFloat(pool['reserve_prc20']);
+  // max slippage is 50%
+  const minReceive = Math.floor(offerAmount * (reservePaxi / reservePrc20) * 0.5);
+
+  // optionally increase PRC20 allowance if PRC20==native denom
+  const msgs = [];
+  if (prc20 === offerDenom) {
+    const allowanceMsg = {
+      increase_allowance: {
+        spender: swapModuleAddress, // Address of Swap Module Address
+        amount:  String(offerAmount)
+      }
+    };
+    const exec1 = PaxiCosmJS.MsgExecuteContract.fromPartial({
+      sender:   sender,
+      contract: prc20,
+      msg:      new TextEncoder().encode(JSON.stringify(allowanceMsg)),
+    });
+    msgs.push(PaxiCosmJS.Any.fromPartial({
+      typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+      value:   PaxiCosmJS.MsgExecuteContract.encode(exec1).finish()
+    }));
+  }
+
+  // create the actual swap message
+  const swapMsg = {
+    creator:    sender,
+    prc20:      prc20,
+    offerDenom: offerDenom,
+    offerAmount:String(offerAmount),
+    minReceive: String(minReceive)
+  };
+  // Note: adjust typeUrl if your protobuf path differs
+  const swapExec = PaxiCosmJS.MsgSwap.fromPartial(swapMsg);
+  msgs.push(PaxiCosmJS.Any.fromPartial({
+    typeUrl: "/x.swap.types.MsgSwap",
+    value:   PaxiCosmJS.MsgSwap.encode(swapExec).finish()
+  }));
+
+  // broadcast
+  await buildAndSendTx(msgs, `Swap ${offerAmount} ${offerDenom}`);
+}
+3.9 完整範例代碼
+https://paxipick.com

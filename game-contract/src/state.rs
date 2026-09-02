@@ -22,6 +22,18 @@ pub const DAILY_AI_LIMIT: u64 = 20;                    // 每日 AI 对战上限
 pub const UPGRADE_BURN_PCT: u128 = 50;                 // 升星 50% 销毁，50% 金库
 
 // ============================================================
+// 碎片系统常量
+// ============================================================
+/// 重复卡转化碎片数量
+pub const FRAGMENT_FROM_DUPLICATE: [(u64, u64); 4] = [
+    // (rarity_index, fragments)  index: 0=common 1=rare 2=epic 3=legend
+    (0, 5), (1, 10), (2, 20), (3, 50),
+];
+/// 合成卡牌消耗碎片
+pub const CRAFT_COST: [u64; 4] = [30, 60, 150, 400];
+/// 升星碎片替代：TKCC / 100（向上取整）
+
+// ============================================================
 // 合约配置
 // ============================================================
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -41,6 +53,52 @@ pub const CONFIG: Item<Config> = Item::new("config");
 pub const CARDS: Map<&str, CardInfo> = Map::new("cards");
 /// 玩家地址 -> 卡牌ID 列表
 pub const PLAYER_CARDS: Map<&Addr, Vec<String>> = Map::new("player_cards");
+
+// ============================================================
+// 碎片系统
+// ============================================================
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema, Default)]
+pub struct Fragments {
+    pub common: u64,
+    pub rare: u64,
+    pub epic: u64,
+    pub legend: u64,
+}
+
+impl Fragments {
+    /// 按稀有度字符串获取字段值
+    pub fn get(&self, rarity: &str) -> u64 {
+        match rarity {
+            "common" => self.common,
+            "rare" => self.rare,
+            "epic" => self.epic,
+            "legend" => self.legend,
+            _ => 0,
+        }
+    }
+    /// 按稀有度字符串设置字段值
+    pub fn set(&mut self, rarity: &str, val: u64) {
+        match rarity {
+            "common" => self.common = val,
+            "rare" => self.rare = val,
+            "epic" => self.epic = val,
+            "legend" => self.legend = val,
+            _ => {}
+        }
+    }
+    /// 稀有度字符串 -> 索引 (0~3)
+    pub fn rarity_index(rarity: &str) -> Option<usize> {
+        match rarity {
+            "common" => Some(0),
+            "rare" => Some(1),
+            "epic" => Some(2),
+            "legend" => Some(3),
+            _ => None,
+        }
+    }
+}
+
+pub const FRAGMENTS: Map<&Addr, Fragments> = Map::new("fragments");
 /// 稀有度计数（用于提案校验）
 pub const RARITY_COUNT: Map<&str, u64> = Map::new("rarity_count");
 /// 已启用的卡牌模板总数（校验 MAX_CARDS）

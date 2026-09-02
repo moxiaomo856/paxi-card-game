@@ -1036,7 +1036,7 @@
         <div class="wallet-bar" id="walletBar">
             <span class="addr" id="walletAddr">未连接钱包</span>
             <span class="bal">PAXI: <span class="num" id="paxiBalance">-</span></span>
-            <span class="bal">TKCC: <span class="num" id="prcBalance">-</span></span>
+            <span class="bal">TKCC: <span class="num" id="tkccBalance">-</span></span>
             <button class="btn btn-secondary btn-sm" onclick="refreshBalances()">🔄 刷新</button>
         </div>
 
@@ -1045,6 +1045,10 @@
             <div class="stat-item"><span class="number" id="winCount">0</span><span class="label" data-i18n="wins">🏆 胜场</span></div>
             <div class="stat-item"><span class="number" id="cardCount">0</span><span class="label" data-i18n="cards">🃏 卡牌</span></div>
             <div class="stat-item"><span class="number" id="battleCount">0</span><span class="label" data-i18n="battles">⚔️ 总对战</span></div>
+            <div class="stat-item"><span class="number" id="fragCommon" style="color:#aaa;">0</span><span class="label">🟤 普通碎片</span></div>
+            <div class="stat-item"><span class="number" id="fragRare" style="color:#4a9eff;">0</span><span class="label">🔵 稀有碎片</span></div>
+            <div class="stat-item"><span class="number" id="fragEpic" style="color:#b14aff;">0</span><span class="label">🟣 史诗碎片</span></div>
+            <div class="stat-item"><span class="number" id="fragLegend" style="color:#ffd700;">0</span><span class="label">🟡 传说碎片</span></div>
         </div>
 
         <!-- ===== 战斗动画区 ===== -->
@@ -1087,6 +1091,7 @@
             <button class="btn btn-gold" style="font-size:12px;padding:6px 10px;" onclick="saveBattleOrder()" data-i18n="save_battle_order_btn">💾 保存出战顺序（链上）</button>
             <button class="btn btn-primary" style="font-size:12px;padding:6px 10px;" onclick="openProposalModal()" data-i18n="open_proposal_btn">🗳 新卡牌提案（社区）</button>
             <button class="btn btn-secondary" style="font-size:12px;padding:6px 10px;" onclick="listProposalsUI()" data-i18n="list_proposal_btn">📜 提案列表</button>
+            <button class="btn btn-success" style="font-size:12px;padding:6px 10px;" onclick="openCraftModal()">✨ 合成卡牌</button>
         </div>
 
         <!-- ===== 我的卡牌 ===== -->
@@ -1140,6 +1145,32 @@
             <div class="star-actions">
                 <button class="btn btn-gold" onclick="submitProposal()">✅ 提交提案 (50k TKCC)</button>
                 <button class="btn btn-secondary" onclick="closeProposalModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ✨ 合成卡牌弹窗 ===== -->
+    <div class="modal-overlay" id="craftModal" style="display:none;">
+        <div class="modal" style="max-width:420px;">
+            <button class="close-btn" onclick="closeCraftModal()">✕</button>
+            <h2>✨ 碎片合成</h2>
+            <p style="color:#b39b7a;font-size:12px;margin:4px 0 10px;">
+                消耗对应稀有度碎片，随机获得一张该稀有度卡牌。
+            </p>
+            <div id="craftFragmentsDisplay" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+                <span style="color:#aaa;">🟤 <b id="craftFragCommon">0</b></span>
+                <span style="color:#4a9eff;">🔵 <b id="craftFragRare">0</b></span>
+                <span style="color:#b14aff;">🟣 <b id="craftFragEpic">0</b></span>
+                <span style="color:#ffd700;">🟡 <b id="craftFragLegend">0</b></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <button class="btn btn-secondary" onclick="craftCard('common')">🟤 合成普通 (30碎片)</button>
+                <button class="btn btn-primary" onclick="craftCard('rare')">🔵 合成稀有 (60碎片)</button>
+                <button class="btn btn-gold" onclick="craftCard('epic')">🟣 合成史诗 (150碎片)</button>
+                <button class="btn btn-gold" onclick="craftCard('legend')" style="background:linear-gradient(135deg,#ffd700,#ff8c00);">🟡 合成传说 (400碎片)</button>
+            </div>
+            <div class="star-actions">
+                <button class="btn btn-secondary" onclick="closeCraftModal()">关闭</button>
             </div>
         </div>
     </div>
@@ -1200,7 +1231,7 @@
         // 黑洞地址（永久销毁，游戏说明 5.3）
         const BURN_ADDRESS = 'paxi1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
 
-        // 11 个抽水地址（游戏说明 5.2，每包抽卡随机 1 个收到 30,000 PRC + 30 PAXI）
+        // 11 个抽水地址（游戏说明 5.2，每包抽卡随机 1 个收到 30,000 TKCC + 30 PAXI）
         const TAP_ADDRESSES = [
             'paxi1ngut7ymp4cmzu7drjrc2gv7rhtnq4p0u6cgl0g',
             'paxi1kg0fzzyldr5ldggd8hhvvmyhg9xx3j3uvkn8eg',
@@ -1220,22 +1251,22 @@
         // ============================================================
         // 单抽
         const SINGLE_PAXI_FEE       = 10;      // 10 PAXI
-        const SINGLE_PRC_TOTAL      = 200000;  // 20 万 TKCC
-        const SINGLE_PRC_VAULT      = 140000;  // 70% 入金库
-        const SINGLE_PRC_BURN       = 40000;   // 20% 销毁
-        const SINGLE_PRC_ECO        = 20000;   // 10% 生态发展（给抽水地址）
+        const SINGLE_TKCC_TOTAL      = 200000;  // 20 万 TKCC
+        const SINGLE_TKCC_VAULT      = 140000;  // 70% 入金库
+        const SINGLE_TKCC_BURN       = 40000;   // 20% 销毁
+        const SINGLE_TKCC_ECO        = 20000;   // 10% 生态发展（给抽水地址）
         // 三连抽
         const PACK3_PAXI_FEE        = 30;      // 30 PAXI
-        const PACK3_PRC_TOTAL       = 500000;  // 50 万 TKCC
-        const PACK3_PRC_VAULT       = 350000;  // 70% 入金库
-        const PACK3_PRC_BURN        = 100000;  // 20% 销毁
-        const PACK3_PRC_ECO         = 50000;   // 10% 生态发展（给抽水地址）
+        const PACK3_TKCC_TOTAL       = 500000;  // 50 万 TKCC
+        const PACK3_TKCC_VAULT       = 350000;  // 70% 入金库
+        const PACK3_TKCC_BURN        = 100000;  // 20% 销毁
+        const PACK3_TKCC_ECO         = 50000;   // 10% 生态发展（给抽水地址）
         // 兼容旧命名（确保现有调用不报错，默认单抽）
         const DRAW_PAXI_FEE  = SINGLE_PAXI_FEE;
-        const DRAW_PRC_TOTAL = SINGLE_PRC_TOTAL;
-        const DRAW_PRC_TAP   = SINGLE_PRC_ECO;
-        const DRAW_PRC_BURN  = SINGLE_PRC_BURN;
-        const DRAW_PRC_VAULT = SINGLE_PRC_VAULT;
+        const DRAW_PRC_TOTAL = SINGLE_TKCC_TOTAL;
+        const DRAW_TKCC_TAP   = SINGLE_TKCC_ECO;
+        const DRAW_TKCC_BURN  = SINGLE_TKCC_BURN;
+        const DRAW_TKCC_VAULT = SINGLE_TKCC_VAULT;
 
         // AI 对战（挑战费/胜利奖励）
         const AI_BATTLE_FEE    = [10000, 15000, 20000, 25000]; // 简单/普通/困难/传说
@@ -1264,6 +1295,10 @@
 
         // AI 防刷（需求三：每日上限 20 局）
         const DAILY_AI_LIMIT        = 20;
+
+        // 碎片系统常量
+        const CRAFT_COST = [30, 60, 150, 400];           // 合成消耗：普通/稀有/史诗/传说
+        const FRAGMENT_FROM_DUP = [5, 10, 20, 50];        // 重复卡转化碎片
         const AI_BATTLE_BURN_PCT_BP = 5000; // 50%
 
         // 提案系统
@@ -1281,14 +1316,14 @@
         let walletAddress = '';
         let walletPublicKey = null;
         let paxiBalance = 0;  // 单位 upaxi
-        let prcBalance = 0;   // 单位 PRC 最小单位
+        let tkccBalance = 0;   // 单位 TKCC 最小单位
         let isProcessing = false; // 防止重复点击
 
         // ============================================================
         // 工具：单位换算（PRC-20 decimals=6，与 upaxi 一致）
         // ============================================================
-        function toMicro(n) { return String(Math.floor(Number(n) * 1_000_000)); }       // PRC -> uprc
-        function fromMicro(n) { return (Number(n) / 1_000_000).toString(); }            // uprc -> PRC
+        function toMicro(n) { return String(Math.floor(Number(n) * 1_000_000)); }       // TKCC -> utkcc
+        function fromMicro(n) { return (Number(n) / 1_000_000).toString(); }            // utkcc -> TKCC
         function toUpaxi(n) { return String(Math.floor(Number(n) * 1_000_000)); }       // PAXI -> upaxi
 
         // ============================================================
@@ -1323,7 +1358,7 @@
         }
 
         // ============================================================
-        // 刷新 PAXI 和 PRC 余额（DApp 指南 2.6 / CLI 指令 1.10）
+        // 刷新 PAXI 和 TKCC 余额（DApp 指南 2.6 / CLI 指令 1.10）
         // ============================================================
         async function refreshBalances() {
             if (!walletAddress) {
@@ -1338,17 +1373,20 @@
                 paxiBalance = paxiBal ? Number(paxiBal.amount) : 0;
                 document.getElementById('paxiBalance').textContent = fromMicro(paxiBalance) + ' PAXI';
 
-                // PRC 余额：查询 PRC-20 合约 balance（CLI 指令 1.10）
+                // TKCC 余额：查询 PRC-20 合约 balance（CLI 指令 1.10）
                 if (PRC20_CONTRACT) {
                     const queryObj = JSON.stringify({ balance: { address: walletAddress } });
                     const url = `${PAXI_LCD}/cosmwasm/wasm/v1/contract/${PRC20_CONTRACT}/smart/` + btoa(queryObj);
                     const prcRes = await fetch(url);
                     const prcData = await prcRes.json();
-                    prcBalance = Number(prcData.data?.balance || 0);
-                    document.getElementById('prcBalance').textContent = fromMicro(prcBalance) + ' TKCC';
+                    tkccBalance = Number(prcData.data?.balance || 0);
+                    document.getElementById('tkccBalance').textContent = fromMicro(tkccBalance) + ' TKCC';
                 } else {
-                    document.getElementById('prcBalance').textContent = '合约未部署';
+                    document.getElementById('tkccBalance').textContent = '合约未部署';
                 }
+
+                // 同步刷新碎片余额
+                await loadFragments();
             } catch (e) {
                 console.error('refreshBalances', e);
                 showToast('❌ 查询余额失败：' + (e.message || e), 'error');
@@ -1469,10 +1507,10 @@
 
         // ============================================================
         // 转账 PRC-20（DApp 指南 3.6 MsgExecuteContract）
-        // amount: PRC 数值（整数），内部换算为最小单位
+        // amount: TKCC 数值（整数），内部换算为最小单位
         // ============================================================
-        function buildMsgTransferPRC20(fromAddr, toAddr, amountPrc) {
-            const msgObj = { transfer: { recipient: toAddr, amount: toMicro(amountPrc) } };
+        function buildMsgTransferPRC20(fromAddr, toAddr, amountTkcc) {
+            const msgObj = { transfer: { recipient: toAddr, amount: toMicro(amountTkcc) } };
             const msg = PaxiCosmJS.MsgExecuteContract.fromPartial({
                 sender:   fromAddr,
                 contract: PRC20_CONTRACT,
@@ -1832,6 +1870,19 @@
                         <tr><td>3→4</td><td>+18</td><td>+12</td><td>400,000</td><td>200,000</td><td>200,000</td></tr>
                         <tr><td>4→5</td><td>+25</td><td>+18</td><td>1,000,000</td><td>500,000</td><td>500,000</td></tr>
                     </table>
+                    <p style="margin-top:6px;color:#ffd700;">✨ <strong>碎片替代升星</strong>：升星时可选碎片支付，消耗 = TKCC / 100（向上取整），不销毁 TKCC。</p>
+                </div>
+                <div class="rule-section">
+                    <h3>✨ 碎片系统（重复卡转化 · 合成 · 升星替代）</h3>
+                    <p>抽到重复卡牌时自动转化为碎片。碎片可用于合成新卡或替代 TKCC 升星。</p>
+                    <table>
+                        <tr><th>稀有度</th><th>重复卡转化</th><th>合成消耗</th><th>升星替代（TKCC/100）</th></tr>
+                        <tr><td>🟤 普通</td><td>5 碎片</td><td>30 碎片</td><td>如 5万 TKCC → 500 碎片</td></tr>
+                        <tr><td>🔵 稀有</td><td>10 碎片</td><td>60 碎片</td><td>如 15万 TKCC → 1,500 碎片</td></tr>
+                        <tr><td>🟣 史诗</td><td>20 碎片</td><td>150 碎片</td><td>如 40万 TKCC → 4,000 碎片</td></tr>
+                        <tr><td>🟡 传说</td><td>50 碎片</td><td>400 碎片</td><td>如 100万 TKCC → 10,000 碎片</td></tr>
+                    </table>
+                    <p style="margin-top:6px;color:#b39b7a;font-size:11px;">合成概率与抽卡一致（从对应稀有度池随机抽取）。碎片按稀有度独立计算，不可跨稀有度使用。</p>
                 </div>
                 <div class="rule-section">
                     <h3>⚔️ 对战系统（AI · PVP · 混战）</h3>
@@ -2006,7 +2057,7 @@
         }
 
         // ============================================================
-        // ⭐ 升星逻辑（正式版：链上消耗 PRC，50% 销毁 + 50% 金库）
+        // ⭐ 升星逻辑（正式版：链上消耗 TKCC，50% 销毁 + 50% 金库）
         // 游戏说明 4.3 / 5.1
         // ============================================================
         async function confirmUpgrade() {
@@ -2026,28 +2077,50 @@
             const burnAmount = Math.floor(fee / 2);     // 50% 销毁
             const vaultAmount = fee - burnAmount;        // 50% 进金库
 
+            // 碎片替代：TKCC / 100 向上取整
+            const fragNeeded = Math.ceil(fee / 100);
+            const rarityMap = { common: 0, rare: 1, epic: 2, legend: 3 };
+            const fragIdx = rarityMap[detailCard.rarity] ?? 0;
+
+            // 选择支付方式
+            const useFragments = confirm(
+                `升星费用：\n` +
+                `🃏 TKCC 模式：${fee.toLocaleString()} TKCC（50%销毁 + 50%金库）\n` +
+                `✨ 碎片模式：${fragNeeded} 个${detailCard.rarity === 'common' ? '普通' : detailCard.rarity === 'rare' ? '稀有' : detailCard.rarity === 'epic' ? '史诗' : '传说'}碎片（不消耗TKCC）\n\n` +
+                `确定 = 碎片支付\n取消 = TKCC 支付`
+            );
+
             try {
                 isProcessing = true;
-                showToast(`⏳ 正在支付升星费 ${fee.toLocaleString()} TKCC（销毁 ${burnAmount.toLocaleString()} + 金库 ${vaultAmount.toLocaleString()}）...`, 'info');
 
-                let msgs;
-                if (GAME_CONTRACT) {
-                    // ✅ 模式 A：游戏合约已部署
-                    // 1) 把全部升星费 TKCC 转入游戏合约
-                    // 2) 调用 StarUp(card_id)，合约内部自动 50% 销毁 + 50% 留金库
-                    msgs = [
-                        buildMsgTransferPRC20(walletAddress, GAME_CONTRACT, fee),
-                        buildMsgExecuteGame(walletAddress, { star_up: { card_id: detailCard.instance_id } })
+                if (useFragments && GAME_CONTRACT) {
+                    // 碎片模式：直接调用 StarUp(use_fragments: true)，无需转 TKCC
+                    showToast(`⏳ 正在用 ${fragNeeded} 碎片升星...`, 'info');
+                    const msgs = [
+                        buildMsgExecuteGame(walletAddress, {
+                            star_up: { card_id: detailCard.instance_id, use_fragments: true }
+                        })
                     ];
+                    await buildAndSendTx(msgs, `Star up (fragments) ${currentStar}->${currentStar + 1}`);
                 } else {
-                    // ⚠️ 模式 B：游戏合约未部署（临时兼容）
-                    // 前端直接：50% 销毁黑洞 + 50% 进金库(=PRC20合约)
-                    msgs = [
-                        buildMsgTransferPRC20(walletAddress, BURN_ADDRESS, burnAmount),
-                        buildMsgTransferPRC20(walletAddress, PRC20_CONTRACT, vaultAmount)
-                    ];
+                    // TKCC 模式（原有逻辑）
+                    showToast(`⏳ 正在支付升星费 ${fee.toLocaleString()} TKCC（销毁 ${burnAmount.toLocaleString()} + 金库 ${vaultAmount.toLocaleString()}）...`, 'info');
+                    let msgs;
+                    if (GAME_CONTRACT) {
+                        msgs = [
+                            buildMsgTransferPRC20(walletAddress, GAME_CONTRACT, fee),
+                            buildMsgExecuteGame(walletAddress, {
+                                star_up: { card_id: detailCard.instance_id, use_fragments: false }
+                            })
+                        ];
+                    } else {
+                        msgs = [
+                            buildMsgTransferPRC20(walletAddress, BURN_ADDRESS, burnAmount),
+                            buildMsgTransferPRC20(walletAddress, PRC20_CONTRACT, vaultAmount)
+                        ];
+                    }
+                    await buildAndSendTx(msgs, `Star up ${currentStar}->${currentStar + 1}: ${fee} TKCC`);
                 }
-                await buildAndSendTx(msgs, `Star up ${currentStar}->${currentStar + 1}: ${fee} TKCC`);
 
                 // 链上消耗成功，更新卡牌属性
                 detailCard.star = currentStar + 1;
@@ -2056,7 +2129,7 @@
 
                 updateUI();
                 updateSortArea();
-                showToast(`⭐ 升星成功！消耗 ${fee.toLocaleString()} TKCC（销毁 ${burnAmount.toLocaleString()} + 金库 ${vaultAmount.toLocaleString()}）`, 'success');
+                showToast(`⭐ 升星成功！${useFragments && GAME_CONTRACT ? '消耗 ' + fragNeeded + ' 碎片' : '消耗 ' + fee.toLocaleString() + ' TKCC'}`, 'success');
                 showCardDetail(detailCard.instance_id);
                 await refreshBalances();
             } catch (e) {
@@ -2102,7 +2175,7 @@
                     msgs = [buildMsgTransferPRC20(walletAddress, GAME_CONTRACT, totalFee)];
                     const steps = 5 - currentStar;
                     for (let i = 0; i < steps; i++) {
-                        msgs.push(buildMsgExecuteGame(walletAddress, { star_up: { card_id: detailCard.instance_id } }));
+                        msgs.push(buildMsgExecuteGame(walletAddress, { star_up: { card_id: detailCard.instance_id, use_fragments: false } }));
                     }
                 } else {
                     // ⚠️ 模式 B：游戏合约未部署（临时兼容）
@@ -2168,16 +2241,16 @@
 
                 // 三连抽参数
                 const paxiFee   = PACK3_PAXI_FEE;
-                const prcTotal  = PACK3_PRC_TOTAL;
-                const prcVault  = PACK3_PRC_VAULT;
-                const prcBurn   = PACK3_PRC_BURN;
-                const prcEco    = PACK3_PRC_ECO;
+                const tkccTotal  = PACK3_TKCC_TOTAL;
+                const tkccVault  = PACK3_TKCC_VAULT;
+                const tkccBurn   = PACK3_TKCC_BURN;
+                const tkccEco    = PACK3_TKCC_ECO;
 
                 let msgs;
                 if (GAME_CONTRACT) {
                     // ✅ 模式 A：游戏合约已部署 → 调用 draw_pack_3
                     msgs = [
-                        buildMsgTransferPRC20(walletAddress, GAME_CONTRACT, prcTotal),
+                        buildMsgTransferPRC20(walletAddress, GAME_CONTRACT, tkccTotal),
                         buildMsgExecuteGameWithFunds(walletAddress,
                             { draw_pack_3: { tap_index: tapIndex } },
                             toUpaxi(paxiFee))
@@ -2186,13 +2259,13 @@
                     // ⚠️ 模式 B：未部署，前端直接转账
                     msgs = [
                         buildMsgSendPaxi(walletAddress, tapAddr, paxiFee),
-                        buildMsgTransferPRC20(walletAddress, tapAddr, prcEco),
-                        buildMsgTransferPRC20(walletAddress, BURN_ADDRESS, prcBurn),
-                        buildMsgTransferPRC20(walletAddress, PRC20_CONTRACT, prcVault)
+                        buildMsgTransferPRC20(walletAddress, tapAddr, tkccEco),
+                        buildMsgTransferPRC20(walletAddress, BURN_ADDRESS, tkccBurn),
+                        buildMsgTransferPRC20(walletAddress, PRC20_CONTRACT, tkccVault)
                     ];
                 }
 
-                await buildAndSendTx(msgs, `Draw pack3: ${paxiFee} PAXI + ${prcTotal} TKCC (tap ${tapIndex})`);
+                await buildAndSendTx(msgs, `Draw pack3: ${paxiFee} PAXI + ${tkccTotal} TKCC (tap ${tapIndex})`);
 
                 // 链上消耗成功，再发牌（前端生成卡牌，合约也会记账）
                 const weighted = [];
@@ -2202,16 +2275,27 @@
                 });
 
                 const drawn = [];
+                const rarityMap = { common: 0, rare: 1, epic: 2, legend: 3 };
+                const dupFragments = { common: 0, rare: 0, epic: 0, legend: 0 };
                 for (let i = 0; i < count; i++) {
                     const template = weighted[randomInt(0, weighted.length - 1)];
-                    const card = {
-                        ...template,
-                        instance_id: generateId(),
-                        star: 1,
-                        attack: template.attack,
-                        defense: template.defense,
-                    };
-                    drawn.push(card);
+
+                    // 检查是否已拥有同名卡牌（重复检测）
+                    const isDup = userCards.some(c => c.name === template.name);
+                    if (isDup) {
+                        // 重复 → 转化为碎片
+                        const fragIdx = rarityMap[template.rarity] ?? 0;
+                        dupFragments[template.rarity] = (dupFragments[template.rarity] || 0) + FRAGMENT_FROM_DUP[fragIdx];
+                    } else {
+                        const card = {
+                            ...template,
+                            instance_id: generateId(),
+                            star: 1,
+                            attack: template.attack,
+                            defense: template.defense,
+                        };
+                        drawn.push(card);
+                    }
                 }
                 userCards.push(...drawn);
                 updateBattleOrder();
@@ -2236,7 +2320,20 @@
                         }
                     });
                 }, 30);
-                showToast(`🎉 抽卡成功！消耗 ${paxiFee} PAXI + ${prcTotal.toLocaleString()} TKCC，获得 ${count} 张卡牌`, 'success');
+                const dupCount = count - drawn.length;
+                const fragMsg = Object.entries(dupFragments).filter(([,v]) => v > 0)
+                    .map(([k,v]) => `${v} ${k === 'common' ? '普通' : k === 'rare' ? '稀有' : k === 'epic' ? '史诗' : '传说'}碎片`).join(', ');
+                showToast(`🎉 抽卡成功！获得 ${drawn.length} 张新卡牌${dupCount > 0 ? `，${dupCount} 张重复转化为${fragMsg ? ' ' + fragMsg : '碎片'}` : ''}`, 'success');
+                // 更新本地碎片显示
+                if (dupCount > 0) {
+                    Object.entries(dupFragments).forEach(([k, v]) => {
+                        if (v > 0) fragmentsData[k] = (fragmentsData[k] || 0) + v;
+                    });
+                    document.getElementById('fragCommon').textContent = fragmentsData.common || 0;
+                    document.getElementById('fragRare').textContent = fragmentsData.rare || 0;
+                    document.getElementById('fragEpic').textContent = fragmentsData.epic || 0;
+                    document.getElementById('fragLegend').textContent = fragmentsData.legend || 0;
+                }
                 await refreshBalances();
             } catch (e) {
                 console.error('drawCards', e);
@@ -2676,6 +2773,77 @@
         console.log('💡 点击排序区卡牌可调整出战顺序');
         console.log('💾 点击「保存出战顺序」将顺序写入链上');
         console.log('🗳 点击「新卡牌提案」可提交社区治理提案（5万TKCC质押 / 7天投票期）');
+
+        // ============================================================
+        // 碎片系统：加载碎片余额 / 合成卡牌
+        // ============================================================
+        let fragmentsData = { common: 0, rare: 0, epic: 0, legend: 0 };
+
+        async function loadFragments() {
+            if (!walletAddress || !GAME_CONTRACT) return;
+            try {
+                const queryObj = JSON.stringify({ get_fragments: { address: walletAddress } });
+                const url = `${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(queryObj);
+                const res = await fetch(url);
+                const data = await res.json();
+                const f = data.data || { common: 0, rare: 0, epic: 0, legend: 0 };
+                fragmentsData = f;
+                document.getElementById('fragCommon').textContent = f.common || 0;
+                document.getElementById('fragRare').textContent = f.rare || 0;
+                document.getElementById('fragEpic').textContent = f.epic || 0;
+                document.getElementById('fragLegend').textContent = f.legend || 0;
+            } catch (e) {
+                // 合约未部署或查询失败，静默处理
+                console.log('loadFragments (合约未部署或查询失败)', e.message);
+            }
+        }
+
+        function openCraftModal() {
+            // 更新弹窗中的碎片余额显示
+            document.getElementById('craftFragCommon').textContent = fragmentsData.common || 0;
+            document.getElementById('craftFragRare').textContent = fragmentsData.rare || 0;
+            document.getElementById('craftFragEpic').textContent = fragmentsData.epic || 0;
+            document.getElementById('craftFragLegend').textContent = fragmentsData.legend || 0;
+            document.getElementById('craftModal').style.display = 'flex';
+        }
+
+        function closeCraftModal() {
+            document.getElementById('craftModal').style.display = 'none';
+        }
+
+        async function craftCard(rarity) {
+            if (!requireWallet()) return;
+            if (!GAME_CONTRACT) {
+                showToast('⚠️ 游戏合约未部署，无法合成', 'error');
+                return;
+            }
+            const rarityMap = { common: 0, rare: 1, epic: 2, legend: 3 };
+            const idx = rarityMap[rarity];
+            const cost = CRAFT_COST[idx];
+            const have = fragmentsData[rarity] || 0;
+            if (have < cost) {
+                showToast(`❌ 碎片不足：需要 ${cost}，当前 ${have}`, 'error');
+                return;
+            }
+            try {
+                isProcessing = true;
+                showToast(`⏳ 正在合成 ${rarity} 卡牌（消耗 ${cost} 碎片）...`, 'info');
+                const msgs = [
+                    buildMsgExecuteGame(walletAddress, { craft_card: { rarity: rarity } })
+                ];
+                await buildAndSendTx(msgs, `Craft ${rarity} card: ${cost} fragments`);
+                showToast(`✨ 合成成功！获得一张 ${rarity} 卡牌`, 'success');
+                closeCraftModal();
+                updateUI();
+                updateSortArea();
+                await refreshBalances();
+            } catch (e) {
+                console.error('craftCard', e);
+                showToast('❌ 合成失败：' + (e.message || e), 'error');
+            } finally {
+                isProcessing = false;
+            }
+        }
 
         // ============================================================
         // 需求四：保存出战顺序（链上 SetBattleOrder）

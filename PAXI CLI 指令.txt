@@ -1,0 +1,364 @@
+1. PAXI CLI 指令
+1.1 安裝 PAXI CLI
+BASHCOPY
+curl -sL https://raw.githubusercontent.com/paxi-web3/paxi/main/scripts/cli_install.sh | bash
+1.2 添加金鑰
+BASHCOPY
+# Add a new key
+paxid keys add your_key_name
+
+# Import key from seed phrase
+paxid keys add your_key_name --recover
+1.3 發送 PAXI
+BASHCOPY
+paxid tx bank send your_key_name paxi1... 1000000upaxi \
+--gas auto --fees 30000upaxi
+1.4 查詢餘額
+BASHCOPY
+paxid q bank balances paxi1...
+1.5 上傳合約
+BASHCOPY
+paxid tx wasm store your_contract.wasm \
+--from your_key_name --gas auto --fees 10000000upaxi
+1.6 創建 PRC-20 代幣
+BASHCOPY
+paxid tx wasm instantiate 1 '{
+  "name": "TestToken",
+  "symbol": "TST",
+  "decimals": 6,
+  "initial_balances": [
+    {
+      "address": "paxi1...",
+      "amount": "1000000"
+    }
+  ],
+  "mint": {
+    "minter": "paxi1..."
+  },
+  "marketing": {
+    "project": "TestToken Project",
+    "description": "This is a test token",
+    "marketing": "paxi1...",
+    "logo": {
+      "url": "ipfs://bafkreiaaaaabbbbccccddddeeeeffff11112222333344445555666677778888"
+    }
+  }
+}' --from your_key_name --label "TestToken" --no-admin --gas auto --fees 6000000upaxi
+
+# Wait for 5 seconds and run the command below to get the contract address
+curl -s 'GET' 'https://mainnet-lcd.paxinet.io/cosmos/tx/v1beta1/txs/{TX_HASH}' | jq -r '.tx_response.events[]
+  | select(.type=="instantiate")
+  | .attributes[]
+  | select(.key=="_contract_address")
+  | .value'
+1.7 創建 PRC-721 NFT
+BASHCOPY
+paxid tx wasm instantiate 2 \
+    '{"name":"Test NFT","symbol":"TNFT","minter":"paxi1..."}' \
+    --from your_key_name \
+    --label "Test Collections" \
+    --no-admin \
+    --gas auto \
+    --fees 6000000upaxi
+
+# Wait for 5 seconds and run the command below to get the contract address
+curl -s 'GET' 'https://mainnet-lcd.paxinet.io/cosmos/tx/v1beta1/txs/{TX_HASH}' | jq -r '.tx_response.events[]
+  | select(.type=="instantiate")
+  | .attributes[]
+  | select(.key=="_contract_address")
+  | .value'
+
+paxid tx wasm execute prc721_contract_addr \
+  '{"mint": {"token_id": "test_001", "owner": "paxi1...", "token_uri": "https://example.com/test_meta.json"}}' \
+  --from your_key_name \
+  --gas auto \
+  --fees 20000upaxi
+1.8 轉移 PRC-20 NFT
+BASHCOPY
+paxid tx wasm execute prc20_contract_addr '{"transfer":{"recipient":"paxi1...","amount":"1000"}}' \
+--from your_key_name --gas auto --fees 30000upaxi
+1.9 轉移 PRC-721 NFT
+BASHCOPY
+paxid tx wasm execute prc721_contract_addr '{"transfer_nft":{"recipient":"paxi1...","token_id":"1","minter":"paxi1..."}}' \
+--from your_key_name --gas auto --fees 30000upaxi
+1.10 查詢 PRC-20 餘額
+BASHCOPY
+paxid query wasm contract-state smart prc20_contract_addr '{"balance":{"address":"paxi1..."}}'
+1.11 查詢 PRC-721 詳情
+BASHCOPY
+paxid query wasm contract-state smart prc721_contract_addr '{"nft_info":{"token_id":"1"}}'
+1.12 更多詳細資訊（--HELP）
+BASHCOPY
+paxid --help
+paxid tx --help
+paxid query wasm --help
+1.13 增加授權額度
+BASHCOPY
+./paxid tx wasm execute your_contract_address \
+    '{"increase_allowance": {
+    "spender": "paxi1mfru9azs5nua2wxcd4sq64g5nt7nn4n80r745t", # This is the swap module's address
+    "amount": "10000000000000"
+    }}' \
+    --from your_key_name \
+    --gas auto \
+    --fees 21000upaxi
+1.14 提供流動性
+BASHCOPY
+# Remember to increase allowance to the swap module before executing this command
+./paxid tx swap provide-liquidity \
+    --prc20 "your_contract_address" \
+    --paxi-amount "1000000upaxi" \
+    --prc20-amount "10000000" \
+    --from your_key_name \
+    --gas auto  \
+    --fees 21000upaxi
+1.15 提取流動性
+BASHCOPY
+./paxid tx swap withdraw-liquidity \
+    --prc20 "your_contract_address" \
+    --lp-amount "1000000" \
+    --from your_key_name \
+    --gas auto  \
+    --fees 21000upaxi
+1.16 兌換
+BASHCOPY
+# Remember to increase allowance to the swap module before executing this command
+./paxid tx swap swap \
+    --prc20 "your_contract_address" \
+    --offer-denom upaxi \
+    --offer-amount 10000 \
+    --min-receive 10 \
+    --from your_key_name \
+    --gas auto  \
+    --fees 21000upaxi
+2. REST API
+2.1 根據哈希取得交易
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/cosmos/tx/v1beta1/txs/{hash}
+2.2 取得區塊內交易
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/cosmos/tx/v1beta1/txs/block/{block_height}
+2.3 取得節點狀態
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/cosmos/base/node/v1beta1/status
+2.4 取得最新區塊
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/cosmos/base/tendermint/v1beta1/blocks/latest
+2.5 取得驗證者
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/cosmos/staking/v1beta1/validators
+2.6 取得餘額
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/cosmos/bank/v1beta1/balances/{address}
+2.7 取得帳戶資訊
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/cosmos/auth/v1beta1/accounts/{address}
+2.8 取得流通供應量
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/paxi/paxi/circulating_supply
+2.9 取得鎖定歸屬
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/paxi/paxi/locked_vesting
+2.10 取得總供應量
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/paxi/paxi/total_supply
+2.11 取得解鎖計畫
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/paxi/paxi/unlock_schedules
+2.12 取得所有兌換池
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/paxi/swap/all_pools
+2.13 取得兌換池詳情
+BASHCOPY
+GET https://mainnet-lcd.paxinet.io/paxi/swap/pool/{prc20_address}
+2.14 SWAGGER UI
+使用 Swagger UI，您可以瀏覽所有 API 端點的詳細文件，檢視參數結構、範例請求/回應，並在瀏覽器中直接測試 API。
+
+開啟 SWAGGER UI
+
+3. JAVASCRIPT SDK
+3.1 匯入與設定
+JAVASCRIPTCOPY
+// Proto source code for TypeScript: https://github.com/paxi-web3/paxi/tree/main/ts_proto
+
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing";
+import { SigningStargateClient, coins, calculateFee, GasPrice } from "@cosmjs/stargate";
+
+// endpoints & config
+const rpcEndpoint = "https://mainnet-rpc.paxinet.io";
+const lcdEndpoint = "https://mainnet-lcd.paxinet.io";
+const prefix      = "paxi";
+const denom       = "upaxi";
+3.2 初始化錢包
+JAVASCRIPTCOPY
+async function initWallet(mnemonic) {
+  // create wallet from mnemonic
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(mnemonic, { prefix });
+  const [firstAccount] = await wallet.getAccounts();
+  return { wallet, address: firstAccount.address };
+}
+
+// Usage:
+// const mnemonic = "your twelve word mnemonic here";
+// const { wallet, address } = await initWallet(mnemonic);
+3.3 取得鏈 ID
+JAVASCRIPTCOPY
+async function fetchChainId() {
+  const client = await SigningStargateClient.connect(rpcEndpoint);
+  const chainId = await client.getChainId();
+  return chainId;
+}
+
+// Usage:
+// const chainId = await fetchChainId();
+3.4 取得帳戶資訊
+JAVASCRIPTCOPY
+async function fetchAccountInfo(address) {
+  const client = await SigningStargateClient.connect(rpcEndpoint);
+  const account = await client.getAccount(address);
+  return {
+    accountNumber: account.accountNumber,
+    sequence:      account.sequence
+  };
+}
+
+// Usage:
+// const info = await fetchAccountInfo("paxi1...");
+3.5 構建並發送交易
+JAVASCRIPTCOPY
+async function sendTokens(mnemonic, toAddress, amount, memo = "") {
+  const { wallet, address } = await initWallet(mnemonic);
+  const client = await SigningStargateClient.connectWithSigner(rpcEndpoint, wallet);
+  const fee    = calculateFee(200_000, GasPrice.fromString('0.0upaxi')); // gas & fee
+
+  const result = await client.sendTokens(
+      address,
+      toAddress,
+      coins(amount, denom),
+      fee,
+      memo,
+  );
+  return result.transactionHash;
+}
+
+// Usage:
+// const txHash = await sendTokens("your mnemonic", "paxi1dest...", "1000000", "Test transfer");
+4. PYTHON SDK
+4.1 匯入與設定
+PYTHONCOPY
+# cosmpy==0.11.1
+# mospy-wallet==0.6.0
+
+from mospy import Account, Transaction
+import requests
+import json
+from datetime import datetime, timedelta
+from cosmpy.crypto.address import Address
+
+paxi_lcd = 'https://mainnet-lcd.paxinet.io'
+paxi_rpc = 'https://mainnet-rpc.paxinet.io'
+4.2 取得鏈 ID
+PYTHONCOPY
+def fetch_chain_id(lcd_url: str) -> str:
+    resp = requests.get(f"{lcd_url}/cosmos/base/tendermint/v1beta1/node_info")
+    resp.raise_for_status()
+    return resp.json()["default_node_info"]["network"]
+
+# Usage
+chain_id = fetch_chain_id(paxi_lcd)
+4.3 取得帳戶資訊
+PYTHONCOPY
+def fetch_account_info(lcd_url: str, address: str) -> tuple[int, int]:
+    url = f"{lcd_url}/cosmos/auth/v1beta1/accounts/{address}"
+    r = requests.get(url)
+    data = r.json()
+    base_account = data.get("account", {})
+    return int(base_account.get("account_number", 0)), int(base_account.get("sequence", 0))
+
+# Usage
+acct_num, seq = fetch_account_info(paxi_lcd, "paxi1...")
+4.4 發送交易
+PYTHONCOPY
+def send_tx(account: Account, to_address: str, amount: float,
+            fee: float, chain_id: str, lcd_url: str, memo: str = "") -> str | None:
+    tx = Transaction(
+        account=account,
+        gas=int(fee * 10**6 / 0.05),
+        chain_id=chain_id,
+        memo=memo
+    )
+    tx.set_fee(amount=int(fee * 10**6), denom=denom)
+    tx.add_msg(
+        tx_type="transfer",
+        sender=account,
+        recipient=to_address,
+        amount=int(amount * 10**6),
+        denom=denom
+    )
+    payload = {
+      "tx_bytes": tx.get_tx_bytes_as_string(),
+      "mode": "BROADCAST_MODE_ASYNC"
+    }
+    resp = requests.post(f"{lcd_url}/cosmos/tx/v1beta1/txs", json=payload)
+    resp.raise_for_status()
+    return resp.json().get("tx_response", {}).get("txhash")
+4.5 檢查交易狀態
+PYTHONCOPY
+def fetch_tx_status(lcd_url: str, tx_hash: str) -> dict:
+    url = f"{lcd_url}/cosmos/tx/v1beta1/txs/{tx_hash}"
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        return {"status": "pending", "detail": "Node unreachable"}
+    data = resp.json().get("tx_response", {})
+    code = data.get("code", 0)
+    if code == 0:
+        return {"status": "success", "height": data.get("height")}
+    return {"status": "failed", "code": code, "raw_log": data.get("raw_log")}
+
+# Usage
+status = fetch_tx_status(paxi_lcd, "HASH123...")
+4.6 驗證地址
+PYTHONCOPY
+from bech32 import bech32_decode
+
+def is_valid_bech32_address(addr: str, hrp: str = "paxi") -> bool:
+    r1, r2 = bech32_decode(addr)
+    return True if r1==hrp and r2!=None else False
+
+# Usage
+valid = is_valid_bech32_address("paxi1...")  # True or False
+4.7 發送交易範例
+PYTHONCOPY
+# 1. Import account from mnemonic
+mnemonic = "canal lazy unveil sort dwarf bacon measure spawn increase neutral winter lucky"
+account = Account(seed_phrase=mnemonic, hrp='paxi')
+account_number, sequence = fetch_account_info(paxi_lcd, account.address)
+account.account_number = account_number
+account.next_sequence = sequence
+
+# Alternative: import account from hex-encoded private key
+# priv_key_hex = "abcdef1234567890..."
+# account = Account(private_key=priv_key_hex, hrp='paxi')
+
+# 2. Define transaction parameters
+to_address = "paxi1..."
+amount = 1.5  # amount in PAXI
+fee = 0.04  # fee in PAXI
+chain_id = fetch_chain_id(paxi_lcd)
+memo = "Test transfer via Python SDK"
+
+# 3. Send transaction and retrieve transaction hash
+tx_hash = send_tx(account, to_address, amount, fee, chain_id, paxi_lcd, memo)
+print(f"Transaction hash: {tx_hash}")
+4.8 生成地址
+PYTHONCOPY
+from mospy import Account
+from mnemonic import Mnemonic
+
+mnemo = Mnemonic("english")
+words = mnemo.generate(strength=128)
+addr = Account(seed_phrase=words, hrp='paxi', slip44=118).address
+5. PRC-20 代幣標準
+https://github.com/paxi-web3/paxi/blob/main/docs/prc_20_standard.md
+6. PRC-721 代幣標準
+https://github.com/paxi-web3/paxi/blob/main/docs/prc_721_standard.md

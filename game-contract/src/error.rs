@@ -51,4 +51,8 @@ pub enum ContractError {
     VotingClosed,
     #[error("Invalid rarity: {0}")]
     InvalidRarity(String),
+
+    // ------ 碎片系统 ------
+    #[error("Insufficient fragments: need {needed}, have {have}")]
+    InsufficientFragments { needed: u64, have: u64 },
 }

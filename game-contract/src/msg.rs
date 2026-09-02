@@ -38,8 +38,8 @@ pub enum ExecuteMsg {
     },
     ClaimReward { battle_id: String },
 
-    // ---- 升星（50% 销毁 + 50% 金库）----
-    StarUp { card_id: String },
+    // ---- 升星（50% 销毁 + 50% 金库 / 碎片替代）----
+    StarUp { card_id: String, use_fragments: Option<bool> },
 
     // ---- 需求四：玩家自定义出卡顺序 ----
     SetBattleOrder { order: Vec<String> },
@@ -73,6 +73,10 @@ pub enum ExecuteMsg {
         burn_address: Option<String>,
         tap_addresses: Option<Vec<String>>,
     },
+
+    // ---- 碎片系统 ----
+    /// 合成卡牌：消耗碎片，随机获得对应稀有度卡牌
+    CraftCard { rarity: String },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -113,6 +117,9 @@ pub enum QueryMsg {
         limit: Option<u32>,
     },
     RarityCount {},
+
+    // ---- 碎片系统 ----
+    GetFragments { address: String },
 }
 
 // ============================================================
@@ -210,4 +217,12 @@ pub struct GameParamsResponse {
     pub ai_fee: [String; 4],
     pub ai_reward: [String; 4],
     pub upgrade_fees: [String; 4],
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct FragmentsResponse {
+    pub common: u64,
+    pub rare: u64,
+    pub epic: u64,
+    pub legend: u64,
 }
