@@ -1,0 +1,37 @@
+[package]
+name = "three-kingdoms-card-game"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+panic = "abort"
+incremental = false
+codegen-units = 1
+
+[features]
+# 用于库引入时禁用 std
+default = []
+# 加上 backtraces 方便调试
+backtraces = ["cosmwasm-std/backtraces"]
+
+[dependencies]
+cosmwasm-std = { version = "1.5.0", features = ["staking"] }
+cosmwasm-storage = "1.5.0"
+cw-storage-plus = "1.2.0"
+cw2 = "1.1.0"
+schemars = "0.8.15"
+serde = { version = "1.0.189", features = ["derive"] }
+serde_json = "1.0.108"
+thiserror = "1.0.50"
+
+[dev-dependencies]
+cosmwasm-vm = { version = "1.5.0" }
+cw-multi-test = "0.16.5"

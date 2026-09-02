@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>🐉 三国卡牌 · 测试版（不消耗代币）</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0d0a0c;
+            background-image: radial-gradient(ellipse at 30% 20%, #1a1218, #0a0709);
+            min-height: 100vh;
+            padding: 12px 8px;
+            font-family: '华文行楷', 'STKaiti', 'KaiTi', 'SimSun', serif;
+            color: #e8d5b8;
+            transition: font-family 0.2s;
+        }
+        body.lang-en {
+            font-family: 'Georgia', 'Times New Roman', serif;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* ===== 头部 ===== */
+        .header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(8px);
+            padding: 8px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(200, 160, 100, 0.12);
+            margin-bottom: 12px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .header h1 {
+            font-size: 20px;
+            letter-spacing: 2px;
+            color: #e8d5b8;
+        }
+        .header h1 span {
+            color: #b8860b;
+        }
+        .header .badge {
+            background: rgba(76, 175, 80, 0.15);
+            border: 1px solid #4caf50;
+            border-radius: 20px;
+            padding: 2px 12px;
+            font-size: 11px;
+            color: #4caf50;
+        }
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn-lang {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(200, 160, 100, 0.2);
+            color: #e8d5b8;
+            padding: 2px 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+        .btn-lang:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        .btn-lang.active {
+            background: #b8860b;
+            color: #0d0a0c;
+            border-color: #b8860b;
+        }
+
+        .btn {
+            padding: 6px 14px;
+            border: none;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .btn:hover {
+            transform: scale(1.04);
+            box-shadow: 0 4px 20px rgba(184, 134, 11, 0.3);
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-primary {
+            background: #8b2f1a;
+            color: #f5efe0;
+        }
+        .btn-success {
+            background: #2a6a3a;
+            color: #f5efe0;
+        }
+        .btn-danger {
+            background: #6a2a2a;
+            color: #f5efe0;
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: #e8d5b8;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            box-shadow: none;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+            font-size: 11px;
+        }
+        .btn-gold {
+            background: #b8860b;
+            color: #0d0a0c;
+        }
+        .btn-gold:hover {
+            box-shadow: 0 4px 20px rgba(184, 134, 11, 0.4);
+        }
+        .btn-star {
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+            color: #0d0a0c;
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+        .btn-star:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+        }
+
+        /* ===== 统计面板 ===== */
+        .stats-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 16px;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.04);
+            padding: 8px 12px;
+            border-radius: 14px;
+            border: 1px solid rgba(200, 160, 100, 0.08);
+            margin-bottom: 12px;
+        }
+        .stat-item {
+            text-align: center;
+        }
+        .stat-item .number {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .stat-item .label {
+            font-size: 11px;
+            color: #8a7a6a;
+            margin-left: 4px;
+        }
+
+        /* ===== 操作区（三按钮一行） ===== */
+        .actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .action-box {
+            background: rgba(255, 255, 255, 0.04);
+            padding: 8px 6px;
+            border-radius: 14px;
+            text-align: center;
+            border: 1px solid rgba(200, 160, 100, 0.08);
+        }
+        .action-box h4 {
+            font-size: 13px;
+            margin-bottom: 2px;
+            color: #e8d5b8;
+        }
+        .action-box .desc {
+            font-size: 10px;
+            color: #8a7a6a;
+            margin-bottom: 4px;
+        }
+        .action-box .btn {
+            width: 100%;
+            font-size: 12px;
+            padding: 6px 8px;
+        }
+
+        /* ===== 难度选择 ===== */
+        .difficulty-selector {
+            display: flex;
+            gap: 4px;
+            margin: 4px 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .difficulty-selector .btn {
+            font-size: 10px;
+            padding: 2px 8px;
+            width: auto;
+        }
+        .difficulty-selector .btn.active {
+            outline: 2px solid #ffd700;
+            outline-offset: 2px;
+        }
+
+        /* ===== 卡牌排序 ===== */
+        .sort-area {
+            background: rgba(255, 255, 255, 0.04);
+            border-radius: 14px;
+            padding: 6px 10px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(200, 160, 100, 0.08);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+        }
+        .sort-area label {
+            font-size: 12px;
+            color: #8a7a6a;
+            margin-right: 4px;
+        }
+        .sort-area .slot {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 11px;
+            border: 1px solid rgba(200, 160, 100, 0.15);
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .sort-area .slot:hover {
+            border-color: #b8860b;
+        }
+        .sort-area .slot .idx {
+            color: #8a7a6a;
+            font-size: 10px;
+        }
+        .sort-area .slot .name {
+            font-weight: bold;
+            font-size: 11px;
+        }
+        .sort-area .slot .power {
+            color: #ffd700;
+            font-size: 10px;
+        }
+
+        /* ===== 卡牌网格（手机3列） ===== */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .card {
+            background: #f5efe0;
+            background-image: linear-gradient(0deg, rgba(200, 180, 150, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(200, 180, 150, 0.06) 1px, transparent 1px);
+            background-size: 8px 8px;
+            border-radius: 4px 12px 4px 12px;
+            padding: 4px 4px 4px 4px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(180, 150, 110, 0.2);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.3s;
+            height: 230px;
+            cursor: default;
+            position: relative;
+        }
+        .card:hover {
+            transform: translateY(-2px) scale(1.01);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+        }
+        .card::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 6px 14px 6px 14px;
+            padding: 2px;
+            background: transparent;
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        .card:hover::before {
+            opacity: 0.7;
+        }
+        .rarity-legend::before {
+            background: linear-gradient(135deg, #ffd700, #b8860b);
+        }
+        .rarity-epic::before {
+            background: linear-gradient(135deg, #ab47bc, #6a3a7a);
+        }
+        .rarity-rare::before {
+            background: linear-gradient(135deg, #4fc3f7, #2a6a8a);
+        }
+        .rarity-common::before {
+            background: linear-gradient(135deg, #9e9e9e, #6a6a6a);
+        }
+        .rarity-legend {
+            border-color: rgba(255, 215, 0, 0.25);
+        }
+        .rarity-epic {
+            border-color: rgba(171, 71, 188, 0.25);
+        }
+        .rarity-rare {
+            border-color: rgba(79, 195, 247, 0.25);
+        }
+        .rarity-common {
+            border-color: rgba(158, 158, 158, 0.25);
+        }
+
+        .card-image {
+            flex: 4;
+            min-height: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(ellipse at 50% 80%, rgba(60, 40, 20, 0.05), transparent 70%);
+            border-radius: 8px;
+            overflow: hidden;
+            padding: 2px;
+        }
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            max-height: 100%;
+        }
+        .card-footer {
+            flex: 1.5;
+            border-top: 1px dashed rgba(100, 80, 60, 0.12);
+            padding-top: 2px;
+            margin-top: 2px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            font-size: 10px;
+            line-height: 1.2;
+            overflow: hidden;
+        }
+        .card-footer .name-line {
+            font-size: 12px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+        .rarity-legend .name-line {
+            color: #8b3a2a;
+        }
+        .rarity-epic .name-line {
+            color: #5a2a6a;
+        }
+        .rarity-rare .name-line {
+            color: #1a4a7a;
+        }
+        .rarity-common .name-line {
+            color: #4a4a4a;
+        }
+        .card-footer .sub-line {
+            font-size: 9px;
+            color: #6a5a4a;
+            opacity: 0.7;
+        }
+        .card-footer .stats-line {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            font-size: 10px;
+        }
+        .card-footer .stats-line .val {
+            font-weight: bold;
+        }
+        .card-footer .stars-line {
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            color: #b8860b;
+        }
+        .card-footer .badge {
+            font-size: 8px;
+            padding: 0 6px;
+            border-radius: 8px;
+            color: #fff;
+            background: #6a6a6a;
+            display: inline-block;
+        }
+        .rarity-legend .badge {
+            background: #8b2f1a;
+        }
+        .rarity-epic .badge {
+            background: #6a3a7a;
+        }
+        .rarity-rare .badge {
+            background: #2a6a8a;
+        }
+        .rarity-common .badge {
+            background: #6a6a6a;
+        }
+        .card .order-badge {
+            position: absolute;
+            top: 2px;
+            left: 4px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            padding: 0 6px;
+            font-size: 9px;
+            color: #ffd700;
+            border: 1px solid rgba(200, 160, 100, 0.2);
+        }
+
+        /* ===== ⭐ 升星按钮 ===== */
+        .card .star-btn-wrap {
+            margin-top: 2px;
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .card .star-btn-wrap .btn-star {
+            font-size: 9px;
+            padding: 1px 8px;
+            border-radius: 10px;
+        }
+        .card .star-btn-wrap .btn-detail {
+            font-size: 9px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.12);
+            color: #aaa;
+            border: none;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .card .star-btn-wrap .btn-detail:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        /* ===== 战斗动画 ===== */
+        .battle-arena {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 14px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(200, 160, 100, 0.1);
+            display: none;
+            min-height: 150px;
+            position: relative;
+            overflow: hidden;
+        }
+        .battle-arena.show {
+            display: block;
+        }
+        .battle-arena .vs-banner {
+            text-align: center;
+            font-size: 24px;
+            color: #ffd700;
+            letter-spacing: 6px;
+            padding: 6px 0;
+            font-weight: bold;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+        .battle-arena .round-result {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 8px;
+            border-bottom: 1px solid rgba(200, 160, 100, 0.05);
+            font-size: 12px;
+        }
+        .battle-arena .round-result:last-child {
+            border-bottom: none;
+        }
+        .battle-arena .round-result .win {
+            color: #4caf50;
+        }
+        .battle-arena .round-result .lose {
+            color: #f44336;
+        }
+        .battle-arena .round-result .draw {
+            color: #ffd700;
+        }
+        .battle-arena .final-result {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 6px 0;
+            margin-top: 4px;
+            border-top: 1px solid rgba(200, 160, 100, 0.1);
+        }
+
+        /* ===== 弹窗 ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: #1a1218;
+            border-radius: 18px;
+            padding: 16px 20px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid rgba(200, 160, 100, 0.15);
+            color: #e8d5b8;
+            font-family: inherit;
+        }
+        .modal h2 {
+            text-align: center;
+            margin-bottom: 12px;
+            color: #ffd700;
+            font-size: 22px;
+            letter-spacing: 2px;
+        }
+        .modal .close-btn {
+            float: right;
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: #8a7a6a;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal .close-btn:hover {
+            color: #e8d5b8;
+        }
+        .modal .rule-section {
+            margin-bottom: 12px;
+        }
+        .modal .rule-section h3 {
+            color: #b8860b;
+            font-size: 16px;
+            margin-bottom: 4px;
+            border-bottom: 1px solid rgba(200, 160, 100, 0.1);
+            padding-bottom: 4px;
+        }
+        .modal .rule-section p,
+        .modal .rule-section li {
+            font-size: 14px;
+            line-height: 1.5;
+            color: #c9b8a8;
+        }
+        .modal .rule-section ul {
+            padding-left: 20px;
+        }
+        .modal .rule-section table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        .modal .rule-section table th,
+        .modal .rule-section table td {
+            border: 1px solid rgba(200, 160, 100, 0.15);
+            padding: 4px 6px;
+            text-align: center;
+        }
+        .modal .rule-section table th {
+            background: rgba(200, 160, 100, 0.1);
+            color: #ffd700;
+        }
+
+        /* ===== ⭐ 升星弹窗（卡牌详情 + 升星） ===== */
+        .card-detail-modal .modal {
+            max-width: 400px;
+        }
+        .card-detail-modal .card-preview {
+            text-align: center;
+            padding: 6px 0;
+        }
+        .card-detail-modal .card-preview img {
+            max-width: 140px;
+            max-height: 160px;
+            border-radius: 10px;
+        }
+        .card-detail-modal .card-preview .card-name-detail {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .card-detail-modal .card-preview .card-sub-detail {
+            font-size: 13px;
+            color: #8a7a6a;
+        }
+        .card-detail-modal .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin: 8px 0;
+        }
+        .card-detail-modal .info-grid .label {
+            color: #8a7a6a;
+        }
+        .card-detail-modal .info-grid .value {
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .card-detail-modal .card-desc {
+            font-size: 14px;
+            color: #c9b8a8;
+            line-height: 1.5;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(200, 160, 100, 0.1);
+        }
+        .card-detail-modal .star-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(200, 160, 100, 0.1);
+        }
+        .card-detail-modal .star-actions .btn {
+            min-width: 80px;
+        }
+
+        /* 提案 & 表单 */
+        .w3-input {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid rgba(200, 160, 100, 0.35);
+            background: rgba(30, 20, 10, 0.65);
+            color: #f2e6d4;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        .w3-input:focus { border-color: #b8860b; }
+        select.w3-input { appearance: none; }
+        .w3-input::placeholder { color: #7a6a5a; }
+        textarea.w3-input { resize: vertical; min-height: 44px; }
+
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 13px;
+            z-index: 1000;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            animation: fadeUp 0.3s ease;
+            max-width: 90%;
+            text-align: center;
+            border: 1px solid rgba(200, 160, 100, 0.1);
+        }
+        .toast.success {
+            border-color: #4caf50;
+        }
+        .toast.error {
+            border-color: #f44336;
+        }
+        .toast.info {
+            border-color: #b8860b;
+        }
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* ===== 响应式调整（专为手机） ===== */
+        @media (max-width: 600px) {
+            .card-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
+            }
+            .card {
+                height: 200px;
+                padding: 4px;
+            }
+            .card-image {
+                min-height: 70px;
+            }
+            .card-footer .name-line {
+                font-size: 11px;
+            }
+            .card-footer .stats-line {
+                font-size: 9px;
+                gap: 6px;
+            }
+            .card-footer .sub-line {
+                font-size: 8px;
+            }
+            .card-footer .stars-line {
+                font-size: 9px;
+            }
+            .card-footer .badge {
+                font-size: 7px;
+                padding: 0 4px;
+            }
+            .card .star-btn-wrap .btn-star {
+                font-size: 8px;
+                padding: 1px 6px;
+            }
+            .card .star-btn-wrap .btn-detail {
+                font-size: 8px;
+                padding: 1px 6px;
+            }
+            .actions {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 6px;
+            }
+            .action-box h4 {
+                font-size: 12px;
+            }
+            .action-box .desc {
+                font-size: 9px;
+            }
+            .action-box .btn {
+                font-size: 11px;
+                padding: 4px 6px;
+            }
+            .header h1 {
+                font-size: 18px;
+            }
+            .stats-panel .number {
+                font-size: 16px;
+            }
+            .stats-panel .label {
+                font-size: 10px;
+            }
+            .sort-area {
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+            .sort-area .slot {
+                font-size: 10px;
+                padding: 2px 6px;
+            }
+            .sort-area .slot .name {
+                font-size: 10px;
+            }
+            .modal {
+                padding: 12px 16px;
+            }
+            .modal .rule-section h3 {
+                font-size: 14px;
+            }
+            .modal .rule-section p,
+            .modal .rule-section li {
+                font-size: 13px;
+            }
+            .battle-arena .round-result {
+                font-size: 11px;
+            }
+            .battle-arena .final-result {
+                font-size: 16px;
+            }
+        }
+        @media (max-width: 400px) {
+            .card-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 5px;
+            }
+            .card {
+                height: 170px;
+            }
+            .card-image {
+                min-height: 55px;
+            }
+            .card-footer .name-line {
+                font-size: 10px;
+            }
+            .card-footer .stats-line {
+                font-size: 8px;
+                gap: 4px;
+            }
+            .card-footer .sub-line {
+                font-size: 7px;
+            }
+            .card-footer .stars-line {
+                font-size: 8px;
+            }
+            .actions {
+                gap: 4px;
+            }
+            .action-box {
+                padding: 4px 4px;
+            }
+            .action-box h4 {
+                font-size: 11px;
+            }
+            .action-box .btn {
+                font-size: 10px;
+                padding: 3px 4px;
+            }
+            .card .star-btn-wrap .btn-star {
+                font-size: 10px;
+                padding: 4px 10px;
+                min-height: 28px;
+            }
+            .card .star-btn-wrap .btn-detail {
+                font-size: 10px;
+                padding: 4px 10px;
+                min-height: 28px;
+            }
+        }
+        .hidden {
+            display: none !important;
+        }
+        .text-center {
+            text-align: center;
+        }
+        /* ============================================================
+           需求一：卡牌动态效果
+           ============================================================ */
+        /* 1. 呼吸发光（不同稀有度不同颜色和频率）*/
+        @keyframes glow-common {
+            0%,   100% { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0px rgba(158,158,158,0); }
+            50%        { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 10px rgba(158,158,158,0.4); }
+        }
+        @keyframes glow-rare {
+            0%,   100% { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0px rgba(79,195,247,0); }
+            50%        { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 14px rgba(79,195,247,0.55); }
+        }
+        @keyframes glow-epic {
+            0%,   100% { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0px rgba(171,71,188,0); }
+            50%        { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 18px rgba(171,71,188,0.65); }
+        }
+        @keyframes glow-legend {
+            0%,   100% { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 0px rgba(255,215,0,0); }
+            35%        { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 22px rgba(255,215,0,0.85); }
+            50%        { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 28px rgba(255,215,0,0.95); }
+            65%        { box-shadow: 0 2px 12px rgba(0,0,0,0.5), 0 0 22px rgba(255,215,0,0.85); }
+        }
+        @keyframes float-common {
+            0%,   100% { transform: translateY(0); }
+            50%        { transform: translateY(-1px); }
+        }
+        @keyframes float-rare {
+            0%,   100% { transform: translateY(0); }
+            50%        { transform: translateY(-1.5px); }
+        }
+        @keyframes float-epic {
+            0%,   100% { transform: translateY(0); }
+            50%        { transform: translateY(-2px); }
+        }
+        @keyframes float-legend {
+            0%,   100% { transform: translateY(0); }
+            50%        { transform: translateY(-2.5px); }
+        }
+        .card.rarity-common { animation: glow-common 3.5s ease-in-out infinite, float-common 3.5s ease-in-out infinite; }
+        .card.rarity-rare   { animation: glow-rare   3.0s ease-in-out infinite, float-rare   3.0s ease-in-out infinite; }
+        .card.rarity-epic   { animation: glow-epic   2.5s ease-in-out infinite, float-epic   2.5s ease-in-out infinite; }
+        .card.rarity-legend { animation: glow-legend 2.0s ease-in-out infinite, float-legend 2.0s ease-in-out infinite; }
+
+        /* 2. 抽卡翻转入场 */
+        @keyframes flip-in {
+            0%   { transform: translateY(80px) rotateX(90deg) scale(0.6); opacity: 0; }
+            60%  { transform: translateY(-5px) rotateX(-10deg) scale(1.05); opacity: 1; }
+            100% { transform: translateY(0) rotateX(0) scale(1); opacity: 1; }
+        }
+        .card.new-card { animation: flip-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+        /* 抽卡翻转入场（规范类名 draw-flip-card） */
+        .draw-flip-card {
+            animation: flip-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+        @keyframes gold-burst {
+            0%   { transform: scale(0); opacity: 0.9; }
+            60%  { transform: scale(1.6); opacity: 0.35; }
+            100% { transform: scale(2.4); opacity: 0; }
+        }
+        .gold-burst {
+            position: absolute; inset: -8%;
+            background: radial-gradient(circle, rgba(255,215,0,0.95) 0%, rgba(255,180,0,0.65) 25%, rgba(255,215,0,0.25) 50%, transparent 75%);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: gold-burst 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            z-index: 99;
+        }
+
+        /* 3. 触感反馈（点击下沉+回弹） */
+        .card {
+            transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s;
+        }
+        .card:active {
+            transform: scale(0.95) translateY(2px);
+        }
+        .card.rarity-legend:active {
+            filter: drop-shadow(0 0 14px rgba(255,215,0,0.9));
+        }
+
+        /* 4. 传说卡流光边框 */
+        @property --angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+        @property --flow-angle {
+            syntax: '<angle>';
+            initial-value: 0deg;
+            inherits: false;
+        }
+        @keyframes flow-conic {
+            from { --angle: 0deg; --flow-angle: 0deg; }
+            to   { --angle: 360deg; --flow-angle: 360deg; }
+        }
+        .card.rarity-legend::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 8px 16px 8px 16px;
+            padding: 3px;
+            background: conic-gradient(from var(--angle),
+                rgba(255,215,0,0) 0deg,
+                rgba(255,215,0,0.95) 40deg,
+                rgba(255,240,150,1) 80deg,
+                rgba(255,215,0,0.95) 120deg,
+                rgba(255,215,0,0) 180deg,
+                rgba(255,215,0,0) 360deg);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            animation: flow-conic 3s linear infinite;
+            z-index: 2;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- ===== 头部 ===== -->
+        <div class="header">
+            <div class="header-left">
+                <h1>⚔️ 三国·<span>卡牌</span></h1>
+                <span class="badge">🧪 测试版·不消耗代币</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary btn-sm" onclick="openHelp()" id="helpBtn" data-i18n="help_btn">📖 玩法</button>
+                <button class="btn-lang active" data-lang="zh" onclick="switchLang('zh')">中文</button>
+                <button class="btn-lang" data-lang="en" onclick="switchLang('en')">EN</button>
+            </div>
+        </div>
+
+        <!-- ===== 统计面板 ===== -->
+        <div class="stats-panel" id="statsPanel">
+            <div class="stat-item"><span class="number" id="winCount">0</span><span class="label" data-i18n="wins">🏆 胜场</span></div>
+            <div class="stat-item"><span class="number" id="cardCount">0</span><span class="label" data-i18n="cards">🃏 卡牌</span></div>
+            <div class="stat-item"><span class="number" id="battleCount">0</span><span class="label" data-i18n="battles">⚔️ 总对战</span></div>
+        </div>
+
+        <!-- ===== 战斗动画区 ===== -->
+        <div class="battle-arena" id="battleArena">
+            <div id="battleContent"></div>
+        </div>
+
+        <!-- ===== 操作区（三按钮一行） ===== -->
+        <div class="actions">
+            <div class="action-box">
+                <h4 data-i18n="draw_title">🎁 抽卡</h4>
+                <div class="desc" data-i18n="draw_desc">获得3张</div>
+                <button class="btn btn-primary" onclick="drawCards()" data-i18n="draw_btn">抽 3 张</button>
+            </div>
+            <div class="action-box">
+                <h4 data-i18n="battle_title">🤖 打 AI</h4>
+                <div class="desc" data-i18n="battle_desc">选择难度</div>
+                <div class="difficulty-selector">
+                    <button class="btn btn-sm btn-secondary active" data-diff="1" onclick="setDifficulty(1)" data-i18n="diff_easy">简</button>
+                    <button class="btn btn-sm btn-secondary" data-diff="2" onclick="setDifficulty(2)" data-i18n="diff_normal">普</button>
+                    <button class="btn btn-sm btn-secondary" data-diff="3" onclick="setDifficulty(3)" data-i18n="diff_hard">难</button>
+                    <button class="btn btn-sm btn-secondary" data-diff="4" onclick="setDifficulty(4)" data-i18n="diff_legend">传</button>
+                </div>
+                <button class="btn btn-success" id="battleBtn" onclick="startBattle()" data-i18n="battle_btn">⚔️ 打</button>
+            </div>
+            <div class="action-box">
+                <h4 data-i18n="reset_title">🔄 重置</h4>
+                <div class="desc" data-i18n="reset_desc">清除数据</div>
+                <button class="btn btn-danger" onclick="resetGame()" data-i18n="reset_btn">重置</button>
+            </div>
+        </div>
+
+        <!-- ===== 卡牌排序区 ===== -->
+        <div class="sort-area" id="sortArea">
+            <label data-i18n="sort_label">📋 出战顺序（点击调整）：</label>
+            <span id="sortSlots">请先抽卡</span>
+            <span style="font-size:10px;color:#6a5a4a;margin-left:auto;" data-i18n="sort_tip">💡 田忌赛马</span>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+            <button class="btn btn-gold" style="font-size:12px;padding:6px 10px;" onclick="saveBattleOrder()" data-i18n="save_battle_order_btn">💾 保存出战顺序（链上）</button>
+            <button class="btn btn-primary" style="font-size:12px;padding:6px 10px;" onclick="openProposalModal()" data-i18n="open_proposal_btn">🗳 新卡牌提案（社区）</button>
+            <button class="btn btn-secondary" style="font-size:12px;padding:6px 10px;" onclick="listProposalsUI()" data-i18n="list_proposal_btn">📜 提案列表</button>
+        </div>
+
+        <!-- ===== 我的卡牌 ===== -->
+        <div style="margin-top:4px;">
+            <h3 style="display:inline-block; border-bottom:2px solid rgba(200,160,100,0.2); padding-bottom:4px; font-size:16px; color:#e8d5b8;" data-i18n="my_cards">我的卡牌</h3>
+            <div class="card-grid" id="cardGrid">
+                <div class="empty-state" style="grid-column:1/-1; text-align:center; color:#6a5a4a; padding:20px 0;" data-i18n="empty_cards">点击「抽卡」获取卡牌</div>
+            </div>
+        </div>
+
+        <!-- ===== 卡牌池 ===== -->
+        <div style="margin-top:16px;">
+            <h3 style="display:inline-block; border-bottom:2px solid rgba(200,160,100,0.2); padding-bottom:4px; font-size:16px; color:#e8d5b8;" data-i18n="card_pool">📚 全部卡牌 (30张)</h3>
+            <div class="card-grid" id="poolGrid"></div>
+        </div>
+    </div>
+
+    <!-- ===== 玩法说明弹窗 ===== -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeHelp()">✕</button>
+            <h2 id="helpTitle">📖 游戏玩法</h2>
+            <div id="helpContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== 🗳 新卡牌提案弹窗（社区治理）===== -->
+    <div class="modal-overlay" id="proposalModal" style="display:none;">
+        <div class="modal" style="max-width:520px;">
+            <button class="close-btn" onclick="closeProposalModal()">✕</button>
+            <h2 data-i18n="proposal_title">🗳 提交新卡牌提案</h2>
+            <p style="color:#b39b7a;font-size:12px;margin:4px 0 10px;">
+                质押 <b>50,000 TKCC</b> 进入 7 天投票期；赞成票 &gt; 50% 加入卡池，质押退还；否则质押进金库。
+            </p>
+            <div class="info-grid">
+                <div style="grid-column:1/3;"><span class="label">卡牌名称 (name)</span><br><input id="prop_name" class="w3-input" placeholder="如：邓艾"></div>
+                <div><span class="label">稀有度</span><br>
+                    <select id="prop_rarity" class="w3-input">
+                        <option value="common">普通 (35-45)</option>
+                        <option value="rare">稀有 (20-30)</option>
+                        <option value="epic">史诗 (10-15)</option>
+                        <option value="legend">传说 (2-5)</option>
+                    </select>
+                </div>
+                <div><span class="label">权重 (weight)</span><br><input id="prop_weight" type="number" class="w3-input" placeholder="普通35-45"></div>
+                <div><span class="label">攻击 (attack)</span><br><input id="prop_atk" type="number" class="w3-input" placeholder="70"></div>
+                <div><span class="label">防御 (defense)</span><br><input id="prop_def" type="number" class="w3-input" placeholder="70"></div>
+                <div style="grid-column:1/3;"><span class="label">称号 (title)</span><br><input id="prop_title" class="w3-input" placeholder="如：偷渡阴平（可选）"></div>
+                <div style="grid-column:1/3;"><span class="label">描述</span><br><textarea id="prop_desc" class="w3-input" rows="2" placeholder="技能/背景描述（可选）"></textarea></div>
+            </div>
+            <div class="star-actions">
+                <button class="btn btn-gold" onclick="submitProposal()">✅ 提交提案 (50k TKCC)</button>
+                <button class="btn btn-secondary" onclick="closeProposalModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ⭐ 升星/详情弹窗 ===== -->
+    <div class="modal-overlay card-detail-modal" id="cardDetailModal">
+        <div class="modal">
+            <button class="close-btn" onclick="closeCardDetail()">✕</button>
+            <div class="card-preview">
+                <img id="detailImg" src="" alt="card" />
+                <div class="card-name-detail" id="detailName">曹操</div>
+                <div class="card-sub-detail" id="detailSub">魏武挥鞭</div>
+            </div>
+            <div class="info-grid">
+                <div><span class="label" data-i18n="rarity">稀有度</span><br><span class="value" id="detailRarity">传说</span></div>
+                <div><span class="label" data-i18n="attack">攻击</span><br><span class="value" id="detailAtk">105</span></div>
+                <div><span class="label" data-i18n="defense">防御</span><br><span class="value" id="detailDef">95</span></div>
+                <div><span class="label" data-i18n="power">战力</span><br><span class="value" id="detailPower">200</span></div>
+                <div style="grid-column:1/3;"><span class="label">⭐ 当前星级</span><br><span class="value" id="detailStar">1</span></div>
+            </div>
+            <div class="card-desc" id="detailDesc"></div>
+            <div class="star-actions">
+                <button class="btn btn-gold" id="detailUpgradeBtn" onclick="confirmUpgrade()">⭐ 升1星</button>
+                <button class="btn btn-primary" id="detailUpgradeMaxBtn" onclick="confirmUpgradeToMax()">⭐ 升满</button>
+                <button class="btn btn-secondary" onclick="closeCardDetail()">关闭</button>
+            </div>
+            <div id="modalLoading" class="hidden" style="text-align:center;margin-top:8px;">
+                <span style="display:inline-block;width:14px;height:14px;border:2px solid #888;border-top-color:#b8860b;border-radius:50%;animation:spin 0.6s linear infinite;"></span> 处理中...
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- JavaScript -->
+    <!-- ============================================================ -->
+    <script>
+        // ============================================================
+        // 卡牌数据（30张三国人物）
+        // ============================================================
+        const CARD_TEMPLATES = [
+            { name: '曹操', title: '魏武挥鞭', rarity: 'legend', attack: 105, defense: 95, identity: '魏·武帝' },
+            { name: '诸葛亮', title: '卧龙出山', rarity: 'legend', attack: 110, defense: 90, identity: '蜀·丞相' },
+            { name: '关羽', title: '武圣降世', rarity: 'legend', attack: 115, defense: 85, identity: '蜀·五虎将' },
+            { name: '赵云', title: '常山龙胆', rarity: 'legend', attack: 100, defense: 100, identity: '蜀·五虎将' },
+            { name: '吕布', title: '飞将无双', rarity: 'legend', attack: 120, defense: 80, identity: '汉·温侯' },
+            { name: '司马懿', title: '冢虎沉谋', rarity: 'legend', attack: 95, defense: 110, identity: '魏·太傅' },
+            { name: '张飞', title: '当阳怒吼', rarity: 'epic', attack: 95, defense: 75, identity: '蜀·五虎将' },
+            { name: '马超', title: '锦马超', rarity: 'epic', attack: 90, defense: 80, identity: '蜀·五虎将' },
+            { name: '黄忠', title: '百步穿杨', rarity: 'epic', attack: 85, defense: 85, identity: '蜀·五虎将' },
+            { name: '姜维', title: '麒麟之志', rarity: 'epic', attack: 88, defense: 82, identity: '蜀·大将军' },
+            { name: '周瑜', title: '赤壁东风', rarity: 'epic', attack: 80, defense: 90, identity: '吴·大都督' },
+            { name: '陆逊', title: '火烧连营', rarity: 'epic', attack: 82, defense: 88, identity: '吴·大都督' },
+            { name: '夏侯惇', title: '拔矢啖睛', rarity: 'epic', attack: 92, defense: 78, identity: '魏·大将军' },
+            { name: '张辽', title: '威震逍遥', rarity: 'epic', attack: 88, defense: 82, identity: '魏·五子良将' },
+            { name: '魏延', title: '汉中镇守', rarity: 'rare', attack: 75, defense: 70, identity: '蜀·镇北将军' },
+            { name: '庞统', title: '凤雏落凤', rarity: 'rare', attack: 70, defense: 75, identity: '蜀·军师中郎将' },
+            { name: '法正', title: '睚眦必报', rarity: 'rare', attack: 68, defense: 72, identity: '蜀·尚书令' },
+            { name: '甘宁', title: '锦帆贼', rarity: 'rare', attack: 80, defense: 60, identity: '吴·折冲将军' },
+            { name: '太史慈', title: '北海救孔', rarity: 'rare', attack: 72, defense: 68, identity: '吴·建昌都尉' },
+            { name: '孙策', title: '小霸王', rarity: 'rare', attack: 78, defense: 62, identity: '吴·讨逆将军' },
+            { name: '吕蒙', title: '吴下阿蒙', rarity: 'rare', attack: 65, defense: 75, identity: '吴·大都督' },
+            { name: '邓艾', title: '阴平奇兵', rarity: 'rare', attack: 70, defense: 70, identity: '魏·征西将军' },
+            { name: '廖化', title: '蜀中先锋', rarity: 'common', attack: 50, defense: 45, identity: '蜀·车骑将军' },
+            { name: '简雍', title: '雍容辩士', rarity: 'common', attack: 40, defense: 50, identity: '蜀·昭德将军' },
+            { name: '孙乾', title: '雍容辩士', rarity: 'common', attack: 38, defense: 48, identity: '蜀·秉忠将军' },
+            { name: '糜竺', title: '富商军师', rarity: 'common', attack: 42, defense: 42, identity: '蜀·安汉将军' },
+            { name: '诸葛瑾', title: '敦厚长者', rarity: 'common', attack: 45, defense: 55, identity: '吴·大将军' },
+            { name: '鲁肃', title: '单刀赴会', rarity: 'common', attack: 48, defense: 52, identity: '吴·横江将军' },
+            { name: '程昱', title: '兖州谋主', rarity: 'common', attack: 44, defense: 46, identity: '魏·卫尉' },
+            { name: '贾诩', title: '毒士乱武', rarity: 'common', attack: 46, defense: 44, identity: '魏·太尉' },
+        ];
+
+        const IMAGE_URLS = [
+            'https://i.ibb.co/0pXyCqvs/image.png',
+            'https://i.ibb.co/vvKKdPCq/image.png',
+            'https://i.ibb.co/6743V8cB/image.png',
+            'https://i.ibb.co/z98s8dS/image.png',
+            'https://i.ibb.co/S7Qjr3Hk/image.png',
+            'https://i.ibb.co/S7RB8T90/image.png',
+            'https://i.ibb.co/xSX7Bv0q/image.png',
+            'https://i.ibb.co/jkFY9h1Z/image.png',
+            'https://i.ibb.co/70bYyjF/image.png',
+            'https://i.ibb.co/k2HxGQ25/image.png',
+            'https://i.ibb.co/99p7TBpH/image.png',
+            'https://i.ibb.co/BKc8bJgc/image.png',
+            'https://i.ibb.co/Pz35X0Hc/image.png',
+            'https://i.ibb.co/4wwW0yRv/image.png',
+            'https://i.ibb.co/99DDBg1y/image.png',
+            'https://i.ibb.co/mrpP4bYk/image.png',
+            'https://i.ibb.co/jpMd1Bw/image.png',
+            'https://i.ibb.co/JVxVCnV/image.png',
+            'https://i.ibb.co/dhWs803/image.png',
+            'https://i.ibb.co/VWm6yT7W/image.png',
+            'https://i.ibb.co/WpvPY4y9/image.png',
+            'https://i.ibb.co/KxZZb9RF/image.png',
+            'https://i.ibb.co/W4wfdFWg/image.png',
+            'https://i.ibb.co/vCLxJLyP/image.png',
+            'https://i.ibb.co/PGMxkthb/image.png',
+            'https://i.ibb.co/Z6sBmsxK/image.png',
+            'https://i.ibb.co/yF6JZxTC/image.png',
+            'https://i.ibb.co/tPPt4J3c/image.png',
+            'https://i.ibb.co/fmGRNrc/image.png',
+            'https://i.ibb.co/pvjK82Yb/image.png',
+        ];
+
+        // ============================================================
+        // 多语言词库
+        // ============================================================
+        const i18n = {
+            zh: {
+                'wins': '🏆 胜场',
+                'cards': '🃏 卡牌',
+                'battles': '⚔️ 总对战',
+                'help_btn': '📖 玩法',
+                'draw_title': '🎁 抽卡',
+                'draw_desc': '获得3张随机卡牌',
+                'draw_btn': '抽 3 张',
+                'battle_title': '🤖 打 AI',
+                'battle_desc': '选择难度，挑战 AI',
+                'diff_easy': '简',
+                'diff_normal': '普',
+                'diff_hard': '难',
+                'diff_legend': '传',
+                'battle_btn': '⚔️ 打',
+                'reset_title': '🔄 重置',
+                'reset_desc': '清除所有卡牌和数据',
+                'reset_btn': '重置',
+                'sort_label': '📋 出战顺序：',
+                'sort_tip': '💡 田忌赛马',
+                'my_cards': '我的卡牌',
+                'empty_cards': '点击「抽卡」获取卡牌',
+                'card_pool': '📚 全部卡牌 (30张)',
+                'help_title': '📖 游戏玩法',
+                'rarity': '稀有度',
+                'attack': '攻击',
+                'defense': '防御',
+                'power': '战力',
+                'card_detail_title': '卡牌详情',
+                'desc_cao_cao': '魏武帝，乱世枭雄，挟天子以令诸侯。',
+                'desc_zhuge_liang': '蜀汉丞相，卧龙先生，智谋无双。',
+                'desc_guan_yu': '武圣，忠义无双，青龙偃月刀威震华夏。',
+                'desc_zhao_yun': '常山赵子龙，一身是胆，七进七出。',
+                'desc_lv_bu': '人中吕布，马中赤兔，飞将无双。',
+                'desc_sima_yi': '冢虎，魏国权谋大师，老谋深算。',
+                'desc_zhang_fei': '当阳桥头一声吼，喝退百万曹军。',
+                'desc_ma_chao': '西凉锦马超，勇冠三军。',
+                'desc_huang_zhong': '老当益壮，百步穿杨。',
+                'desc_jiang_wei': '蜀汉栋梁，继诸葛亮遗志，九伐中原。',
+                'desc_zhou_yu': '江东大都督，赤壁之战火烧曹军。',
+                'desc_lu_xun': '吴国儒将，夷陵之战火烧连营。',
+                'desc_xia_hou_dun': '魏国猛将，拔矢啖睛，刚烈无比。',
+                'desc_zhang_liao': '威震逍遥津，八百破十万。',
+                'desc_wei_yan': '蜀汉后期大将，镇守汉中。',
+                'desc_pang_tong': '凤雏，与诸葛亮齐名，落凤坡陨落。',
+                'desc_fa_zheng': '蜀汉谋主，睚眦必报。',
+                'desc_gan_ning': '吴国猛将，锦帆贼，百骑劫魏营。',
+                'desc_tai_shi_ci': '北海救孔融，神射无双。',
+                'desc_sun_ce': '小霸王，江东基业奠基人。',
+                'desc_lv_meng': '吴下阿蒙，士别三日，刮目相看。',
+                'desc_deng_ai': '魏国名将，阴平偷渡灭蜀。',
+                'desc_liao_hua': '蜀汉老将，从关羽到诸葛亮，见证蜀汉兴衰。',
+                'desc_jian_yong': '蜀汉昭德将军，以辩才著称。',
+                'desc_sun_qian': '蜀汉秉忠将军，长于外交。',
+                'desc_mi_zhu': '蜀汉安汉将军，富商出身，资助刘备。',
+                'desc_zhuge_jin': '吴国大将军，诸葛亮之兄，敦厚长者。',
+                'desc_lu_su': '吴国横江将军，主张联刘抗曹。',
+                'desc_cheng_yu': '魏国谋士，兖州之谋主。',
+                'desc_jia_xu': '毒士，三国第一谋士，乱武天下。',
+                'desc_default': '三国名将，骁勇善战。'
+            },
+            en: {
+                'wins': '🏆 Wins',
+                'cards': '🃏 Cards',
+                'battles': '⚔️ Total Battles',
+                'help_btn': '📖 Help',
+                'draw_title': '🎁 Draw',
+                'draw_desc': 'Get 3 random cards',
+                'draw_btn': 'Draw 3',
+                'battle_title': '🤖 VS AI',
+                'battle_desc': 'Choose difficulty',
+                'diff_easy': 'Easy',
+                'diff_normal': 'Normal',
+                'diff_hard': 'Hard',
+                'diff_legend': 'Legend',
+                'battle_btn': '⚔️ Fight',
+                'reset_title': '🔄 Reset',
+                'reset_desc': 'Clear all data',
+                'reset_btn': 'Reset',
+                'sort_label': '📋 Order:',
+                'sort_tip': '💡 Strategy',
+                'my_cards': 'My Cards',
+                'empty_cards': 'Draw cards to start',
+                'card_pool': '📚 All Cards (30)',
+                'help_title': '📖 Game Guide',
+                'rarity': 'Rarity',
+                'attack': 'Attack',
+                'defense': 'Defense',
+                'power': 'Power',
+                'card_detail_title': 'Card Details',
+                'desc_cao_cao': 'Emperor Wu of Wei, cunning hero.',
+                'desc_zhuge_liang': 'Sleeping Dragon, unparalleled wisdom.',
+                'desc_guan_yu': 'Martial Saint, loyal and righteous.',
+                'desc_zhao_yun': 'Fearless warrior, charged seven times.',
+                'desc_lv_bu': 'Unmatched warrior among men.',
+                'desc_sima_yi': 'The Grave Tiger, deep and calculating.',
+                'desc_zhang_fei': 'One roar repelled a million troops.',
+                'desc_ma_chao': 'Brave and powerful from Xiliang.',
+                'desc_huang_zhong': 'Old but vigorous, the Sharpshooter.',
+                'desc_jiang_wei': 'Shu pillar, campaigned nine times.',
+                'desc_zhou_yu': 'Grand Commander, burned Cao\'s fleet.',
+                'desc_lu_xun': 'Scholar-general, burned the camps.',
+                'desc_xia_hou_dun': 'Wei general, fiercely brave.',
+                'desc_zhang_liao': 'Terrified Xiaoyao Ford.',
+                'desc_wei_yan': 'Late Shu general, defended Hanzhong.',
+                'desc_pang_tong': 'Young Phoenix, fell at Luofeng.',
+                'desc_fa_zheng': 'Shu strategist, vengeful and sharp.',
+                'desc_gan_ning': 'Brocade Pirate, raided Wei camp.',
+                'desc_tai_shi_ci': 'Peerless archer, rescued Kong Rong.',
+                'desc_sun_ce': 'Little Conqueror, founder of Wu.',
+                'desc_lv_meng': 'Young man of Wu, "look with new eyes".',
+                'desc_deng_ai': 'Wei general, took Shu by surprise.',
+                'desc_liao_hua': 'Shu veteran, witnessed rise and fall.',
+                'desc_jian_yong': 'Shu general, known for eloquence.',
+                'desc_sun_qian': 'Shu general, skilled in diplomacy.',
+                'desc_mi_zhu': 'Wealthy merchant, funded Liu Bei.',
+                'desc_zhuge_jin': 'Wu Grand Commander, dignified elder.',
+                'desc_lu_su': 'Wu general, advocated alliance.',
+                'desc_cheng_yu': 'Wei strategist, key planner.',
+                'desc_jia_xu': 'Poison Strategist, top adviser.',
+                'desc_default': 'Three Kingdoms general, brave and skilled.'
+            }
+        };
+
+        // ============================================================
+        // 游戏状态
+        // ============================================================
+        let userCards = [];
+        let battleOrder = [];
+        let winCount = 0;
+        let battleCount = 0;
+        let selectedDifficulty = 1;
+        let isBattling = false;
+        let currentLang = 'zh';
+
+        // 升星弹窗状态
+        let detailCard = null;
+
+        // ============================================================
+        // 工具函数
+        // ============================================================
+        function getRarityLabel(r) {
+            const map = { legend: '传说', epic: '史诗', rare: '稀有', common: '普通' };
+            return map[r] || r;
+        }
+
+        function getRarityStars(r) {
+            const map = { legend: [1, 1, 1, 1, 1], epic: [1, 1, 1, 1, 0], rare: [1, 1, 1, 0, 0], common: [1, 1, 0, 0,
+                    0
+                ] };
+            return map[r] || [1, 1, 0, 0, 0];
+        }
+
+        function renderStars(stars) { return stars.map(s => s ? '★' : '☆').join(''); }
+
+        function getCardPower(card) { return (card.attack || 0) + (card.defense || 0); }
+
+        function generateId() { return 'id_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1e6).toString(36); }
+
+        function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+        function showToast(msg, type = 'info') {
+            const old = document.querySelector('.toast');
+            if (old) old.remove();
+            const div = document.createElement('div');
+            div.className = `toast ${type}`;
+            div.textContent = msg;
+            document.body.appendChild(div);
+            setTimeout(() => div.remove(), 3000);
+        }
+
+        function getCardImage(name) {
+            const idx = CARD_TEMPLATES.findIndex(c => c.name === name);
+            return idx >= 0 ? IMAGE_URLS[idx] : '';
+        }
+
+        // ============================================================
+        // 多语言切换
+        // ============================================================
+        function switchLang(lang) {
+            if (lang === currentLang) return;
+            currentLang = lang;
+            document.querySelectorAll('.btn-lang').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.btn-lang[data-lang="${lang}"]`).classList.add('active');
+            document.body.classList.toggle('lang-en', lang === 'en');
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (i18n[lang] && i18n[lang][key] !== undefined) {
+                    el.innerHTML = i18n[lang][key];
+                }
+            });
+            if (document.getElementById('helpModal').classList.contains('active')) {
+                openHelp();
+            }
+            if (document.getElementById('cardDetailModal').classList.contains('active')) {
+                if (detailCard) showCardDetail(detailCard);
+            }
+        }
+
+        // ============================================================
+        // 玩法说明
+        // ============================================================
+        function openHelp() {
+            const modal = document.getElementById('helpModal');
+            document.getElementById('helpTitle').textContent = i18n[currentLang]['help_title'] || '📖 游戏玩法';
+            const zhContent = `
+                <div class="rule-section">
+                    <h3>🎯 游戏简介</h3>
+                    <p>基于 Paxi 链（CosmWasm）的三国卡牌 DApp：抽卡 → 收集 → 对战 → 升星 → 社区治理扩展卡牌。</p>
+                    <p><strong>核心循环：</strong>抽卡 → 收集 → 对战 → 变强 → 继续对战</p>
+                    <p><strong>部署方式：</strong>--no-admin 无管理员部署（除卡槽提案系统外无任何管理员权限），金库 = 游戏合约地址。</p>
+                </div>
+                <div class="rule-section">
+                    <h3>🃏 卡牌系统（首发 30 张 · 上限 100 张）</h3>
+                    <p><strong>稀有度与卡槽上限（社区提案时硬性校验）：</strong></p>
+                    <ul>
+                        <li>🟤 普通 ≤30 — 灰色边框，基础战力；权重范围 35~45</li>
+                        <li>🔵 稀有 ≤25 — 蓝色边框，中等战力；权重范围 20~30</li>
+                        <li>🟣 史诗 ≤20 — 紫色边框，高战力；权重范围 10~15</li>
+                        <li>🟡 传说 ≤15 — 金色边框，最强战力；权重范围 2~5（含流光边框特效）</li>
+                    </ul>
+                    <p><strong>战力 = 攻击 + 防御；星级 1~5 星，每升星永久加攻防。</strong></p>
+                </div>
+                <div class="rule-section">
+                    <h3>💰 抽卡（经济模型 v2 · 需求二）</h3>
+                    <table>
+                        <tr><th>类型</th><th>PAXI</th><th>TKCC</th><th>入金库 (70%)</th><th>销毁 (20%)</th><th>生态 (10%)</th></tr>
+                        <tr><td>单抽</td><td>10 PAXI</td><td>200,000</td><td>140,000</td><td>40,000</td><td>20,000</td></tr>
+                        <tr><td>三连抽</td><td>30 PAXI</td><td>500,000</td><td>350,000</td><td>100,000</td><td>50,000</td></tr>
+                    </table>
+                    <p style="font-size:13px;color:#8a7a6a;margin-top:4px;">TKCC = PRC-20 游戏币；PAXI 主币用于 Gas。销毁地址由 instantiate 写入。</p>
+                </div>
+                <div class="rule-section">
+                    <h3>⭐ 升星系统（50% 销毁 · 50% 进金库）</h3>
+                    <p>升星 50% 永久销毁 / 50% 入金库。攻击、防御按星级递增加成。</p>
+                    <table>
+                        <tr><th>升星</th><th>攻击</th><th>防御</th><th>消耗 TKCC</th><th>销毁</th><th>入金库</th></tr>
+                        <tr><td>1→2</td><td>+8</td><td>+5</td><td>50,000</td><td>25,000</td><td>25,000</td></tr>
+                        <tr><td>2→3</td><td>+12</td><td>+8</td><td>150,000</td><td>75,000</td><td>75,000</td></tr>
+                        <tr><td>3→4</td><td>+18</td><td>+12</td><td>400,000</td><td>200,000</td><td>200,000</td></tr>
+                        <tr><td>4→5</td><td>+25</td><td>+18</td><td>1,000,000</td><td>500,000</td><td>500,000</td></tr>
+                    </table>
+                </div>
+                <div class="rule-section">
+                    <h3>⚔️ 对战系统（AI · PVP · 混战）</h3>
+                    <p><strong>AI 对战（每日限 20 局 · 难度随胜率自动升级）</strong></p>
+                    <p>每日上限 20 局（UTC 00:00 重置）；胜率越高 AI 越强：胜率 &lt;40% 简单 / 40~60% 普通 / 60~80% 困难 / 胜率 &gt;80% 使用传说 AI (属性+25%)。</p>
+                    <table>
+                        <tr><th>AI难度</th><th>胜率</th><th>挑战费</th><th>胜利奖励</th><th>净收益</th></tr>
+                        <tr><td>简单</td><td>&lt;40%</td><td>10,000</td><td>40,000</td><td>+30,000</td></tr>
+                        <tr><td>普通</td><td>40~60%</td><td>15,000</td><td>50,000</td><td>+35,000</td></tr>
+                        <tr><td>困难</td><td>60~80%</td><td>20,000</td><td>70,000</td><td>+50,000</td></tr>
+                        <tr><td>传说</td><td>&gt;80%</td><td>25,000</td><td>80,000</td><td>+55,000（传说AI属性+25%）</td></tr>
+                    </table>
+                    <p><strong>PVP 1v1：</strong>挑战方付 60,000 TKCC；赢家奖励随金库余额动态：&lt;888万→10万 / 888~3888万→15万 / 3888~6888万→20万 / &gt;6888万→25万。</p>
+                    <p><strong>混战（合约支持 4-6 人 · 前端开放 4 人）：</strong>入场 60,000/人；4 人奖池 240,000：赢家 70%（168,000）、销毁 15%（36,000）、金库 15%（36,000）。</p>
+                    <p><strong>出卡顺序：</strong>可用「保存出战顺序」按钮自定义；不足 3 张或无效卡将自动回退按战力排序取前 3。</p>
+                </div>
+                <div class="rule-section">
+                    <h3>🗳 预设卡槽提案系统（社区治理 · 无管理员）</h3>
+                    <ul>
+                        <li>任何人可提新卡：质押 <b>50,000 TKCC</b>，进入 <b>7 天</b> 投票期</li>
+                        <li>投票：1 TKCC = 1 票；每地址每提案 1 票</li>
+                        <li>到期后赞成票 &gt; 50% 即通过：新卡加入池子，质押退还；否则质押进金库</li>
+                        <li>稀有度数量 / 权重范围由合约硬性校验，无法绕过</li>
+                        <li>最大卡牌 100 张（首发 30 + 扩展 70）</li>
+                    </ul>
+                </div>
+                <div class="rule-section">
+                    <h3>💡 游戏目标</h3>
+                    <ul>
+                        <li>🎯 休闲：收集喜欢的武将、对战娱乐</li>
+                        <li>🎯 策略：自定义出卡顺序，冲击高胜率拿 AI 奖励</li>
+                        <li>🎯 收藏：集齐全稀有度、培养满星传说</li>
+                        <li>🎯 社区：提卡 / 投票，参与三国卡池去中心化扩展</li>
+                    </ul>
+                </div>
+            `;
+            const enContent = `
+                <div class="rule-section">
+                    <h3>🎯 Game Overview</h3>
+                    <p>Three Kingdoms TCG DApp on Paxi (CosmWasm): Draw → Collect → Battle → Upgrade → Community-governed card pool.</p>
+                    <p><strong>Core Loop:</strong> Draw → Collect → Battle → Upgrade → Battle more</p>
+                    <p><strong>Deployment:</strong> --no-admin (no admin except proposal-based card extensions). Vault = Game Contract address itself.</p>
+                </div>
+                <div class="rule-section">
+                    <h3>🃏 Card System (30 launch · 100 cap)</h3>
+                    <p><strong>Rarity hard caps (enforced on-chain):</strong></p>
+                    <ul>
+                        <li>🟤 Common ≤30 — Gray border; weight 35~45</li>
+                        <li>🔵 Rare ≤25 — Blue border; weight 20~30</li>
+                        <li>🟣 Epic ≤20 — Purple border; weight 10~15</li>
+                        <li>🟡 Legend ≤15 — Gold conic-gradient border; weight 2~5</li>
+                    </ul>
+                    <p><strong>Power = Attack + Defense. Stars 1~5 add permanent stat boosts.</strong></p>
+                </div>
+                <div class="rule-section">
+                    <h3>💰 Draw Packs (Economy v2)</h3>
+                    <table>
+                        <tr><th>Pack</th><th>PAXI</th><th>TKCC</th><th>Vault 70%</th><th>Burn 20%</th><th>Eco 10%</th></tr>
+                        <tr><td>Single</td><td>10 PAXI</td><td>200,000</td><td>140,000</td><td>40,000</td><td>20,000</td></tr>
+                        <tr><td>x3</td><td>30 PAXI</td><td>500,000</td><td>350,000</td><td>100,000</td><td>50,000</td></tr>
+                    </table>
+                </div>
+                <div class="rule-section">
+                    <h3>⭐ Star Up (50% Burn · 50% Vault)</h3>
+                    <table>
+                        <tr><th>Star</th><th>ATK</th><th>DEF</th><th>TKCC Cost</th><th>Burn</th><th>Vault</th></tr>
+                        <tr><td>1→2</td><td>+8</td><td>+5</td><td>50,000</td><td>25,000</td><td>25,000</td></tr>
+                        <tr><td>2→3</td><td>+12</td><td>+8</td><td>150,000</td><td>75,000</td><td>75,000</td></tr>
+                        <tr><td>3→4</td><td>+18</td><td>+12</td><td>400,000</td><td>200,000</td><td>200,000</td></tr>
+                        <tr><td>4→5</td><td>+25</td><td>+18</td><td>1,000,000</td><td>500,000</td><td>500,000</td></tr>
+                    </table>
+                </div>
+                <div class="rule-section">
+                    <h3>⚔️ Battles (AI · PVP · Royale)</h3>
+                    <p><strong>AI: 20 games/day cap; difficulty auto-scaled by win-rate</strong></p>
+                    <table>
+                        <tr><th>AI</th><th>Win-rate</th><th>Fee</th><th>Win Reward</th></tr>
+                        <tr><td>Easy</td><td>&lt;40%</td><td>10,000</td><td>40,000</td></tr>
+                        <tr><td>Normal</td><td>40~60%</td><td>15,000</td><td>50,000</td></tr>
+                        <tr><td>Hard</td><td>60~80%</td><td>20,000</td><td>70,000</td></tr>
+                        <tr><td>Legend</td><td>&gt;80%</td><td>25,000</td><td>80,000 (+25% AI stats)</td></tr>
+                    </table>
+                    <p><strong>PVP:</strong> challenger pays 60k TKCC; winner reward tied to vault: &lt;8.88M→100k / &lt;38.88M→150k / &lt;68.88M→200k / else 250k.</p>
+                    <p><strong>Royale (4-6 players on-chain, UI opens 4p):</strong> entry 60k/p; 4p pool 240k: 70% winner / 15% burn / 15% vault.</p>
+                    <p><strong>Battle Order:</strong> save custom order via 💾 button; invalid/short orders auto fallback to top-3 by power.</p>
+                </div>
+                <div class="rule-section">
+                    <h3>🗳 Card Proposals (Community Governance)</h3>
+                    <ul>
+                        <li>Anyone can propose: deposit <b>50,000 TKCC</b>, <b>7-day</b> voting</li>
+                        <li>1 TKCC = 1 vote; 1 vote / address / proposal</li>
+                        <li>Yes &gt; 50% after deadline: card added + deposit refunded; else deposit to vault</li>
+                        <li>Rarity count &amp; weight ranges enforced on-chain</li>
+                        <li>100 total cap (30 launch + 70 expansions)</li>
+                    </ul>
+                </div>
+                <div class="rule-section">
+                    <h3>💡 Goals</h3>
+                    <ul>
+                        <li>🎯 Casual: collect favorite generals</li>
+                        <li>🎯 Strategic: tune battle order, chase win-rate &amp; AI rewards</li>
+                        <li>🎯 Collector: max-star legendary deck</li>
+                        <li>🎯 Community: propose &amp; vote to grow the card pool</li>
+                    </ul>
+                </div>
+            `;
+            document.getElementById('helpContent').innerHTML = currentLang === 'zh' ? zhContent : enContent;
+            modal.classList.add('active');
+        }
+
+        function closeHelp() {
+            document.getElementById('helpModal').classList.remove('active');
+        }
+
+        // ============================================================
+        // ⭐ 卡牌详情 + 升星弹窗
+        // ============================================================
+        // 接收 instance_id 字符串，从 userCards 中查找真实引用（避免修改临时对象）
+        function showCardDetail(instanceId) {
+            // 触感震动反馈
+            try { if (navigator.vibrate) navigator.vibrate(10); } catch (_) {}
+            const card = userCards.find(c => c.instance_id === instanceId);
+            if (!card) {
+                showToast('⚠️ 卡牌不存在', 'error');
+                return;
+            }
+            detailCard = card; // 保存真实引用，升星会反映到 userCards
+            const modal = document.getElementById('cardDetailModal');
+            document.getElementById('detailImg').src = getCardImage(card.name);
+            document.getElementById('detailName').textContent = card.name;
+            document.getElementById('detailSub').textContent = card.title || '';
+            document.getElementById('detailRarity').textContent = getRarityLabel(card.rarity);
+            document.getElementById('detailAtk').textContent = card.attack;
+            document.getElementById('detailDef').textContent = card.defense;
+            document.getElementById('detailPower').textContent = getCardPower(card);
+            document.getElementById('detailStar').textContent = card.star || 1;
+
+            const lang = currentLang;
+            const keyDesc = 'desc_' + card.name.replace(/\s/g, '_').toLowerCase();
+            let desc = i18n[lang][keyDesc];
+            if (!desc) desc = i18n[lang]['desc_default'] || (lang === 'en' ? 'Three Kingdoms general.' : '三国名将。');
+            document.getElementById('detailDesc').textContent = desc;
+
+            // 检查是否可升星
+            const canUpgrade = (card.star || 1) < 5;
+            const fees = [50000, 150000, 400000, 1000000];
+            const starIdx = (card.star || 1) - 1;
+            if (canUpgrade) {
+                document.getElementById('detailUpgradeBtn').disabled = false;
+                document.getElementById('detailUpgradeMaxBtn').disabled = false;
+                document.getElementById('detailUpgradeBtn').textContent = `⭐ 升1星 (${fees[starIdx].toLocaleString()} PRC)`;
+            } else {
+                document.getElementById('detailUpgradeBtn').disabled = true;
+                document.getElementById('detailUpgradeMaxBtn').disabled = true;
+                document.getElementById('detailUpgradeBtn').textContent = '⭐ 已达满星';
+            }
+
+            modal.classList.add('active');
+        }
+
+        // 池中卡牌（非玩家拥有）只读查看：通过名称定位 CARD_TEMPLATES
+        function showTemplateCard(name) {
+            try { if (navigator.vibrate) navigator.vibrate(10); } catch (_) {}
+            const tpl = CARD_TEMPLATES.find(c => c.name === name);
+            if (!tpl) return;
+            // 用一个临时对象展示，不污染 CARD_TEMPLATES
+            const card = { ...tpl, star: 1 };
+            detailCard = null; // 池中卡牌不允许升星
+            const modal = document.getElementById('cardDetailModal');
+            document.getElementById('detailImg').src = getCardImage(card.name);
+            document.getElementById('detailName').textContent = card.name;
+            document.getElementById('detailSub').textContent = card.title || '';
+            document.getElementById('detailRarity').textContent = getRarityLabel(card.rarity);
+            document.getElementById('detailAtk').textContent = card.attack;
+            document.getElementById('detailDef').textContent = card.defense;
+            document.getElementById('detailPower').textContent = getCardPower(card);
+            document.getElementById('detailStar').textContent = card.star || 1;
+
+            const lang = currentLang;
+            const keyDesc = 'desc_' + card.name.replace(/\s/g, '_').toLowerCase();
+            let desc = i18n[lang][keyDesc];
+            if (!desc) desc = i18n[lang]['desc_default'] || (lang === 'en' ? 'Three Kingdoms general.' : '三国名将。');
+            document.getElementById('detailDesc').textContent = desc;
+
+            // 池中卡牌不可升星
+            document.getElementById('detailUpgradeBtn').disabled = true;
+            document.getElementById('detailUpgradeMaxBtn').disabled = true;
+            document.getElementById('detailUpgradeBtn').textContent = currentLang === 'zh' ? '⭐ 暂未拥有' : '⭐ Not Owned';
+
+            modal.classList.add('active');
+        }
+
+        function closeCardDetail() {
+            document.getElementById('cardDetailModal').classList.remove('active');
+            detailCard = null;
+        }
+
+        // ============================================================
+        // ⭐ 升星逻辑（模拟）
+        // ============================================================
+        function confirmUpgrade() {
+            if (!detailCard) {
+                showToast('⚠️ 该卡牌不可升星', 'info');
+                return;
+            }
+            const currentStar = detailCard.star || 1;
+            if (currentStar >= 5) {
+                showToast('已达满星', 'info');
+                return;
+            }
+            const fees = [50000, 150000, 400000, 1000000];
+            const boosts = [8, 12, 18, 25];
+            const defBoosts = [5, 8, 12, 18];
+            const starIdx = currentStar - 1;
+            const fee = fees[starIdx];
+            // 测试版：不消耗任何代币，仅模拟升星
+            showToast(`⭐ 升星成功！（测试版不消耗，原价 ${fee.toLocaleString()} PRC）`, 'success');
+            detailCard.star = currentStar + 1;
+            detailCard.attack = (detailCard.attack || 0) + boosts[starIdx];
+            detailCard.defense = (detailCard.defense || 0) + defBoosts[starIdx];
+            // detailCard 已经是 userCards 中的真实引用，无需再 findIndex 赋值
+            updateUI();
+            updateSortArea();
+            // 刷新详情弹窗
+            showCardDetail(detailCard.instance_id);
+        }
+
+        function confirmUpgradeToMax() {
+            if (!detailCard) {
+                showToast('⚠️ 该卡牌不可升星', 'info');
+                return;
+            }
+            const currentStar = detailCard.star || 1;
+            if (currentStar >= 5) {
+                showToast('已达满星', 'info');
+                return;
+            }
+            const fees = [50000, 150000, 400000, 1000000];
+            const boosts = [8, 12, 18, 25];
+            const defBoosts = [5, 8, 12, 18];
+            let totalFee = 0;
+            let totalAttack = 0;
+            let totalDefense = 0;
+            for (let i = currentStar - 1; i < 4; i++) {
+                totalFee += fees[i];
+                totalAttack += boosts[i];
+                totalDefense += defBoosts[i];
+            }
+            showToast(`⭐ 升满星成功！（测试版不消耗，原价 ${totalFee.toLocaleString()} PRC）`, 'success');
+            detailCard.star = 5;
+            detailCard.attack = (detailCard.attack || 0) + totalAttack;
+            detailCard.defense = (detailCard.defense || 0) + totalDefense;
+            // detailCard 已经是 userCards 中的真实引用
+            updateUI();
+            updateSortArea();
+            showCardDetail(detailCard.instance_id);
+        }
+
+        // ============================================================
+        // 核心功能
+        // ============================================================
+        function drawCards(count = 3) {
+            const weighted = [];
+            CARD_TEMPLATES.forEach(c => {
+                const weight = c.rarity === 'legend' ? 3 : c.rarity === 'epic' ? 12 : c.rarity === 'rare' ? 25 : 40;
+                for (let i = 0; i < weight; i++) weighted.push(c);
+            });
+
+            const drawn = [];
+            for (let i = 0; i < count; i++) {
+                const template = weighted[randomInt(0, weighted.length - 1)];
+                const card = {
+                    ...template,
+                    instance_id: generateId(),
+                    star: 1,
+                    attack: template.attack,
+                    defense: template.defense,
+                };
+                drawn.push(card);
+            }
+            userCards.push(...drawn);
+            updateBattleOrder();
+            updateUI();
+            updateSortArea();
+            // 翻转动画：新卡依次 0.15 秒延迟入场；传说卡叠加金光爆裂
+            const newCardIds = drawn.map(c => c.instance_id);
+            const rarityList = drawn.map(c => c.rarity);
+            setTimeout(() => {
+                newCardIds.forEach((id, idx) => {
+                    const el = document.querySelector(`.card[data-instance="${id}"]`);
+                    if (!el) return;
+                    el.style.animationDelay = `${idx * 0.15}s`;
+                    el.classList.add('new-card');
+                    // 动画结束后移除 new-card（避免再触发），保留呼吸动画
+                    setTimeout(() => {
+                        el.classList.remove('new-card');
+                        el.style.animationDelay = '';
+                    }, 900 + idx * 150);
+                    // 传说卡金光爆裂
+                    if (rarityList[idx] === 'legend') {
+                        const burst = document.createElement('div');
+                        burst.className = 'gold-burst';
+                        burst.style.animationDelay = `${idx * 0.15 + 0.2}s`;
+                        el.appendChild(burst);
+                        setTimeout(() => burst.remove(), 1500);
+                    }
+                });
+            }, 30);
+            showToast(`🎉 获得 ${count} 张卡牌！`, 'success');
+        }
+
+        function updateBattleOrder() {
+            const sorted = [...userCards].sort((a, b) => getCardPower(b) - getCardPower(a));
+            const top3 = sorted.slice(0, 3);
+            battleOrder = top3.map(c => c.instance_id);
+        }
+
+        function toggleOrder(instanceId) {
+            const idx = battleOrder.indexOf(instanceId);
+            if (idx >= 0) {
+                battleOrder.splice(idx, 1);
+            } else {
+                if (battleOrder.length >= 3) battleOrder.pop();
+                battleOrder.push(instanceId);
+            }
+            updateSortArea();
+        }
+
+        function getBattleOrderCards() {
+            if (battleOrder.length < 3) updateBattleOrder();
+            return battleOrder.map(id => userCards.find(c => c.instance_id === id)).filter(Boolean);
+        }
+
+        function setDifficulty(level) {
+            selectedDifficulty = level;
+            document.querySelectorAll('.difficulty-selector .btn').forEach(b => b.classList.remove('active'));
+            document.querySelector(`.difficulty-selector .btn[data-diff="${level}"]`).classList.add('active');
+        }
+
+        // ============================================================
+        // AI 对战
+        // ============================================================
+        function startBattle() {
+            if (isBattling) return;
+            if (userCards.length < 3) {
+                showToast('⚠️ 至少需要3张卡牌！先抽卡吧', 'error');
+                return;
+            }
+
+            const playerCards = getBattleOrderCards();
+            if (playerCards.length < 3) {
+                showToast('⚠️ 请选择3张出战卡牌', 'error');
+                return;
+            }
+
+            isBattling = true;
+            const btn = document.getElementById('battleBtn');
+            btn.disabled = true;
+            btn.textContent = currentLang === 'zh' ? '⏳ 战斗中...' : '⏳ Fighting...';
+
+            const aiCards = generateAIDeck(selectedDifficulty);
+
+            setTimeout(() => {
+                const result = simulateBattle(playerCards, aiCards, selectedDifficulty);
+                displayBattleResult(result, playerCards, aiCards);
+                isBattling = false;
+                btn.disabled = false;
+                btn.textContent = currentLang === 'zh' ? '⚔️ 打' : '⚔️ Fight';
+                updateUI();
+            }, 800);
+        }
+
+        function generateAIDeck(difficulty) {
+            const pool = CARD_TEMPLATES.filter(c => {
+                const r = c.rarity === 'legend' ? 4 : c.rarity === 'epic' ? 3 : c.rarity === 'rare' ? 2 : 1;
+                return r <= difficulty;
+            });
+            const selected = [];
+            const used = new Set();
+            for (let i = 0; i < 3; i++) {
+                let attempts = 0;
+                let card;
+                do {
+                    card = pool[randomInt(0, pool.length - 1)];
+                    attempts++;
+                } while (used.has(card.name) && attempts < 20);
+                used.add(card.name);
+                const star = randomInt(1, Math.min(3, difficulty + 1));
+                const attackBonus = (star - 1) * 6;
+                const defenseBonus = (star - 1) * 4;
+                selected.push({
+                    ...card,
+                    star: star,
+                    attack: card.attack + attackBonus,
+                    defense: card.defense + defenseBonus,
+                    is_ai: true,
+                });
+            }
+            return selected;
+        }
+
+        function simulateBattle(playerCards, aiCards, difficulty) {
+            let playerWins = 0,
+                aiWins = 0;
+            const rounds = [];
+
+            for (let i = 0; i < 3; i++) {
+                const pCard = playerCards[i];
+                const aCard = aiCards[i];
+                const pPower = getCardPower(pCard);
+                const aPower = getCardPower(aCard);
+
+                let result;
+                if (pPower > aPower) {
+                    playerWins++;
+                    result = 'win';
+                } else if (aPower > pPower) {
+                    aiWins++;
+                    result = 'lose';
+                } else {
+                    result = 'draw';
+                }
+                rounds.push({ pCard, aCard, pPower, aPower, result });
+            }
+
+            let finalResult;
+            if (playerWins > aiWins) {
+                finalResult = 'win';
+                winCount++;
+                battleCount++;
+                const diffNames = ['简单', '普通', '困难', '传说'];
+                const diffEn = ['Easy', 'Normal', 'Hard', 'Legend'];
+                const name = currentLang === 'zh' ? diffNames[difficulty - 1] : diffEn[difficulty - 1];
+                showToast(`🎉 ${currentLang === 'zh' ? '你赢了！战胜了' : 'You won! Defeated '}${name} AI!`, 'success');
+            } else if (aiWins > playerWins) {
+                finalResult = 'lose';
+                battleCount++;
+                const diffNames = ['简单', '普通', '困难', '传说'];
+                const diffEn = ['Easy', 'Normal', 'Hard', 'Legend'];
+                const name = currentLang === 'zh' ? diffNames[difficulty - 1] : diffEn[difficulty - 1];
+                showToast(`😔 ${currentLang === 'zh' ? '你输了...' : 'You lost...'} ${name} ${currentLang === 'zh' ? '更胜一筹' : 'was stronger'}`, 'error');
+            } else {
+                finalResult = 'draw';
+                battleCount++;
+                showToast(`🤝 ${currentLang === 'zh' ? '平局！势均力敌' : 'Draw! Well matched'}`, 'info');
+            }
+
+            return { rounds, finalResult, playerWins, aiWins };
+        }
+
+        function displayBattleResult(result, playerCards, aiCards) {
+            const arena = document.getElementById('battleArena');
+            const content = document.getElementById('battleContent');
+
+            let html = `<div class="vs-banner">⚔️ VS ⚔️</div>`;
+            html += `<div style="display:flex;justify-content:space-between;font-size:12px;color:#8a7a6a;padding:0 8px 4px 8px;">
+                <span>🟢 ${currentLang === 'zh' ? '你' : 'You'}</span>
+                <span>🔴 AI</span>
+            </div>`;
+
+            result.rounds.forEach((r, i) => {
+                const resultText = r.result === 'win' ? '✅ 胜' : r.result === 'lose' ? '❌ 负' : '⚖️ 平';
+                const resultClass = r.result === 'win' ? 'win' : r.result === 'lose' ? 'lose' : 'draw';
+                html += `
+                    <div class="round-result">
+                        <span>${currentLang === 'zh' ? '第' : 'Round '}${i+1}${currentLang === 'zh' ? '局' : ''}：${r.pCard.name} ⚔️ ${r.aCard.name}</span>
+                        <span class="${resultClass}">${resultText} (${r.pPower} vs ${r.aPower})</span>
+                    </div>
+                `;
+            });
+
+            const finalClass = result.finalResult === 'win' ? 'win' : result.finalResult === 'lose' ? 'lose' : 'draw';
+            let finalText;
+            if (result.finalResult === 'win') finalText = currentLang === 'zh' ? '🎉 你赢了！' : '🎉 You win!';
+            else if (result.finalResult === 'lose') finalText = currentLang === 'zh' ? '😔 你输了...' : '😔 You lost...';
+            else finalText = currentLang === 'zh' ? '🤝 平局！' : '🤝 Draw!';
+            html += `<div class="final-result ${finalClass}">${finalText} (${result.playerWins} : ${result.aiWins})</div>`;
+
+            content.innerHTML = html;
+            arena.classList.add('show');
+
+            clearTimeout(window.arenaTimer);
+            window.arenaTimer = setTimeout(() => {
+                arena.classList.remove('show');
+            }, 8000);
+        }
+
+        // ============================================================
+        // UI 更新
+        // ============================================================
+        function updateUI() {
+            document.getElementById('cardCount').textContent = userCards.length;
+            document.getElementById('winCount').textContent = winCount;
+            document.getElementById('battleCount').textContent = battleCount;
+            renderCards();
+        }
+
+        function renderCards() {
+            const grid = document.getElementById('cardGrid');
+            if (userCards.length === 0) {
+                grid.innerHTML =
+                    `<div class="empty-state" style="grid-column:1/-1;text-align:center;color:#6a5a4a;padding:20px 0;" data-i18n="empty_cards">点击「抽卡」获取卡牌</div>`;
+                return;
+            }
+
+            const order = { legend: 0, epic: 1, rare: 2, common: 3 };
+            const sorted = [...userCards].sort((a, b) => (order[a.rarity] || 9) - (order[b.rarity] || 9));
+
+            grid.innerHTML = sorted.map(c => {
+                const imgUrl = getCardImage(c.name);
+                const starArr = getRarityStars(c.rarity);
+                const power = getCardPower(c);
+                const inOrder = battleOrder.indexOf(c.instance_id);
+                const canUpgrade = (c.star || 1) < 5;
+                // 注意：onclick 中 c 是迭代变量，运行时无法访问
+                // 改为传递 instance_id 字符串，由 showCardDetail 查找真实引用
+                const safeId = c.instance_id.replace(/'/g, "\\'");
+                return `
+                    <div class="card rarity-${c.rarity}" data-instance="${safeId}" onclick="showCardDetail('${safeId}')" style="cursor:pointer;">
+                        ${inOrder >= 0 ? `<div class="order-badge">#${inOrder + 1}</div>` : ''}
+                        <div class="card-image"><img src="${imgUrl}" alt="${c.name}" loading="lazy"></div>
+                        <div class="card-footer">
+                            <div class="name-line">${c.name}</div>
+                            <div class="sub-line">${c.title || ''}</div>
+                            <div class="stats-line">
+                                <span>⚔️ <span class="val">${c.attack}</span></span>
+                                <span>🛡️ <span class="val">${c.defense}</span></span>
+                                <span>⭐<span class="val">${c.star||1}</span></span>
+                                <span>⚡<span class="val">${power}</span></span>
+                            </div>
+                            <div class="stars-line">${renderStars(starArr)}</div>
+                            <div><span class="badge">${getRarityLabel(c.rarity)}</span></div>
+                            <div class="star-btn-wrap">
+                                ${canUpgrade ? `<button class="btn-star" onclick="event.stopPropagation();showCardDetail('${safeId}')">⭐ 升星</button>` : `<button class="btn-star" style="opacity:0.5;" onclick="event.stopPropagation();showCardDetail('${safeId}')">⭐ 满星</button>`}
+                                <button class="btn-detail" onclick="event.stopPropagation();showCardDetail('${safeId}')">📖 详情</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateSortArea() {
+            const container = document.getElementById('sortSlots');
+            if (userCards.length === 0) {
+                container.textContent = currentLang === 'zh' ? '请先抽卡' : 'Draw cards first';
+                return;
+            }
+
+            if (battleOrder.length < 3) updateBattleOrder();
+
+            const orderCards = battleOrder.map(id => userCards.find(c => c.instance_id === id)).filter(Boolean);
+
+            if (orderCards.length === 0) {
+                container.textContent = currentLang === 'zh' ? '请选择出战卡牌' : 'Select battle cards';
+                return;
+            }
+
+            container.innerHTML = orderCards.map((c, i) => {
+                const safeId = c.instance_id.replace(/'/g, "\\'");
+                return `<span class="slot" onclick="toggleOrder('${safeId}')">
+                    <span class="idx">#${i+1}</span>
+                    <span class="name">${c.name}</span>
+                    <span class="power">⚡${getCardPower(c)}</span>
+                    <span style="color:#666;">⇅</span>
+                </span>`;
+            }).join(' &nbsp;→&nbsp; ');
+
+            const usedIds = new Set(battleOrder);
+            const remaining = userCards.filter(c => !usedIds.has(c.instance_id));
+            if (remaining.length > 0) {
+                const tip = currentLang === 'zh' ? '备用' : 'Reserve';
+                container.innerHTML += ` &nbsp; <span style="color:#6a5a4a;font-size:10px;">| ${tip}: ${remaining.slice(0, 3).map(c => c.name).join(', ')}</span>`;
+            }
+        }
+
+        function resetGame() {
+            if (userCards.length > 0 && !confirm(currentLang === 'zh' ? '重置将清除所有卡牌和进度，确定吗？' :
+                    'Reset will clear all cards and progress. Are you sure?')) return;
+
+            userCards = [];
+            battleOrder = [];
+            winCount = 0;
+            battleCount = 0;
+            document.getElementById('battleArena').classList.remove('show');
+            showToast(currentLang === 'zh' ? '🔄 已重置游戏' : '🔄 Game reset', 'info');
+            updateUI();
+            updateSortArea();
+        }
+
+        // ============================================================
+        // 卡牌池渲染
+        // ============================================================
+        function renderPool() {
+            const grid = document.getElementById('poolGrid');
+            grid.innerHTML = CARD_TEMPLATES.map((c, idx) => {
+                const imgUrl = IMAGE_URLS[idx] || '';
+                const starArr = getRarityStars(c.rarity);
+                const safeName = c.name.replace(/'/g, "\\'");
+                return `
+                    <div class="card rarity-${c.rarity}" style="cursor:default;">
+                        <div class="card-image"><img src="${imgUrl}" alt="${c.name}" loading="lazy"></div>
+                        <div class="card-footer">
+                            <div class="name-line">${c.name}</div>
+                            <div class="sub-line">${c.title}</div>
+                            <div class="stats-line">
+                                <span>⚔️ <span class="val">${c.attack}</span></span>
+                                <span>🛡️ <span class="val">${c.defense}</span></span>
+                            </div>
+                            <div class="stars-line">${renderStars(starArr)}</div>
+                            <div><span class="badge">${getRarityLabel(c.rarity)}</span> ${c.identity}</div>
+                            <div class="star-btn-wrap" style="margin-top:2px;">
+                                <button class="btn-star" onclick="event.stopPropagation();showTemplateCard('${safeName}')">⭐ 查看</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ============================================================
+        // 初始化
+        // ============================================================
+        renderPool();
+        updateUI();
+        updateSortArea();
+        setDifficulty(1);
+        switchLang('zh');
+
+        console.log('🐉 三国卡牌·测试版（不消耗代币）已加载！');
+        console.log('🧪 测试模式：抽卡/对战/升星均不真实消耗 PRC 和 PAXI，仅用于功能验证');
+        console.log('🎮 点击「抽卡」开始游戏');
+        console.log('⭐ 点击卡牌上的「升星」按钮可升级卡牌');
+        console.log('💡 点击排序区卡牌可调整出战顺序');
+        console.log('💾 点击「保存出战顺序」将顺序写入链上（游戏合约部署后生效）');
+        console.log('🗳 点击「新卡牌提案」可提交社区治理提案（5万TKCC质押/7天投票）');
+
+        // ============================================================
+        // 需求四：保存出战顺序（链上 SetBattleOrder）
+        // ============================================================
+        function saveBattleOrder() {
+            if (battleOrder.length < 3) {
+                showToast('⚠️ 请至少选择3张出战卡牌再保存', 'error');
+                return;
+            }
+            // 测试版写入 localStorage 模拟持久化；正式版通过 SetBattleOrder 写入链
+            const order = battleOrder.filter(id => userCards.find(c => c.instance_id === id)).slice(0, 8);
+            try {
+                localStorage.setItem('battleOrder_' + (window.walletAddress || 'demo'), JSON.stringify(order));
+            } catch (e) {}
+            showToast(`✅ 出战顺序已保存（共${order.length}张）：${order.map(id => {
+                const c = userCards.find(x => x.instance_id === id); return c ? c.name : '?';
+            }).join(' → ')}`, 'success');
+        }
+
+        // 恢复已保存的顺序（测试版）
+        try {
+            const raw = localStorage.getItem('battleOrder_demo');
+            if (raw) {
+                const arr = JSON.parse(raw);
+                if (Array.isArray(arr)) battleOrder = arr.filter(id => userCards.find(c => c.instance_id === id));
+            }
+        } catch (e) {}
+
+        // ============================================================
+        // 需求五：新卡牌提案（前端占位接口）
+        // 正式版：通过 buildMsgExecuteGame 调用游戏合约的 propose_card
+        // ============================================================
+        function openProposalModal() {
+            document.getElementById('proposalModal').style.display = 'flex';
+        }
+        function closeProposalModal() {
+            document.getElementById('proposalModal').style.display = 'none';
+        }
+        function validateProposalForm() {
+            const name = document.getElementById('prop_name').value.trim();
+            const rarity = document.getElementById('prop_rarity').value;
+            const weight = parseInt(document.getElementById('prop_weight').value || '0', 10);
+            const atk = parseInt(document.getElementById('prop_atk').value || '0', 10);
+            const def = parseInt(document.getElementById('prop_def').value || '0', 10);
+            if (!name) { showToast('请填写卡牌名称', 'error'); return null; }
+            const range = { common: [35,45], rare: [20,30], epic: [10,15], legend: [2,5] }[rarity];
+            if (weight < range[0] || weight > range[1]) {
+                showToast(`权重必须在 ${range[0]}-${range[1]} 之间（${rarity}）`, 'error'); return null;
+            }
+            if (atk <= 0 || def <= 0) { showToast('攻防必须 >0', 'error'); return null; }
+            return {
+                id: 'prop_' + Date.now(),
+                name,
+                title: document.getElementById('prop_title').value.trim() || null,
+                rarity,
+                attack: atk,
+                defense: def,
+                weight,
+                description: document.getElementById('prop_desc').value.trim() || null,
+            };
+        }
+        async function submitProposal() {
+            const template = validateProposalForm();
+            if (!template) return;
+            // 测试版仅弹窗提示；正式版先转 5万 TKCC 到游戏合约再调用 propose_card
+            showToast(`🧪 测试版：提案「${template.name}(${template.rarity})」已登记，正式部署后将质押 50,000 TKCC 进入7天投票期`, 'info');
+            try {
+                const list = JSON.parse(localStorage.getItem('mock_proposals') || '[]');
+                list.push({
+                    id: list.length + 1,
+                    template,
+                    proposer: walletAddress || 'demo_proposer',
+                    deposit: '50000000000',
+                    yes_votes: '0', no_votes: '0',
+                    deadline: Math.floor(Date.now()/1000) + 7*86400,
+                    executed: false, approved: false,
+                });
+                localStorage.setItem('mock_proposals', JSON.stringify(list));
+            } catch (e) {}
+            closeProposalModal();
+        }
+        function listProposalsUI() {
+            let list = [];
+            try { list = JSON.parse(localStorage.getItem('mock_proposals') || '[]'); } catch (e) {}
+            if (!list.length) { showToast('📭 当前暂无提案（点击「新卡牌提案」创建第一个）', 'info'); return; }
+            const lines = list.map(p => {
+                const now = Math.floor(Date.now()/1000);
+                const remain = Math.max(0, p.deadline - now);
+                const days = Math.floor(remain / 86400);
+                const yes = parseInt(p.yes_votes || '0', 10);
+                const no = parseInt(p.no_votes || '0', 10);
+                const total = yes + no;
+                const pct = total ? Math.round(yes*100/total) : 0;
+                return `#${p.id} ${p.template.name}(${p.template.rarity}) · yes:${yes} no:${no} (${pct}%) · 剩余${days}天`;
+            });
+            alert('📜 提案列表（本地模拟）\n\n' + lines.join('\n'));
+        }
+    </script>
+
+</body>
+</html>
