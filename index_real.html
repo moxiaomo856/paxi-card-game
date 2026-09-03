@@ -1076,6 +1076,7 @@
             <span class="bal">TKCC: <span class="num" id="tkccBalance">-</span></span>
             <span class="bal" title="可用于抽卡/对战/升星的存款">💾 存款: <span class="num" id="depositBalance">-</span></span>
             <button class="btn btn-primary btn-sm" onclick="showDepositModal()">💰 充值</button>
+            <button class="btn btn-secondary btn-sm" onclick="showWithdrawModal()">💳 提现</button>
             <button class="btn btn-secondary btn-sm" onclick="refreshBalances()">🔄 刷新</button>
         </div>
 
@@ -1115,13 +1116,37 @@
                     <button class="btn btn-sm btn-secondary" data-diff="3" onclick="setDifficulty(3)" data-i18n="diff_hard">难</button>
                     <button class="btn btn-sm btn-secondary" data-diff="4" onclick="setDifficulty(4)" data-i18n="diff_legend">传</button>
                 </div>
+                <div id="aiStatsLine" style="font-size:10px;color:#b39b7a;margin-top:2px;">今日 0 / 20 局</div>
                 <button class="btn btn-success" id="battleBtn" onclick="startBattle()" data-i18n="battle_btn">⚔️ 打</button>
+            </div>
+            <div class="action-box">
+                <h4>⚔️ PVP 1v1</h4>
+                <div class="desc" style="font-size:10px;">消耗 60k TKCC · 3局2胜 · 链上结算</div>
+                <div style="display:flex;gap:4px;">
+                    <button class="btn btn-primary btn-sm" style="flex:1;" onclick="showPvpCreateModal()">发起挑战</button>
+                    <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="listPvpUI()">对局列表</button>
+                </div>
+            </div>
+            <div class="action-box">
+                <h4>👑 4-6 人混战</h4>
+                <div class="desc" style="font-size:10px;">消耗 60k · 赢者 70% · 15%销毁 · 15%金库</div>
+                <div style="display:flex;gap:4px;">
+                    <button class="btn btn-primary btn-sm" style="flex:1;" onclick="showRoyaleCreateModal()">创建房间</button>
+                    <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="showRoyaleJoinModal()">加入房间</button>
+                </div>
+                <button class="btn btn-sm btn-gold" style="margin-top:4px;width:100%;" onclick="listRoyaleUI()">📋 房间列表</button>
             </div>
             <div class="action-box">
                 <h4 data-i18n="reset_title">🔄 重置</h4>
                 <div class="desc" data-i18n="reset_desc">清除数据</div>
                 <button class="btn btn-danger" onclick="resetGame()" data-i18n="reset_btn">重置</button>
             </div>
+        </div>
+
+        <!-- ===== PVP 对局列表区域（动态渲染） ===== -->
+        <div class="match-list-panel" id="matchListPanel" style="display:none;margin-top:8px;">
+            <h3 style="font-size:14px;color:#e8d5b8;margin-bottom:4px;">📜 PVP / 混战对局</h3>
+            <div id="pvpListContent"></div>
         </div>
 
         <!-- ===== 卡牌排序区 ===== -->
@@ -1139,7 +1164,15 @@
 
         <!-- ===== 我的卡牌 ===== -->
         <div style="margin-top:4px;">
-            <h3 style="display:inline-block; border-bottom:2px solid rgba(200,160,100,0.2); padding-bottom:4px; font-size:16px; color:#e8d5b8;" data-i18n="my_cards">我的卡牌</h3>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;gap:4px;align-items:flex-end;">
+                    <h3 style="display:inline-block; border-bottom:2px solid rgba(200,160,100,0.2); padding-bottom:4px; font-size:16px; color:#e8d5b8;" data-i18n="my_cards">我的卡牌</h3>
+                </div>
+                <div style="display:flex;gap:4px;">
+                    <button class="btn btn-sm btn-secondary active" onclick="switchMyCardsView('mine', this)">🎴 我的卡牌</button>
+                    <button class="btn btn-sm btn-secondary" onclick="openCodexModal()">📚 图鉴</button>
+                </div>
+            </div>
             <div class="card-grid" id="cardGrid">
                 <div class="empty-state" style="grid-column:1/-1; text-align:center; color:#6a5a4a; padding:20px 0;" data-i18n="empty_cards">点击「抽卡」获取卡牌</div>
             </div>
@@ -1153,7 +1186,7 @@
     </div>
 
     <!-- ===== 玩法说明弹窗 ===== -->
-    <div class="modal-overlay" id="helpModal">
+    <div class="modal-overlay" id="helpModal" style="display:none;">
         <div class="modal">
             <button class="close-btn" onclick="closeHelp()">✕</button>
             <h2 id="helpTitle">📖 游戏玩法</h2>
@@ -1184,6 +1217,16 @@
                 <div><span class="label">防御 (defense)</span><br><input id="prop_def" type="number" class="w3-input" placeholder="70"></div>
                 <div style="grid-column:1/3;"><span class="label">称号 (title)</span><br><input id="prop_title" class="w3-input" placeholder="如：偷渡阴平（可选）"></div>
                 <div style="grid-column:1/3;"><span class="label">描述</span><br><textarea id="prop_desc" class="w3-input" rows="2" placeholder="技能/背景描述（可选）"></textarea></div>
+                <div style="grid-column:1/3;">
+                    <span class="label">卡牌图片 <span style="color:#f44336;">*</span></span>
+                    <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
+                        <input id="prop_image" class="w3-input" placeholder="图片 URL（上传后自动填入）" readonly>
+                        <button class="btn btn-primary btn-sm" onclick="uploadCardImage()">📤 上传图片</button>
+                    </div>
+                    <div id="imagePreview" style="margin-top:4px;display:none;">
+                        <img id="previewImg" style="max-height:80px;border-radius:6px;">
+                    </div>
+                </div>
             </div>
             <div class="star-actions">
                 <button class="btn btn-gold" onclick="submitProposal()">✅ 提交提案 (50k TKCC)</button>
@@ -1218,8 +1261,118 @@
         </div>
     </div>
 
+    <!-- ===== 💳 提现弹窗 ===== -->
+    <div class="modal-overlay" id="withdrawModal" style="display:none;">
+        <div class="modal" style="max-width:380px;">
+            <button class="close-btn" onclick="closeWithdrawModal()">✕</button>
+            <h2>💳 从存款提现 TKCC</h2>
+            <p style="color:#b39b7a;font-size:12px;">将个人可用存款退回您的钱包地址。</p>
+            <div style="margin:10px 0;">
+                <span class="label">提现数量（TKCC）</span>
+                <input id="wd_amount" type="number" class="w3-input" placeholder="例如：50000" min="1">
+            </div>
+            <div class="star-actions">
+                <button class="btn btn-gold" onclick="doWithdraw()">✅ 确认提现</button>
+                <button class="btn btn-secondary" onclick="closeWithdrawModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ⚔️ 创建 PVP 挑战 ===== -->
+    <div class="modal-overlay" id="pvpCreateModal" style="display:none;">
+        <div class="modal" style="max-width:460px;">
+            <button class="close-btn" onclick="closePvpCreateModal()">✕</button>
+            <h2>⚔️ 创建 PVP 挑战</h2>
+            <p style="color:#b39b7a;font-size:12px;">从双方存款各扣 <b>60,000 TKCC</b>；接受后立即链上结算（3局2胜）。奖励根据金库档位动态发放。</p>
+            <div style="margin:10px 0;">
+                <span class="label">对手地址 (paxi1...)</span>
+                <input id="pvpOpponent" class="w3-input" placeholder="对手的钱包地址">
+            </div>
+            <div id="pvpCreateCardSelector" style="margin:10px 0;"></div>
+            <div class="star-actions">
+                <button class="btn btn-gold" onclick="doCreatePvpMatch()">✅ 发起挑战</button>
+                <button class="btn btn-secondary" onclick="closePvpCreateModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ✅ 接受 PVP 挑战 ===== -->
+    <div class="modal-overlay" id="pvpAcceptModal" style="display:none;">
+        <div class="modal" style="max-width:460px;">
+            <button class="close-btn" onclick="closePvpAcceptModal()">✕</button>
+            <h2>✅ 接受 PVP 挑战</h2>
+            <div id="pvpAcceptInfo" style="color:#b39b7a;font-size:12px;margin:6px 0;"></div>
+            <div id="pvpAcceptCardSelector" style="margin:10px 0;"></div>
+            <div class="star-actions">
+                <button class="btn btn-gold" onclick="doAcceptPvpMatch()">⚔️ 接受并出战</button>
+                <button class="btn btn-danger" onclick="doCancelPvpMatch()">❌ 取消该对局</button>
+                <button class="btn btn-secondary" onclick="closePvpAcceptModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 👑 创建混战房间 ===== -->
+    <div class="modal-overlay" id="royaleCreateModal" style="display:none;">
+        <div class="modal" style="max-width:460px;">
+            <button class="close-btn" onclick="closeRoyaleCreateModal()">✕</button>
+            <h2>👑 创建混战房间</h2>
+            <p style="color:#b39b7a;font-size:12px;">每人 <b>60,000 TKCC</b>；满人后由任意玩家发起结算。奖池 70% 给赢家，15% 销毁，15% 留金库。</p>
+            <div style="margin:10px 0;display:flex;gap:12px;">
+                <div style="flex:1;">
+                    <span class="label">房间人数</span>
+                    <select id="royaleSize" class="w3-input">
+                        <option value="4">4 人</option>
+                        <option value="5">5 人</option>
+                        <option value="6">6 人</option>
+                    </select>
+                </div>
+            </div>
+            <div id="royaleCreateCardSelector" style="margin:10px 0;"></div>
+            <div class="star-actions">
+                <button class="btn btn-gold" onclick="doCreateRoyale()">✅ 创建房间</button>
+                <button class="btn btn-secondary" onclick="closeRoyaleCreateModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 加入混战房间 ===== -->
+    <div class="modal-overlay" id="royaleJoinModal" style="display:none;">
+        <div class="modal" style="max-width:460px;">
+            <button class="close-btn" onclick="closeRoyaleJoinModal()">✕</button>
+            <h2>🎮 加入混战房间</h2>
+            <div style="margin:10px 0;">
+                <span class="label">房间 ID (royale_xxx)</span>
+                <input id="royaleJoinId" class="w3-input" placeholder="房间ID">
+            </div>
+            <div id="royaleJoinCardSelector" style="margin:10px 0;"></div>
+            <div class="star-actions">
+                <button class="btn btn-gold" onclick="doJoinRoyaleRoom()">🎮 加入房间</button>
+                <button class="btn btn-secondary" onclick="closeRoyaleJoinModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 🗳 提案列表 + 投票弹窗 ===== -->
+    <div class="modal-overlay" id="proposalListModal" style="display:none;">
+        <div class="modal" style="max-width:720px;max-height:85vh;overflow-y:auto;">
+            <button class="close-btn" onclick="closeProposalListModal()">✕</button>
+            <h2>📜 提案列表（社区治理 · 7 天投票）</h2>
+            <div id="proposalListContent"></div>
+        </div>
+    </div>
+
+    <!-- ===== 📚 卡牌图鉴弹窗 ===== -->
+    <div class="modal-overlay" id="codexModal" style="display:none;">
+        <div class="modal" style="max-width:840px;max-height:85vh;overflow-y:auto;">
+            <button class="close-btn" onclick="closeCodexModal()">✕</button>
+            <h2>📚 卡牌图鉴</h2>
+            <div id="codexProgress" style="margin:6px 0 10px;"></div>
+            <div id="codexContent"></div>
+        </div>
+    </div>
+
     <!-- ===== ⭐ 升星/详情弹窗 ===== -->
-    <div class="modal-overlay card-detail-modal" id="cardDetailModal">
+    <div class="modal-overlay card-detail-modal" id="cardDetailModal" style="display:none;">
         <div class="modal">
             <button class="close-btn" onclick="closeCardDetail()">✕</button>
             <div class="card-preview">
@@ -1229,16 +1382,20 @@
             </div>
             <div class="info-grid">
                 <div><span class="label" data-i18n="rarity">稀有度</span><br><span class="value" id="detailRarity">传说</span></div>
+                <div><span class="label">Lv. 等级</span><br><span class="value" id="detailLevel">0</span>/10</div>
                 <div><span class="label" data-i18n="attack">攻击</span><br><span class="value" id="detailAtk">105</span></div>
                 <div><span class="label" data-i18n="defense">防御</span><br><span class="value" id="detailDef">95</span></div>
                 <div><span class="label" data-i18n="power">战力</span><br><span class="value" id="detailPower">200</span></div>
                 <div style="grid-column:1/3;"><span class="label">⭐ 当前星级</span><br><span class="value" id="detailStar">1</span></div>
+                <div style="grid-column:1/3;"><span class="label">💠 升级消耗</span><br><span class="value" id="detailUpgradeCost">-</span></div>
             </div>
             <div class="card-desc" id="detailDesc"></div>
             <div class="star-actions">
                 <button class="btn btn-gold" id="detailUpgradeBtn" onclick="confirmUpgrade()">⭐ 升1星</button>
                 <button class="btn btn-secondary" id="detailUpgradeFragBtn" onclick="confirmUpgradeFragments()">✨ 碎片升星</button>
                 <button class="btn btn-primary" id="detailUpgradeMaxBtn" onclick="confirmUpgradeToMax()">⭐ 升满</button>
+                <button class="btn btn-success" id="detailLevelUpBtn" onclick="upgradeCard()">💠 卡牌升级</button>
+                <button class="btn btn-danger" id="detailDecomposeBtn" onclick="decomposeCard()">🔥 分解为碎片</button>
                 <button class="btn btn-secondary" onclick="closeCardDetail()">关闭</button>
             </div>
             <div id="modalLoading" class="hidden" style="text-align:center;margin-top:8px;">
@@ -1397,6 +1554,7 @@
                 await refreshBalances();
                 // 钱包连接后再恢复出战顺序（页面加载时 walletAddress 为空，setTimeout 无效）
                 await restoreBattleOrder();
+                await refreshAiStatsAndUI();
             } catch (e) {
                 console.error('connectWallet', e);
                 showToast('❌ 连接钱包失败：' + (e.message || e), 'error');
@@ -2103,7 +2261,9 @@
             }
             detailCard = card; // 保存真实引用，升星会反映到 userCards
             const modal = document.getElementById('cardDetailModal');
-            document.getElementById('detailImg').src = getCardImage(card.name);
+            // 优先使用链上 card.image_url，否则使用本地 getCardImage
+            const img = card.image_url ? card.image_url : getCardImage(card.name);
+            document.getElementById('detailImg').src = img;
             document.getElementById('detailName').textContent = card.name;
             document.getElementById('detailSub').textContent = card.title || '';
             document.getElementById('detailRarity').textContent = getRarityLabel(card.rarity);
@@ -2111,6 +2271,23 @@
             document.getElementById('detailDef').textContent = card.defense;
             document.getElementById('detailPower').textContent = getCardPower(card);
             document.getElementById('detailStar').textContent = card.star || 1;
+            document.getElementById('detailLevel').textContent = (typeof card.level === 'number') ? card.level : 0;
+
+            // 升级消耗碎片（common 50 / rare 100 / epic 200 / legend 500）
+            const rarityIndex = ['common','rare','epic','legend'].indexOf(card.rarity);
+            const levelCost = [50, 100, 200, 500][rarityIndex] ?? 50;
+            const decomposeFrag = [5, 10, 20, 50][rarityIndex] ?? 5;
+            const rarityLabel = ['普通','稀有','史诗','传说'][rarityIndex] ?? '普通';
+            const curFrags = fragmentsData?.[card.rarity] ?? 0;
+            const lv = (typeof card.level === 'number') ? card.level : 0;
+            document.getElementById('detailUpgradeCost').textContent =
+                lv >= 10 ? '已满级' : `${levelCost} ${rarityLabel}碎片（当前拥有 ${curFrags}）`;
+            const canLevelUp = lv < 10 && curFrags >= levelCost;
+            const lvlBtn = document.getElementById('detailLevelUpBtn');
+            lvlBtn.disabled = !canLevelUp;
+            lvlBtn.textContent = lv >= 10 ? '💠 已满级' : `💠 卡牌升级 (+3攻+2防)`;
+            // 分解按钮
+            document.getElementById('detailDecomposeBtn').textContent = `🔥 分解 (得 ${decomposeFrag} 碎片)`;
 
             const lang = currentLang;
             const keyDesc = 'desc_' + card.name.replace(/\s/g, '_').toLowerCase();
@@ -2123,7 +2300,7 @@
             const fees = [50000, 150000, 400000, 1000000];
             const starIdx = (card.star || 1) - 1;
             const fragNeeded = Math.ceil(fees[starIdx] / 100);
-            const rarityLabel = card.rarity === 'common' ? '普通' : card.rarity === 'rare' ? '稀有' : card.rarity === 'epic' ? '史诗' : '传说';
+            // 复用上方已声明的 rarityLabel，避免重复 const 导致 SyntaxError 中断整个 script
             if (canUpgrade) {
                 document.getElementById('detailUpgradeBtn').disabled = false;
                 document.getElementById('detailUpgradeMaxBtn').disabled = false;
@@ -2750,17 +2927,17 @@
             const sorted = [...userCards].sort((a, b) => (order[a.rarity] || 9) - (order[b.rarity] || 9));
 
             grid.innerHTML = sorted.map(c => {
-                const imgUrl = getCardImage(c.name);
+                const imgUrl = c.image_url ? c.image_url : getCardImage(c.name);
                 const starArr = getRarityStars(c.rarity);
                 const power = getCardPower(c);
                 const inOrder = battleOrder.indexOf(c.instance_id);
                 const canUpgrade = (c.star || 1) < 5;
-                // 注意：onclick 中 c 是迭代变量，运行时无法访问
-                // 改为传递 instance_id 字符串，由 showCardDetail 查找真实引用
+                const lv = (typeof c.level === 'number') ? c.level : 0;
                 const safeId = c.instance_id.replace(/'/g, "\\'");
                 return `
                     <div class="card rarity-${c.rarity}" data-instance="${safeId}" onclick="showCardDetail('${safeId}')" style="cursor:pointer;">
                         ${inOrder >= 0 ? `<div class="order-badge">#${inOrder + 1}</div>` : ''}
+                        ${lv > 0 ? `<div style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);color:#ffd54f;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:bold;">Lv.${lv}</div>` : ''}
                         <div class="card-image"><img src="${imgUrl}" alt="${c.name}" loading="lazy"></div>
                         <div class="card-footer">
                             <div class="name-line">${c.name}</div>
@@ -3078,7 +3255,9 @@
             const weight = parseInt(document.getElementById('prop_weight').value || '0', 10);
             const atk = parseInt(document.getElementById('prop_atk').value || '0', 10);
             const def = parseInt(document.getElementById('prop_def').value || '0', 10);
+            const image_url = document.getElementById('prop_image').value.trim() || undefined;
             if (!name) { showToast('请填写卡牌名称', 'error'); return null; }
+            if (!image_url) { showToast('请上传或填写卡牌图片 URL', 'error'); return null; }
             const range = { common: [35,45], rare: [20,30], epic: [10,15], legend: [2,5] }[rarity];
             if (weight < range[0] || weight > range[1]) {
                 showToast(`权重必须在 ${range[0]}-${range[1]} 之间（${rarity}）`, 'error'); return null;
@@ -3094,6 +3273,7 @@
                 cost: undefined,
                 weight,
                 description: document.getElementById('prop_desc').value.trim() || undefined,
+                image_url,
             };
         }
         async function submitProposal() {
@@ -3179,6 +3359,632 @@
             } catch (e) {
                 showToast('❌ 查询提案失败：' + (e.message || e), 'error');
             }
+        }
+
+        // ============================================================
+        // 💳 提现存款（前端入口）
+        // ============================================================
+        function showWithdrawModal() {
+            if (!requireWallet()) return;
+            document.getElementById('wd_amount').value = '';
+            document.getElementById('withdrawModal').style.display = 'block';
+        }
+        function closeWithdrawModal() { document.getElementById('withdrawModal').style.display = 'none'; }
+        async function doWithdraw() {
+            if (!requireWallet()) return;
+            const amount = document.getElementById('wd_amount').value.trim();
+            if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+                showToast('⚠️ 请输入有效数字', 'error'); return;
+            }
+            const amountMicro = String(Math.floor(Number(amount) * 1_000_000));
+            try {
+                isProcessing = true;
+                const msgs = [buildMsgExecuteGame(walletAddress, { withdraw_deposit: { amount: amountMicro } })];
+                await buildAndSendTx(msgs, `Withdraw ${amount} TKCC`);
+                closeWithdrawModal();
+                await refreshBalances();
+                showToast(`✅ 已提现 ${Number(amount).toLocaleString()} TKCC`, 'success');
+            } catch (e) {
+                console.error(e);
+                showToast('❌ 提现失败：' + (e.message || e), 'error');
+            } finally { isProcessing = false; }
+        }
+
+        // ============================================================
+        // 选择卡牌工具：弹窗中的 3 张卡选择器
+        // ============================================================
+        let _selectedCards = [];
+        function _renderCardSelector(containerId, maxCards = 3) {
+            const el = document.getElementById(containerId);
+            if (!el) return;
+            if (userCards.length === 0) {
+                el.innerHTML = '<div style="color:#6a5a4a;padding:8px;">暂无卡牌，请先抽卡</div>';
+                _selectedCards = [];
+                return;
+            }
+            _selectedCards = _selectedCards.filter(id => userCards.find(c => c.instance_id === id)).slice(0, maxCards);
+            const toggleId = (id) => {
+                const i = _selectedCards.indexOf(id);
+                if (i >= 0) _selectedCards.splice(i, 1);
+                else {
+                    if (_selectedCards.length >= maxCards) { showToast(`最多选择 ${maxCards} 张`, 'warning'); return; }
+                    _selectedCards.push(id);
+                }
+                _renderCardSelector(containerId, maxCards);
+            };
+            el.innerHTML = `<div style="font-size:11px;color:#b39b7a;margin-bottom:4px;">已选 ${_selectedCards.length}/${maxCards}（点击卡牌切换）</div>` +
+                `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px;max-height:260px;overflow-y:auto;padding:4px;">` +
+                userCards.map(c => {
+                    const checked = _selectedCards.includes(c.instance_id);
+                    const border = checked ? '2px solid #d4a855' : '1px solid #3a2a1a';
+                    const bg = checked ? 'rgba(212,168,85,0.08)' : 'transparent';
+                    const img = c.image_url ? c.image_url : getCardImage(c.name);
+                    return `<div class="card rarity-${c.rarity}" onclick="_selCard_toggle('${containerId}', ${maxCards}, '${c.instance_id.replace(/'/g,"\\'")}')"
+                        style="cursor:pointer;border:${border};background:${bg};margin:0;">
+                        <div class="card-image" style="height:70px;"><img src="${img}" alt="" loading="lazy"></div>
+                        <div class="card-footer" style="padding:4px;">
+                            <div class="name-line" style="font-size:11px;">${c.name}</div>
+                            <div class="stats-line" style="font-size:10px;">⚔️${c.attack} 🛡️${c.defense}</div>
+                        </div>
+                    </div>`;
+                }).join('') + '</div>';
+        }
+        function _selCard_toggle(containerId, maxCards, id) {
+            const i = _selectedCards.indexOf(id);
+            if (i >= 0) _selectedCards.splice(i, 1);
+            else if (_selectedCards.length >= maxCards) { showToast(`最多选择 ${maxCards} 张`, 'warning'); return; }
+            else _selectedCards.push(id);
+            _renderCardSelector(containerId, maxCards);
+        }
+
+        // ============================================================
+        // ⚔️ PVP 1v1 对战 前端
+        // ============================================================
+        let _currentPvpMatchId = null;
+        function showPvpCreateModal() {
+            if (!requireWallet()) return;
+            document.getElementById('pvpOpponent').value = '';
+            _selectedCards = [];
+            _renderCardSelector('pvpCreateCardSelector', 3);
+            document.getElementById('pvpCreateModal').style.display = 'block';
+        }
+        function closePvpCreateModal() { document.getElementById('pvpCreateModal').style.display = 'none'; _selectedCards = []; }
+
+        async function doCreatePvpMatch() {
+            if (!requireWallet()) return;
+            const opponent = document.getElementById('pvpOpponent').value.trim();
+            if (!opponent) { showToast('⚠️ 请输入对手地址', 'error'); return; }
+            if (_selectedCards.length !== 3) { showToast('⚠️ 请选择 3 张卡牌出战', 'error'); return; }
+            try {
+                isProcessing = true;
+                showToast('⏳ 发起 PVP 挑战中...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, {
+                    create_pvp_match: { opponent, card_ids: _selectedCards }
+                })];
+                await buildAndSendTx(msgs, `CreatePvpMatch vs ${opponent.slice(0,12)}...`);
+                closePvpCreateModal();
+                await refreshBalances();
+                showToast('✅ 挑战已发起，等待对手接受', 'success');
+                listPvpUI();
+            } catch (e) {
+                console.error(e); showToast('❌ 失败：' + (e.message || e), 'error');
+            } finally { isProcessing = false; }
+        }
+
+        function showPvpAcceptModal(match) {
+            _currentPvpMatchId = match.match_id;
+            _selectedCards = [];
+            document.getElementById('pvpAcceptInfo').innerHTML =
+                `对局ID: <b style="font-size:10px;">${match.match_id}</b><br>挑战者: ${match.challenger.slice(0, 16)}...`;
+            _renderCardSelector('pvpAcceptCardSelector', 3);
+            document.getElementById('pvpAcceptModal').style.display = 'block';
+        }
+        function closePvpAcceptModal() { document.getElementById('pvpAcceptModal').style.display = 'none'; _selectedCards = []; }
+
+        async function doAcceptPvpMatch() {
+            if (!requireWallet() || !_currentPvpMatchId) return;
+            if (_selectedCards.length !== 3) { showToast('⚠️ 请选择 3 张卡牌出战', 'error'); return; }
+            try {
+                isProcessing = true;
+                showToast('⏳ 接受挑战并链上结算...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, {
+                    accept_pvp_match: { match_id: _currentPvpMatchId, card_ids: _selectedCards }
+                })];
+                await buildAndSendTx(msgs, `AcceptPvpMatch ${_currentPvpMatchId.slice(0,16)}...`);
+                closePvpAcceptModal();
+                await refreshBalances();
+                showToast('⚔️ 对战已结算！可在对局列表中查看结果并领取奖励', 'success');
+                listPvpUI();
+            } catch (e) {
+                console.error(e); showToast('❌ 失败：' + (e.message || e), 'error');
+            } finally { isProcessing = false; }
+        }
+
+        async function doCancelPvpMatch() {
+            if (!_currentPvpMatchId) return;
+            if (!confirm('确认取消该对局？（入场费不退）')) return;
+            try {
+                isProcessing = true;
+                const msgs = [buildMsgExecuteGame(walletAddress, { cancel_pvp_match: { match_id: _currentPvpMatchId } })];
+                await buildAndSendTx(msgs, `CancelPvpMatch`);
+                closePvpAcceptModal();
+                showToast('已取消对局', 'info');
+                listPvpUI();
+            } catch (e) {
+                showToast('❌ 取消失败：' + (e.message || e), 'error');
+            } finally { isProcessing = false; }
+        }
+
+        async function claimPvpReward(match_id) {
+            if (!requireWallet()) return;
+            try {
+                isProcessing = true;
+                showToast('⏳ 领取 PVP 奖励...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, { claim_pvp_reward: { match_id } })];
+                await buildAndSendTx(msgs, `ClaimPvpReward`);
+                await refreshBalances();
+                showToast('🎉 奖励已到账！', 'success');
+                listPvpUI();
+            } catch (e) {
+                showToast('❌ 领取失败：' + (e.message || e), 'error');
+            } finally { isProcessing = false; }
+        }
+
+        async function fetchPvpMatches() {
+            if (!GAME_CONTRACT || !walletAddress) return { matches: [] };
+            try {
+                const q = JSON.stringify({ list_pvp_matches: { player: walletAddress, limit: 50 } });
+                const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
+                const d = await r.json();
+                return d?.data ?? { matches: [] };
+            } catch (e) { return { matches: [] }; }
+        }
+
+        async function listPvpUI() {
+            if (!requireWallet()) return;
+            const data = await fetchPvpMatches();
+            const panel = document.getElementById('matchListPanel');
+            const el = document.getElementById('pvpListContent');
+            if (!data.matches || data.matches.length === 0) {
+                el.innerHTML = '<div style="color:#6a5a4a;padding:8px;">暂无对局</div>';
+            } else {
+                el.innerHTML = data.matches.map(m => {
+                    const statusLabel = { waiting: '⏳ 等待中', pending: '结算中', finished: '🏁 已结束', cancelled: '❌ 已取消' }[m.status] || m.status;
+                    const statusColor = m.status === 'waiting' ? '#a08a5e' : m.status === 'finished' ? '#79d47c' : '#a06060';
+                    let actions = '';
+                    if (m.status === 'waiting') {
+                        if (m.opponent === walletAddress) actions += `<button class="btn btn-gold btn-sm" onclick='acceptFromList("${m.match_id}")'>✅ 接受</button>`;
+                        if (m.challenger === walletAddress) actions += `<button class="btn btn-danger btn-sm" onclick='cancelFromList("${m.match_id}")'>❌ 取消</button>`;
+                    } else if (m.status === 'finished' && m.winner === walletAddress && !m.reward_claimed) {
+                        actions += `<button class="btn btn-primary btn-sm" onclick='claimPvpReward("${m.match_id}")'>🎁 领取奖励</button>`;
+                    }
+                    const winnerLabel = m.winner === walletAddress ? '<b style="color:#79d47c;">🏆 你赢了</b>' :
+                        m.winner ? (m.winner.slice(0,12)+'...') : '-';
+                    return `<div class="row" style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center;padding:6px;border:1px solid #3a2a1a;border-radius:6px;margin-bottom:4px;">
+                        <div style="font-size:10px;">
+                            <div>${m.challenger.slice(0,12)}... vs ${m.opponent.slice(0,12)}...</div>
+                            <div style="color:#888;">创建: ${new Date(m.created_at*1000).toLocaleString()}</div>
+                        </div>
+                        <div>赢家: ${winnerLabel}</div>
+                        <div style="color:${statusColor};font-size:11px;">${statusLabel}</div>
+                        <div style="display:flex;gap:4px;">${actions}</div>
+                    </div>`;
+                }).join('');
+            }
+            panel.style.display = 'block';
+        }
+        async function acceptFromList(id) {
+            const data = await fetchPvpMatches();
+            const m = data.matches.find(x => x.match_id === id);
+            if (m) showPvpAcceptModal(m);
+        }
+        async function cancelFromList(id) {
+            _currentPvpMatchId = id; await doCancelPvpMatch();
+        }
+
+        // ============================================================
+        // 👑 混战房间 前端
+        // ============================================================
+        function showRoyaleCreateModal() {
+            if (!requireWallet()) return;
+            _selectedCards = [];
+            _renderCardSelector('royaleCreateCardSelector', 3);
+            document.getElementById('royaleCreateModal').style.display = 'block';
+        }
+        function closeRoyaleCreateModal() { document.getElementById('royaleCreateModal').style.display = 'none'; _selectedCards = []; }
+
+        async function doCreateRoyale() {
+            if (!requireWallet()) return;
+            if (_selectedCards.length !== 3) { showToast('⚠️ 请选择 3 张卡牌出战', 'error'); return; }
+            const size = Number(document.getElementById('royaleSize').value);
+            try {
+                isProcessing = true;
+                showToast('⏳ 创建混战房间...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, {
+                    create_royale: { size, card_ids: _selectedCards }
+                })];
+                await buildAndSendTx(msgs, `CreateRoyale size=${size}`);
+                closeRoyaleCreateModal();
+                await refreshBalances();
+                showToast('✅ 混战房间已创建', 'success');
+                listRoyaleUI();
+            } catch (e) {
+                showToast('❌ 失败：' + (e.message || e), 'error');
+            } finally { isProcessing = false; }
+        }
+
+        function showRoyaleJoinModal() {
+            if (!requireWallet()) return;
+            document.getElementById('royaleJoinId').value = '';
+            _selectedCards = [];
+            _renderCardSelector('royaleJoinCardSelector', 3);
+            document.getElementById('royaleJoinModal').style.display = 'block';
+        }
+        function closeRoyaleJoinModal() { document.getElementById('royaleJoinModal').style.display = 'none'; _selectedCards = []; }
+
+        async function doJoinRoyaleRoom() {
+            if (!requireWallet()) return;
+            const id = document.getElementById('royaleJoinId').value.trim();
+            if (!id) { showToast('⚠️ 请输入房间 ID', 'error'); return; }
+            if (_selectedCards.length !== 3) { showToast('⚠️ 请选择 3 张卡牌', 'error'); return; }
+            try {
+                isProcessing = true;
+                showToast('⏳ 加入混战房间...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, {
+                    join_royale_room: { royale_id: id, card_ids: _selectedCards }
+                })];
+                await buildAndSendTx(msgs, `JoinRoyale ${id.slice(0,12)}...`);
+                closeRoyaleJoinModal();
+                await refreshBalances();
+                showToast('✅ 已加入房间', 'success');
+                listRoyaleUI();
+            } catch (e) {
+                showToast('❌ 失败：' + (e.message || e), 'error');
+            } finally { isProcessing = false; }
+        }
+
+        async function settleRoyale(id) {
+            if (!requireWallet()) return;
+            try {
+                isProcessing = true;
+                const msgs = [buildMsgExecuteGame(walletAddress, { settle_royale: { royale_id: id } })];
+                await buildAndSendTx(msgs, `SettleRoyale ${id.slice(0,12)}`);
+                await refreshBalances();
+                showToast('🏆 混战已结算', 'success');
+                listRoyaleUI();
+            } catch (e) { showToast('❌ 失败：' + (e.message || e), 'error'); }
+            finally { isProcessing = false; }
+        }
+        async function claimRoyaleReward(id) {
+            if (!requireWallet()) return;
+            try {
+                isProcessing = true;
+                showToast('⏳ 领取混战奖励...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, { claim_royale_reward: { royale_id: id } })];
+                await buildAndSendTx(msgs, `ClaimRoyaleReward`);
+                await refreshBalances();
+                showToast('🎉 奖励已到账！', 'success');
+                listRoyaleUI();
+            } catch (e) { showToast('❌ 失败：' + (e.message || e), 'error'); }
+            finally { isProcessing = false; }
+        }
+
+        async function fetchListRoyale() {
+            if (!GAME_CONTRACT) return { royales: [] };
+            try {
+                const q = JSON.stringify({ list_royale: { limit: 50 } });
+                const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
+                const d = await r.json();
+                return d?.data ?? { royales: [] };
+            } catch (e) { return { royales: [] }; }
+        }
+
+        async function listRoyaleUI() {
+            if (!requireWallet()) return;
+            const data = await fetchListRoyale();
+            const panel = document.getElementById('matchListPanel');
+            let existing = document.getElementById('royaleListContent');
+            if (!existing) {
+                existing = document.createElement('div');
+                existing.id = 'royaleListContent';
+                document.getElementById('pvpListContent').parentNode.appendChild(existing);
+            }
+            if (!data.royales || data.royales.length === 0) {
+                existing.innerHTML = '<h3 style="font-size:14px;color:#e8d5b8;margin:8px 0 4px;">👑 混战房间</h3><div style="color:#6a5a4a;padding:8px;">暂无房间</div>';
+            } else {
+                existing.innerHTML = '<h3 style="font-size:14px;color:#e8d5b8;margin:8px 0 4px;">👑 混战房间</h3>' +
+                    data.royales.map(r => {
+                        const statusLabel = { waiting: '⏳ 等待加入', full: '🟢 满人待结算', finished: '🏁 已结束', cancelled: '❌ 已取消' }[r.status] || r.status;
+                        let actions = '';
+                        if (r.status === 'waiting') {
+                            actions += `<button class="btn btn-secondary btn-sm" onclick="document.getElementById('royaleJoinId').value='${r.royale_id}';showRoyaleJoinModal()">🎮 加入</button>`;
+                        }
+                        if (r.status === 'full' && r.players.includes(walletAddress)) {
+                            actions += `<button class="btn btn-gold btn-sm" onclick='settleRoyale("${r.royale_id}")'>🏁 发起结算</button>`;
+                        }
+                        if (r.status === 'finished' && r.winner === walletAddress && !r.reward_claimed) {
+                            actions += `<button class="btn btn-primary btn-sm" onclick='claimRoyaleReward("${r.royale_id}")'>🎁 领取</button>`;
+                        }
+                        const isWinner = r.winner === walletAddress;
+                        return `<div style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center;padding:6px;border:1px solid #3a2a1a;border-radius:6px;margin-bottom:4px;">
+                            <div style="font-size:10px;">
+                                <div>🏠 ID: <code style="background:#2a1a0a;padding:1px 3px;">${r.royale_id.slice(0,20)}...</code></div>
+                                <div>玩家 ${r.players.length}/${r.size} · 创建 ${new Date(r.created_at*1000).toLocaleString()}</div>
+                            </div>
+                            <div style="font-size:11px;">赢家: ${r.winner ? (isWinner ? '<b style="color:#79d47c;">🏆 你</b>' : r.winner.slice(0,12)+'...') : '-'}</div>
+                            <div style="font-size:11px;color:#a08a5e;">${statusLabel}</div>
+                            <div style="display:flex;gap:4px;">${actions}</div>
+                        </div>`;
+                    }).join('');
+            }
+            panel.style.display = 'block';
+            panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // ============================================================
+        // 📤 提案图片上传（ImgBB，用户替换 API Key）
+        // ============================================================
+        const IMGBB_API_KEY = 'YOUR_IMGBB_API_KEY'; // 用户替换为实际 Key
+        async function uploadCardImage() {
+            if (IMGBB_API_KEY === 'YOUR_IMGBB_API_KEY') {
+                showToast('⚠️ 请先在脚本中填入你的 IMGBB_API_KEY，或手动粘贴图片URL到输入框', 'warning');
+            }
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = async function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                // 预览
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    document.getElementById('previewImg').src = ev.target.result;
+                    document.getElementById('imagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+                if (IMGBB_API_KEY !== 'YOUR_IMGBB_API_KEY') {
+                    try {
+                        const base64 = await new Promise(resolve => {
+                            const r = new FileReader();
+                            r.onload = (e) => resolve(e.target.result.split(',')[1]);
+                            r.readAsDataURL(file);
+                        });
+                        const formData = new FormData();
+                        formData.append('key', IMGBB_API_KEY);
+                        formData.append('image', base64);
+                        const resp = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formData });
+                        const data = await resp.json();
+                        if (data.success) {
+                            document.getElementById('prop_image').value = data.data.url;
+                            document.getElementById('previewImg').src = data.data.url;
+                            showToast('✅ 图片上传成功', 'success');
+                        } else {
+                            showToast('⚠️ 上传失败：' + (data.error?.message || '未知错误'), 'warning');
+                        }
+                    } catch (e) {
+                        showToast('⚠️ 上传异常：' + (e.message || e), 'warning');
+                    }
+                }
+            };
+            input.click();
+        }
+
+        // ============================================================
+        // 🔥 卡牌分解 + 💠 升级
+        // ============================================================
+        async function decomposeCard() {
+            if (!requireWallet() || !detailCard) return;
+            const ridx = ['common','rare','epic','legend'].indexOf(detailCard.rarity);
+            const frag = [5, 10, 20, 50][ridx] ?? 5;
+            if (!confirm(`🔥 确定分解「${detailCard.name}」？将失去该卡，获得 ${frag} 碎片。`)) return;
+            try {
+                isProcessing = true;
+                showToast('⏳ 分解中...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, { decompose_card: { card_id: detailCard.instance_id } })];
+                await buildAndSendTx(msgs, `DecomposeCard ${detailCard.name}`);
+                closeCardDetail();
+                await refreshBalances();
+                showToast(`✅ 分解成功，获得 ${frag} 碎片`, 'success');
+            } catch (e) { showToast('❌ 失败：' + (e.message || e), 'error'); }
+            finally { isProcessing = false; }
+        }
+
+        async function upgradeCard() {
+            if (!requireWallet() || !detailCard) return;
+            try {
+                isProcessing = true;
+                showToast('⏳ 升级中（消耗碎片）...', 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, { upgrade_card: { card_id: detailCard.instance_id } })];
+                await buildAndSendTx(msgs, `UpgradeCard ${detailCard.name}`);
+                closeCardDetail();
+                await refreshBalances();
+                showToast('✅ 升级成功！+3 攻 +2 防', 'success');
+            } catch (e) { showToast('❌ 失败：' + (e.message || e), 'error'); }
+            finally { isProcessing = false; }
+        }
+
+        // ============================================================
+        // 📚 卡牌图鉴（前端展示 + 收集进度）
+        // ============================================================
+        function switchMyCardsView(type, btn) {
+            document.querySelectorAll('#cardGrid').forEach(()=>{}); // 预留扩展
+            document.querySelectorAll('button[onclick*="switchMyCardsView"]').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+        function openCodexModal() { renderCodex(); document.getElementById('codexModal').style.display = 'block'; }
+        function closeCodexModal() { document.getElementById('codexModal').style.display = 'none'; }
+        function renderCodex() {
+            const ownedNames = new Set(userCards.map(c => c.name));
+            const total = CARD_TEMPLATES.length;
+            const owned = CARD_TEMPLATES.filter(t => ownedNames.has(t.name)).length;
+            const pct = Math.floor((owned/total)*100);
+            document.getElementById('codexProgress').innerHTML = `
+                <div style="margin-bottom:4px;">收集进度：<b>${owned} / ${total}</b> （${pct}%）</div>
+                <div style="width:100%;height:8px;background:#2a1a0a;border-radius:4px;overflow:hidden;">
+                    <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,#d4a855,#b8860b);"></div>
+                </div>`;
+            const groups = { legend: [], epic: [], rare: [], common: [] };
+            CARD_TEMPLATES.forEach(t => { if (groups[t.rarity]) groups[t.rarity].push(t); });
+            const titles = { legend: '传说 (Legend)', epic: '史诗 (Epic)', rare: '稀有 (Rare)', common: '普通 (Common)' };
+            const rarityColors = { legend: '#c9a227', epic: '#9b59b6', rare: '#4a9eff', common: '#999' };
+            let html = '';
+            ['legend','epic','rare','common'].forEach(r => {
+                const arr = groups[r] || [];
+                html += `<div style="margin-top:10px;"><h4 style="color:${rarityColors[r]};border-bottom:1px solid #3a2a1a;padding-bottom:4px;">${titles[r]} (${arr.filter(t=>ownedNames.has(t.name)).length}/${arr.length})</h4>`;
+                html += `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">`;
+                arr.forEach(t => {
+                    const isOwned = ownedNames.has(t.name);
+                    const tplImg = t.image_url ? t.image_url : getCardImage(t.name);
+                    html += `<div class="card rarity-${r}" style="opacity:${isOwned?1:0.45};margin:0;">
+                        <div style="position:absolute;top:4px;left:4px;font-size:12px;">${isOwned ? '✅' : '🔒'}</div>
+                        <div class="card-image" style="height:120px;"><img src="${tplImg}" alt="${t.name}" loading="lazy"></div>
+                        <div class="card-footer" style="padding:6px;">
+                            <div class="name-line" style="font-size:12px;">${t.name}</div>
+                            <div class="sub-line" style="font-size:10px;">${t.title || ''}</div>
+                            <div class="stats-line" style="font-size:10px;">⚔️${t.attack} 🛡️${t.defense}</div>
+                        </div>
+                    </div>`;
+                });
+                html += `</div></div>`;
+            });
+            document.getElementById('codexContent').innerHTML = html;
+        }
+
+        // ============================================================
+        // 🗳 提案投票 UI（替换旧的 alert 列表）
+        // ============================================================
+        let _proposalRefreshTimer = null;
+        async function listProposalsUI() {
+            if (!requireWallet()) return;
+            document.getElementById('proposalListModal').style.display = 'block';
+            await refreshProposals();
+            if (_proposalRefreshTimer) clearInterval(_proposalRefreshTimer);
+            _proposalRefreshTimer = setInterval(refreshProposals, 30000);
+        }
+        function closeProposalListModal() {
+            document.getElementById('proposalListModal').style.display = 'none';
+            if (_proposalRefreshTimer) { clearInterval(_proposalRefreshTimer); _proposalRefreshTimer = null; }
+        }
+        async function refreshProposals() {
+            const el = document.getElementById('proposalListContent');
+            let data = null;
+            if (GAME_CONTRACT) {
+                try {
+                    const q = JSON.stringify({ list_proposals: { limit: 30 } });
+                    const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
+                    const d = await r.json();
+                    data = d?.data;
+                } catch (e) { /* 链上失败 */ }
+            }
+            if (!data || !data.proposals || data.proposals.length === 0) {
+                // 回退本地 localStorage 提案
+                const local = JSON.parse(localStorage.getItem('proposals') || '[]');
+                if (local.length === 0) {
+                    el.innerHTML = '<div style="color:#6a5a4a;padding:12px;">暂无提案，成为第一个提交社区卡牌的玩家吧！</div>';
+                    return;
+                }
+                data = { proposals: local.map(p => ({ id: p.id, template: p.template, proposer: p.proposer, deposit: (50000*1e6).toString(), yes_votes: p.yes_votes?.toString()||'0', no_votes: p.no_votes?.toString()||'0', deadline: p.deadline, executed: false, approved: false })) };
+            }
+            const now = Math.floor(Date.now()/1000);
+            el.innerHTML = data.proposals.map(p => {
+                const t = p.template;
+                const yes = Number(p.yes_votes || 0) / 1e6;
+                const no = Number(p.no_votes || 0) / 1e6;
+                const remaining = Math.max(0, Number(p.deadline) - now);
+                const total = yes + no;
+                const passed = total > 0 && yes > total * 0.5;
+                const remainH = Math.floor(remaining/3600);
+                const remainM = Math.floor((remaining%3600)/60);
+                const statusTag = p.executed ? (p.approved ? '✅ 已通过' : '❌ 未通过') :
+                    (remaining <= 0 ? '⏰ 投票结束' : `⏳ ${remainH}小时${remainM}分`);
+                const img = t.image_url || getCardImage(t.name);
+                return `<div style="border:1px solid #3a2a1a;border-radius:8px;padding:8px;margin-bottom:8px;display:grid;grid-template-columns:120px 1fr auto;gap:10px;">
+                    <div><img src="${img}" style="width:120px;height:160px;border-radius:6px;object-fit:cover;"></div>
+                    <div>
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <b>${t.name}</b>
+                            <span class="badge" style="background:#3a2a1a;padding:1px 6px;border-radius:4px;">${getRarityLabel(t.rarity)}</span>
+                            <span style="font-size:11px;color:#a08a5e;">#${p.id}</span>
+                            <span style="font-size:11px;">${statusTag}</span>
+                        </div>
+                        <div style="font-size:11px;color:#b39b7a;">${t.title || ''}</div>
+                        <div style="font-size:11px;">⚔️ ${t.attack} · 🛡️ ${t.defense} · 权重 ${t.weight}</div>
+                        <div style="font-size:11px;">提案人: <code>${String(p.proposer).slice(0,14)}...</code></div>
+                        <div style="margin-top:6px;display:flex;gap:10px;align-items:center;font-size:11px;">
+                            <div style="color:#79d47c;">✅ 赞成: ${yes.toLocaleString()}</div>
+                            <div style="color:#f08080;">❌ 反对: ${no.toLocaleString()}</div>
+                            <div style="flex:1;height:6px;background:#2a1a0a;border-radius:3px;overflow:hidden;">
+                                <div style="height:100%;width:${total>0?(yes/total*100):0}%;background:#79d47c;"></div>
+                            </div>
+                            <div>${total>0? Math.floor(yes/total*100):0}% 赞成</div>
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:4px;align-self:center;">
+                        ${!p.executed && remaining > 0 ?
+                            `<button class="btn btn-success btn-sm" onclick='voteProposal(${p.id}, true)'>✅ 赞成</button>
+                             <button class="btn btn-danger btn-sm" onclick='voteProposal(${p.id}, false)'>❌ 反对</button>` :
+                            (p.executed ? '<div style="font-size:10px;text-align:center;">已执行</div>' :
+                             (passed ? `<button class="btn btn-gold btn-sm" onclick='executeProposal(${p.id})'>⚡ 执行</button>` :
+                              '<div style="font-size:10px;color:#888;text-align:center;">投票结束未通过</div>'))}
+                    </div>
+                </div>`;
+            }).join('');
+        }
+        async function voteProposal(id, approve) {
+            if (!requireWallet()) return;
+            try {
+                isProcessing = true;
+                showToast(`⏳ ${approve?'投赞成':'投反对'}票中...`, 'info');
+                const msgs = [buildMsgExecuteGame(walletAddress, { vote_card: { proposal_id: id, approve } })];
+                await buildAndSendTx(msgs, `Vote ${approve?'YES':'NO'} #${id}`);
+                await refreshBalances();
+                await refreshProposals();
+                showToast('✅ 投票已记录', 'success');
+            } catch (e) { showToast('❌ 失败：' + (e.message || e), 'error'); }
+            finally { isProcessing = false; }
+        }
+        async function executeProposal(id) {
+            if (!confirm('确认执行该提案？通过的卡牌将加入卡池。')) return;
+            try {
+                isProcessing = true;
+                const msgs = [buildMsgExecuteGame(walletAddress, { execute_proposal: { proposal_id: id } })];
+                await buildAndSendTx(msgs, `ExecuteProposal #${id}`);
+                await refreshProposals();
+                showToast('✅ 提案执行成功，新卡牌已入池', 'success');
+            } catch (e) { showToast('❌ 执行失败：' + (e.message || e), 'error'); }
+            finally { isProcessing = false; }
+        }
+
+        // 兼容：替换旧的 listProposalsUI alert 模式 → 弹窗投票 UI
+        // - 已在上方重写 listProposalsUI
+
+        // ============================================================
+        // 🤖 AI 体验优化：今日次数 + 推荐难度高亮
+        // ============================================================
+        async function refreshAiStatsAndUI() {
+            if (!GAME_CONTRACT || !walletAddress) return;
+            try {
+                const q = JSON.stringify({ ai_stats: { address: walletAddress } });
+                const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
+                const d = await r.json();
+                const s = d?.data || {};
+                const today = Number(s.today_count || 0);
+                const limit = Number(s.daily_limit || 20);
+                const rec = Number(s.recommended_difficulty || 1);
+                const line = document.getElementById('aiStatsLine');
+                if (line) line.textContent = `今日 ${today} / ${limit} 局 · 推荐难度 ${['','简','普','难','传'][rec] || '简'}`;
+                // 高亮推荐难度按钮
+                document.querySelectorAll('.difficulty-selector .btn-sm').forEach(b => {
+                    b.classList.remove('active');
+                    const diff = Number(b.getAttribute('data-diff'));
+                    if (diff === rec) {
+                        b.classList.add('active');
+                        if (!b.textContent.includes('推荐')) {
+                            b.innerHTML = b.textContent.trim() + ' <span style="font-size:9px;color:#ffd54f;">(推荐)</span>';
+                        }
+                    }
+                });
+            } catch (e) { /* 静默失败 */ }
         }
     </script>
 

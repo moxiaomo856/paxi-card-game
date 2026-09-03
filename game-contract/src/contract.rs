@@ -16,13 +16,16 @@ use crate::msg::{
     FragmentsResponse, GameParamsResponse, InstantiateMsg, PendingRewardsResponse, ProposalListResponse,
     ProposalResponse, ProposalVotesResponse, QueryMsg, RarityCountResponse,
     AiStatsResponse, PlayerCardsResponse, VaultBalanceResponse,
+    PvpMatchResponse, PvpListResponse, RoyaleResponse, RoyaleListResponse,
 };
 use crate::state::{
     AiStats, BattleRecord, CardProposal, CardTemplate, Config, Fragments, GameParams,
+    PvpMatch, PvpStatus, RoyaleMatch, RoyaleStatus,
     AI_BATTLE_COUNT, AI_BATTLE_DATE, AI_BATTLE_STATS, BATTLES, CARDS, CARD_TEMPLATE_COUNT,
     CARD_TEMPLATES, CONFIG, DEPOSITS, FRAGMENTS, GAME_PARAMS, MAX_CARDS, PLAYER_BATTLE_ORDER, PLAYER_CARDS,
     PENDING_REWARDS, PROPOSALS, PROPOSAL_COUNTER, PROPOSAL_DEPOSIT, PROPOSAL_DEPOSITS, RARITY_COUNT,
     VOTES, VOTING_PERIOD, CRAFT_COST, FRAGMENT_FROM_DUPLICATE,
+    PVP_MATCHES, ROYALE_MATCHES,
 };
 
 const SECS_PER_DAY: u64 = 86_400;
@@ -104,15 +107,29 @@ pub fn execute(
         ExecuteMsg::ExecuteProposal { proposal_id } => execute_execute_proposal(deps, env, proposal_id),
         ExecuteMsg::CancelProposal { proposal_id } => execute_cancel_proposal(deps, env, info, proposal_id),
 
-        ExecuteMsg::RequestPvpMatch { opponent } =>
-            execute_request_pvp_match(deps, env, info, opponent),
-        ExecuteMsg::FinishPvpMatch { match_id, winner } =>
-            execute_finish_pvp_match(deps, env, info, match_id, winner),
+        // ---- PVP 1v1 对战 ----
+        ExecuteMsg::CreatePvpMatch { opponent, card_ids } =>
+            execute_create_pvp_match(deps, env, info, opponent, card_ids),
+        ExecuteMsg::AcceptPvpMatch { match_id, card_ids } =>
+            execute_accept_pvp_match(deps, env, info, match_id, card_ids),
+        ExecuteMsg::CancelPvpMatch { match_id } =>
+            execute_cancel_pvp_match(deps, env, info, match_id),
+        ExecuteMsg::ClaimPvpReward { match_id } =>
+            execute_claim_pvp_reward(deps, env, info, match_id),
 
-        ExecuteMsg::JoinRoyale { royale_id } =>
-            execute_join_royale(deps, env, info, royale_id),
-        ExecuteMsg::FinishRoyale { royale_id, winner, size } =>
-            execute_finish_royale(deps, env, info, royale_id, winner, size),
+        // ---- 4-6 人混战 ----
+        ExecuteMsg::CreateRoyale { size, card_ids } =>
+            execute_create_royale(deps, env, info, size, card_ids),
+        ExecuteMsg::JoinRoyaleRoom { royale_id, card_ids } =>
+            execute_join_royale_room(deps, env, info, royale_id, card_ids),
+        ExecuteMsg::SettleRoyale { royale_id } =>
+            execute_settle_royale(deps, env, info, royale_id),
+        ExecuteMsg::ClaimRoyaleReward { royale_id } =>
+            execute_claim_royale_reward(deps, env, info, royale_id),
+
+        // ---- 卡牌分解 & 升级 ----
+        ExecuteMsg::DecomposeCard { card_id } => execute_decompose_card(deps, env, info, card_id),
+        ExecuteMsg::UpgradeCard { card_id } => execute_upgrade_card(deps, env, info, card_id),
 
         ExecuteMsg::CraftCard { rarity } => execute_craft_card(deps, env, info, rarity),
 
@@ -252,6 +269,7 @@ fn execute_draw_pack(
                 attack: tpl.attack,
                 defense: tpl.defense,
                 star: 1,
+                level: 0,
             };
             CARDS.save(deps.storage, &card_id, &card)?;
             player_cards_ids.push(card_id.clone());
@@ -422,7 +440,7 @@ fn execute_claim_reward(
         .map_err(|_| ContractError::CardNotFound(battle_id.clone()))?;
 
     if battle.player != info.sender {
-        return Err(ContractError::Unauthorized);
+        return Err(ContractError::UnauthorizedReason("not the battle owner".into()));
     }
     if battle.claimed {
         return Err(ContractError::BattleAlreadyClaimed(battle_id));
@@ -469,7 +487,7 @@ fn execute_star_up(
 
     let mut card = CARDS.load(deps.storage, &card_id)
         .map_err(|_| ContractError::CardNotFound(card_id.clone()))?;
-    if card.owner != info.sender { return Err(ContractError::Unauthorized); }
+    if card.owner != info.sender.as_str() { return Err(ContractError::UnauthorizedReason("not the card owner".into())); }
     if card.star >= 5 { return Err(ContractError::MaxStarReached); }
     let star_idx = (card.star - 1) as usize;
     let fee = params.upgrade_fees[star_idx];
@@ -600,6 +618,7 @@ fn execute_craft_card(
         attack: tpl.attack,
         defense: tpl.defense,
         star: 1,
+        level: 0,
     };
     CARDS.save(deps.storage, &card_id, &card)?;
     let mut player_cards_ids = PLAYER_CARDS
@@ -985,37 +1004,511 @@ fn execute_cancel_proposal(
 }
 
 // ============================================================
-// PVP / 混战（骨架实现，供前端接口预留）
+// PVP 1v1 对战
 // ============================================================
-fn execute_request_pvp_match(
-    deps: DepsMut, _env: Env, info: MessageInfo, _opponent: String,
-) -> Result<Response, ContractError> {
-    // 简化实现：占位。真实对战匹配系统可后续扩展
-    // 先解析玩家预设的出战顺序，确保对战使用时已就绪
-    let order_cards = resolve_player_battle_cards(deps.as_ref(), &info.sender)?;
-    Ok(Response::new()
-        .add_attribute("method", "request_pvp_match")
-        .add_attribute("challenger", info.sender)
-        .add_attribute("order_len", order_cards.len().to_string()))
-}
-fn execute_finish_pvp_match(
-    _deps: DepsMut, _env: Env, _info: MessageInfo, _match_id: String, _winner: String,
-) -> Result<Response, ContractError> {
-    // PVP 对战链上结算尚未完整实现（无对局状态 + 无对手签名 + 防重复调用状态）
-    // 为防止金库被任意调用者提空，暂时封禁该入口。
-    Err(ContractError::FeatureDisabled("finish_pvp_match (PVP chain settlement pending)".into()))
+
+/// 验证：card_ids 长度=3 且都属于 player（从 PLAYER_CARDS 查）
+fn validate_owned_cards(storage: &mut dyn Storage, player: &Addr, card_ids: &[String])
+    -> Result<(), ContractError>
+{
+    if card_ids.len() != 3 {
+        return Err(ContractError::InvalidInput(format!(
+            "need exactly 3 cards, got {}", card_ids.len()
+        )));
+    }
+    let owned = PLAYER_CARDS.may_load(storage, player)?.unwrap_or_default();
+    let mut set = std::collections::BTreeSet::new();
+    for id in card_ids {
+        if !owned.contains(id) {
+            return Err(ContractError::CardNotFound(id.clone()));
+        }
+        if !set.insert(id.clone()) {
+            return Err(ContractError::InvalidInput(format!("duplicate card id: {}", id)));
+        }
+    }
+    Ok(())
 }
 
-fn execute_join_royale(
-    _deps: DepsMut, _env: Env, _info: MessageInfo, _royale_id: String,
-) -> Result<Response, ContractError> {
-    // 混战对战链上结算尚未完整实现
-    Err(ContractError::FeatureDisabled("join_royale (battle royale not yet ready)".into()))
+/// 卡牌战力总和（用于 PVP/Royale 结算）
+fn card_power(card: &CardInfo) -> u64 { (card.attack as u64) + (card.defense as u64) }
+
+fn order_total_power(storage: &mut dyn Storage, order: &[String]) -> Result<u64, ContractError> {
+    let mut sum = 0u64;
+    for id in order {
+        let c = CARDS.load(storage, id)
+            .map_err(|_| ContractError::CardNotFound(id.clone()))?;
+        sum += card_power(&c);
+    }
+    Ok(sum)
 }
-fn execute_finish_royale(
-    _deps: DepsMut, _env: Env, _info: MessageInfo, _royale_id: String, _winner: String, _size: u8,
+
+/// PVP 3 局 2 胜：按索引一对一比较战力，胜局多者赢；平局比总战力
+fn settle_pvp(storage: &mut dyn Storage, m: &mut PvpMatch) -> Result<Addr, ContractError> {
+    let mut wins_ch = 0u32;
+    let mut wins_op = 0u32;
+    for i in 0..3 {
+        let ch_id = &m.challenger_order[i];
+        let op_id = &m.opponent_order[i];
+        let ch = CARDS.load(storage, ch_id)
+            .map_err(|_| ContractError::CardNotFound(ch_id.clone()))?;
+        let op = CARDS.load(storage, op_id)
+            .map_err(|_| ContractError::CardNotFound(op_id.clone()))?;
+        let p_ch = card_power(&ch);
+        let p_op = card_power(&op);
+        if p_ch > p_op { wins_ch += 1; }
+        else if p_op > p_ch { wins_op += 1; }
+    }
+    let winner = if wins_ch > wins_op { m.challenger.clone() }
+        else if wins_op > wins_ch { m.opponent.clone() }
+        else {
+            let sum_ch = order_total_power(storage, &m.challenger_order)?;
+            let sum_op = order_total_power(storage, &m.opponent_order)?;
+            if sum_ch >= sum_op { m.challenger.clone() } else { m.opponent.clone() }
+        };
+    Ok(winner)
+}
+
+fn execute_create_pvp_match(
+    deps: DepsMut, env: Env, info: MessageInfo, opponent: String, card_ids: Vec<String>,
 ) -> Result<Response, ContractError> {
-    Err(ContractError::FeatureDisabled("finish_royale (battle royale not yet ready)".into()))
+    let opponent_addr = deps.api.addr_validate(&opponent)?;
+    if opponent_addr == info.sender {
+        return Err(ContractError::InvalidInput("cannot challenge yourself".into()));
+    }
+    validate_owned_cards(deps.storage, &info.sender, &card_ids)?;
+
+    let params = GAME_PARAMS.load(deps.storage)?;
+    consume_deposit(deps.storage, &info.sender, params.pvp_fee)?;
+
+    let now = env.block.time.seconds();
+    let match_id = format!("pvp_{}_{}", info.sender, now);
+
+    let m = PvpMatch {
+        match_id: match_id.clone(),
+        challenger: info.sender.clone(),
+        opponent: opponent_addr,
+        challenger_order: card_ids,
+        opponent_order: Vec::new(),
+        winner: None,
+        status: PvpStatus::Waiting,
+        created_at: now,
+        finished_at: None,
+        reward_claimed: false,
+    };
+    PVP_MATCHES.save(deps.storage, &match_id, &m)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "create_pvp_match")
+        .add_attribute("match_id", match_id)
+        .add_attribute("challenger", info.sender)
+        .add_attribute("opponent", opponent))
+}
+
+fn execute_accept_pvp_match(
+    deps: DepsMut, env: Env, info: MessageInfo, match_id: String, card_ids: Vec<String>,
+) -> Result<Response, ContractError> {
+    let mut m = PVP_MATCHES.load(deps.storage, &match_id)
+        .map_err(|_| ContractError::NotFound(format!("pvp match {}", match_id)))?;
+    if info.sender != m.opponent {
+        return Err(ContractError::UnauthorizedReason("only opponent can accept".into()));
+    }
+    // 7天超时：懒检查（由查询也会检查）
+    let now = env.block.time.seconds();
+    if now.saturating_sub(m.created_at) > 7 * SECS_PER_DAY {
+        m.status = PvpStatus::Cancelled;
+        PVP_MATCHES.save(deps.storage, &match_id, &m)?;
+        return Err(ContractError::Custom("match timed out".into()));
+    }
+    if !matches!(m.status, PvpStatus::Waiting) {
+        return Err(ContractError::InvalidInput(format!("match not in waiting status, current={:?}", m.status)));
+    }
+    validate_owned_cards(deps.storage, &info.sender, &card_ids)?;
+
+    let params = GAME_PARAMS.load(deps.storage)?;
+    consume_deposit(deps.storage, &info.sender, params.pvp_fee)?;
+
+    m.opponent_order = card_ids;
+    m.status = PvpStatus::Pending;
+
+    // 立即链上结算
+    let winner = settle_pvp(deps.storage, &mut m)?;
+    m.winner = Some(winner.clone());
+    m.status = PvpStatus::Finished;
+    m.finished_at = Some(now);
+
+    PVP_MATCHES.save(deps.storage, &match_id, &m)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "accept_pvp_match")
+        .add_attribute("match_id", match_id)
+        .add_attribute("winner", winner.to_string())
+        .add_attribute("finished_at", now.to_string()))
+}
+
+fn execute_cancel_pvp_match(
+    deps: DepsMut, env: Env, info: MessageInfo, match_id: String,
+) -> Result<Response, ContractError> {
+    let mut m = PVP_MATCHES.load(deps.storage, &match_id)
+        .map_err(|_| ContractError::NotFound(format!("pvp match {}", match_id)))?;
+    if info.sender != m.challenger {
+        return Err(ContractError::UnauthorizedReason("only challenger can cancel".into()));
+    }
+    if !matches!(m.status, PvpStatus::Waiting) {
+        return Err(ContractError::InvalidInput("can only cancel waiting match".into()));
+    }
+    // 7 天超时也可以前端触发
+    let _ = env;
+    m.status = PvpStatus::Cancelled;
+    PVP_MATCHES.save(deps.storage, &match_id, &m)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "cancel_pvp_match")
+        .add_attribute("match_id", match_id))
+}
+
+fn execute_claim_pvp_reward(
+    deps: DepsMut, env: Env, info: MessageInfo, match_id: String,
+) -> Result<Response, ContractError> {
+    let mut m = PVP_MATCHES.load(deps.storage, &match_id)
+        .map_err(|_| ContractError::NotFound(format!("pvp match {}", match_id)))?;
+    if !matches!(m.status, PvpStatus::Finished) {
+        return Err(ContractError::InvalidInput("match not finished".into()));
+    }
+    let winner = m.winner.as_ref()
+        .ok_or_else(|| ContractError::InvalidInput("no winner".into()))?.clone();
+    if info.sender != winner {
+        return Err(ContractError::UnauthorizedReason("only winner can claim".into()));
+    }
+    if m.reward_claimed {
+        return Err(ContractError::InvalidInput("reward already claimed".into()));
+    }
+
+    // ===== Check-Effects-Interaction：所有检查在前，最后修改状态+发消息 =====
+    let cfg = CONFIG.load(deps.storage)?;
+    let params = GAME_PARAMS.load(deps.storage)?;
+    let vault_bal = query_token_balance(&deps.as_ref(), &cfg.token_contract, &env.contract.address)?;
+    // 赢家奖励 = 双方入场费（全部退还） + 动态金库奖励
+    // 注意：pvp_reward tier 基于【结算后】金库余额（扣除即将退还的入场费）计算，避免轻微档位膨胀
+    let entry_fees = 2 * params.pvp_fee;
+    let post_settle_bal = vault_bal.saturating_sub(entry_fees);
+    let dynamic_reward = params.pvp_reward(post_settle_bal);
+    let reward = entry_fees + dynamic_reward;
+    if vault_bal < reward {
+        return Err(ContractError::InsufficientFunds {
+            expected: format!("{} TKCC", reward),
+            got: vault_bal.to_string(),
+        });
+    }
+
+    // Effects: 最后修改状态
+    m.reward_claimed = true;
+    PVP_MATCHES.save(deps.storage, &match_id, &m)?;
+
+    // Interaction: 转账（ CosmWasm 原子性保证：转账失败 → 整个 tx 回滚 → save 也回滚）
+    let msg = build_token_transfer(&cfg.token_contract, &winner, reward);
+
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("method", "claim_pvp_reward")
+        .add_attribute("match_id", match_id)
+        .add_attribute("winner", winner.to_string())
+        .add_attribute("reward", reward.to_string()))
+}
+
+// ============================================================
+// 4-6 人混战
+// ============================================================
+
+fn execute_create_royale(
+    deps: DepsMut, env: Env, info: MessageInfo, size: u8, card_ids: Vec<String>,
+) -> Result<Response, ContractError> {
+    if !(4..=6).contains(&size) {
+        return Err(ContractError::InvalidInput(format!("size must be 4-6, got {}", size)));
+    }
+    validate_owned_cards(deps.storage, &info.sender, &card_ids)?;
+    let params = GAME_PARAMS.load(deps.storage)?;
+    consume_deposit(deps.storage, &info.sender, params.royale_entry_fee)?;
+
+    let now = env.block.time.seconds();
+    let royale_id = format!("royale_{}_{}", info.sender, now);
+
+    let r = RoyaleMatch {
+        royale_id: royale_id.clone(),
+        players: vec![info.sender.clone()],
+        player_orders: vec![card_ids],
+        winner: None,
+        status: RoyaleStatus::Waiting,
+        created_at: now,
+        finished_at: None,
+        size,
+        reward_claimed: false,
+    };
+    ROYALE_MATCHES.save(deps.storage, &royale_id, &r)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "create_royale")
+        .add_attribute("royale_id", royale_id)
+        .add_attribute("size", size.to_string())
+        .add_attribute("creator", info.sender))
+}
+
+fn execute_join_royale_room(
+    deps: DepsMut, env: Env, info: MessageInfo, royale_id: String, card_ids: Vec<String>,
+) -> Result<Response, ContractError> {
+    let mut r = ROYALE_MATCHES.load(deps.storage, &royale_id)
+        .map_err(|_| ContractError::NotFound(format!("royale {}", royale_id)))?;
+    if !matches!(r.status, RoyaleStatus::Waiting) {
+        return Err(ContractError::InvalidInput("royale not accepting players".into()));
+    }
+    // 超时检查
+    let now = env.block.time.seconds();
+    if now.saturating_sub(r.created_at) > 7 * SECS_PER_DAY {
+        r.status = RoyaleStatus::Cancelled;
+        ROYALE_MATCHES.save(deps.storage, &royale_id, &r)?;
+        return Err(ContractError::Custom("royale timed out".into()));
+    }
+    if r.players.iter().any(|p| p == &info.sender) {
+        return Err(ContractError::InvalidInput("already joined".into()));
+    }
+    if r.players.len() as u8 >= r.size {
+        return Err(ContractError::InvalidInput("royale is full".into()));
+    }
+    validate_owned_cards(deps.storage, &info.sender, &card_ids)?;
+
+    let params = GAME_PARAMS.load(deps.storage)?;
+    consume_deposit(deps.storage, &info.sender, params.royale_entry_fee)?;
+
+    r.players.push(info.sender.clone());
+    r.player_orders.push(card_ids);
+    if r.players.len() as u8 == r.size {
+        r.status = RoyaleStatus::Full;
+    }
+    ROYALE_MATCHES.save(deps.storage, &royale_id, &r)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "join_royale_room")
+        .add_attribute("royale_id", royale_id)
+        .add_attribute("joiner", info.sender)
+        .add_attribute("current_players", r.players.len().to_string()))
+}
+
+fn execute_settle_royale(
+    deps: DepsMut, env: Env, info: MessageInfo, royale_id: String,
+) -> Result<Response, ContractError> {
+    let mut r = ROYALE_MATCHES.load(deps.storage, &royale_id)
+        .map_err(|_| ContractError::NotFound(format!("royale {}", royale_id)))?;
+    if !matches!(r.status, RoyaleStatus::Full) {
+        return Err(ContractError::InvalidInput("royale not full yet".into()));
+    }
+    // 允许任何参与者发起结算
+    if !r.players.contains(&info.sender) {
+        return Err(ContractError::UnauthorizedReason("not a participant".into()));
+    }
+
+    // ===== 循环赛逐张比较（3局2胜 扩展到多人，田忌赛马策略生效） =====
+    let n = r.player_orders.len();
+    // 预加载每张卡的战力，避免循环内重复 load
+    let mut order_powers: Vec<[u64; 3]> = Vec::with_capacity(n);
+    for order in &r.player_orders {
+        let mut arr = [0u64; 3];
+        for i in 0..3 {
+            let c = CARDS.load(deps.storage, &order[i])
+                .map_err(|_| ContractError::CardNotFound(order[i].clone()))?;
+            arr[i] = card_power(&c);
+        }
+        order_powers.push(arr);
+    }
+    // 每人循环赛净胜局
+    let mut scores: Vec<i32> = vec![0i32; n];
+    for i in 0..n {
+        for j in (i+1)..n {
+            let mut wi = 0i32;
+            for k in 0..3 {
+                let pi = order_powers[i][k];
+                let pj = order_powers[j][k];
+                if pi > pj { wi += 1; }
+                else if pj > pi { wi -= 1; }
+            }
+            // 平局时按三张总战力比
+            if wi == 0 {
+                let si: u64 = order_powers[i].iter().sum();
+                let sj: u64 = order_powers[j].iter().sum();
+                if si > sj { wi = 1; }
+                else if sj > si { wi = -1; }
+            }
+            scores[i] += wi;
+            scores[j] -= wi;
+        }
+    }
+    let winner_idx = scores.iter()
+        .enumerate()
+        .max_by_key(|(_, &s)| s)
+        .map(|(i, _)| i)
+        .unwrap_or(0);
+    let winner = r.players[winner_idx].clone();
+
+    r.winner = Some(winner.clone());
+    r.status = RoyaleStatus::Finished;
+    r.finished_at = Some(env.block.time.seconds());
+
+    // 奖池金额：实际参赛人数 * 入场费（全部进合约）
+    let cfg = CONFIG.load(deps.storage)?;
+    let params = GAME_PARAMS.load(deps.storage)?;
+    let actual_players = u128::from(r.players.len());
+    let pool_size = actual_players * params.royale_entry_fee;
+    let bp_10000 = 10_000u128;
+    let to_winner = pool_size * params.royale_reward_pct_bp / bp_10000; // 70%
+    let to_burn   = pool_size * params.royale_burn_pct_bp   / bp_10000; // 15%
+    let _to_vault = pool_size * params.royale_vault_pct_bp  / bp_10000; // 15% 留在合约
+
+    // 转账：winner 与 burn（vault 已在合约无需转）
+    let mut msgs = vec![];
+    let vault_bal = query_token_balance(&deps.as_ref(), &cfg.token_contract, &env.contract.address)?;
+    if vault_bal >= to_winner + to_burn {
+        msgs.push(build_token_transfer(&cfg.token_contract, &winner, to_winner));
+        if to_burn > 0 {
+            msgs.push(build_token_transfer(&cfg.token_contract, &cfg.burn_address, to_burn));
+        }
+        // 已完成转账 → 标记 reward_claimed=true，状态 Finished 阻止重新结算
+        r.reward_claimed = true;
+    }
+    // ⚠️ 余额不足时 reward_claimed 保持 false → 赢家后续可通过 claim_royale_reward 单独领取
+    // （不可强行设 true，否则赢家永远领不到钱）
+    ROYALE_MATCHES.save(deps.storage, &royale_id, &r)?;
+
+    Ok(Response::new()
+        .add_messages(msgs)
+        .add_attribute("method", "settle_royale")
+        .add_attribute("royale_id", royale_id)
+        .add_attribute("winner", winner.to_string())
+        .add_attribute("winner_share", to_winner.to_string())
+        .add_attribute("burned", to_burn.to_string()))
+}
+
+fn execute_claim_royale_reward(
+    deps: DepsMut, env: Env, info: MessageInfo, royale_id: String,
+) -> Result<Response, ContractError> {
+    let mut r = ROYALE_MATCHES.load(deps.storage, &royale_id)
+        .map_err(|_| ContractError::NotFound(format!("royale {}", royale_id)))?;
+    if !matches!(r.status, RoyaleStatus::Finished) {
+        return Err(ContractError::InvalidInput("royale not finished".into()));
+    }
+    let winner = r.winner.as_ref()
+        .ok_or_else(|| ContractError::InvalidInput("no winner".into()))?.clone();
+    if info.sender != winner {
+        return Err(ContractError::UnauthorizedReason("only winner can claim".into()));
+    }
+    if r.reward_claimed {
+        return Err(ContractError::InvalidInput("reward already paid/claimed".into()));
+    }
+
+    // ===== Check-Effects-Interaction：全部检查在前 =====
+    let cfg = CONFIG.load(deps.storage)?;
+    let params = GAME_PARAMS.load(deps.storage)?;
+    let pool_size = u128::from(r.players.len()) * params.royale_entry_fee;
+    let to_winner = pool_size * params.royale_reward_pct_bp / 10_000u128;
+    let vault_bal = query_token_balance(&deps.as_ref(), &cfg.token_contract, &env.contract.address)?;
+    if vault_bal < to_winner {
+        return Err(ContractError::InsufficientFunds {
+            expected: format!("{} TKCC", to_winner),
+            got: vault_bal.to_string(),
+        });
+    }
+
+    // Effects: 最后修改状态
+    r.reward_claimed = true;
+    ROYALE_MATCHES.save(deps.storage, &royale_id, &r)?;
+
+    // Interaction: 转账
+    let msg = build_token_transfer(&cfg.token_contract, &winner, to_winner);
+    Ok(Response::new()
+        .add_message(msg)
+        .add_attribute("method", "claim_royale_reward")
+        .add_attribute("royale_id", royale_id)
+        .add_attribute("winner", winner.to_string())
+        .add_attribute("reward", to_winner.to_string()))
+}
+
+// ============================================================
+// 卡牌分解 & 升级
+// ============================================================
+
+fn execute_decompose_card(
+    deps: DepsMut, _env: Env, info: MessageInfo, card_id: String,
+) -> Result<Response, ContractError> {
+    let card = CARDS.load(deps.storage, &card_id)
+        .map_err(|_| ContractError::CardNotFound(card_id.clone()))?;
+    if card.owner != info.sender.as_str() {
+        return Err(ContractError::UnauthorizedReason("not the card owner".into()));
+    }
+    let r_idx = Fragments::rarity_index(&card.rarity).unwrap_or(0);
+    let frags = FRAGMENT_FROM_DUPLICATE.get(r_idx).map(|(_, f)| *f).unwrap_or(5);
+
+    // 1. 从 CARDS 移除
+    CARDS.remove(deps.storage, &card_id);
+    // 2. 从 PLAYER_CARDS 移除该 id
+    let mut owned = PLAYER_CARDS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
+    owned.retain(|x| x != &card_id);
+    PLAYER_CARDS.save(deps.storage, &info.sender, &owned)?;
+    // 3. 增加碎片
+    let mut f = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
+    let cur = f.get(&card.rarity);
+    f.set(&card.rarity, cur.saturating_add(frags));
+    FRAGMENTS.save(deps.storage, &info.sender, &f)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "decompose_card")
+        .add_attribute("card_id", card_id)
+        .add_attribute("fragments", frags.to_string())
+        .add_attribute("rarity", card.rarity))
+}
+
+/// 升级消耗碎片数量（按稀有度）common 50 / rare 100 / epic 200 / legend 500
+fn upgrade_cost(rarity: &str) -> u64 {
+    match rarity {
+        "common" => 50,
+        "rare" => 100,
+        "epic" => 200,
+        "legend" => 500,
+        _ => 50,
+    }
+}
+
+fn execute_upgrade_card(
+    deps: DepsMut, _env: Env, info: MessageInfo, card_id: String,
+) -> Result<Response, ContractError> {
+    let mut card = CARDS.load(deps.storage, &card_id)
+        .map_err(|_| ContractError::CardNotFound(card_id.clone()))?;
+    if card.owner != info.sender.as_str() {
+        return Err(ContractError::UnauthorizedReason("not the card owner".into()));
+    }
+    if card.level >= 10 {
+        return Err(ContractError::InvalidInput("max level (10) reached".into()));
+    }
+    let cost = upgrade_cost(&card.rarity);
+    let mut f = FRAGMENTS.may_load(deps.storage, &info.sender)?.unwrap_or_default();
+    let cur = f.get(&card.rarity);
+    if cur < cost {
+        return Err(ContractError::InsufficientFunds {
+            expected: format!("{} {} fragments", cost, card.rarity),
+            got: cur.to_string(),
+        });
+    }
+    f.set(&card.rarity, cur - cost);
+    FRAGMENTS.save(deps.storage, &info.sender, &f)?;
+
+    card.attack = card.attack.saturating_add(3);
+    card.defense = card.defense.saturating_add(2);
+    card.level = card.level.saturating_add(1);
+    CARDS.save(deps.storage, &card_id, &card)?;
+
+    Ok(Response::new()
+        .add_attribute("method", "upgrade_card")
+        .add_attribute("card_id", card_id)
+        .add_attribute("new_level", card.level.to_string())
+        .add_attribute("new_attack", card.attack.to_string())
+        .add_attribute("new_defense", card.defense.to_string())
+        .add_attribute("fragments_spent", cost.to_string()))
 }
 
 // ============================================================
@@ -1035,7 +1528,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_binary(&VaultBalanceResponse { balance: bal.to_string() })
         }
         QueryMsg::Card { card_id } => to_binary(&query_card(deps, card_id)?),
-        QueryMsg::AiStats { address } => to_binary(&query_ai_stats(deps, address)?),
+        QueryMsg::AiStats { address } => to_binary(&query_ai_stats(deps, env, address)?),
         QueryMsg::GetBattleOrder { player } => to_binary(&query_battle_order(deps, player)?),
         QueryMsg::ListProposals { start_after, limit } => to_binary(&query_list_proposals(deps, start_after, limit)?),
         QueryMsg::GetProposal { proposal_id } => to_binary(&query_get_proposal(deps, proposal_id)?),
@@ -1044,6 +1537,14 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::RarityCount {} => to_binary(&query_rarity_count(deps)?),
         QueryMsg::GetFragments { address } => to_binary(&query_fragments(deps, address)?),
         QueryMsg::GetDeposit { address } => to_binary(&query_deposit(deps, address)?),
+
+        QueryMsg::GetPvpMatch { match_id } => to_binary(&query_pvp_match(deps, match_id)?),
+        QueryMsg::ListPvpMatches { player, status, start_after, limit } =>
+            to_binary(&query_list_pvp_matches(deps, player, status, start_after, limit)?),
+
+        QueryMsg::GetRoyale { royale_id } => to_binary(&query_royale(deps, royale_id)?),
+        QueryMsg::ListRoyale { status, start_after, limit } =>
+            to_binary(&query_list_royale(deps, status, start_after, limit)?),
     }
 }
 
@@ -1092,7 +1593,7 @@ fn query_pending_rewards(deps: Deps, address: String) -> StdResult<PendingReward
     Ok(PendingRewardsResponse { total_rewards: total.to_string(), battle_ids: ids })
 }
 fn query_card(deps: Deps, card_id: String) -> StdResult<CardInfo> { CARDS.load(deps.storage, &card_id) }
-fn query_ai_stats(deps: Deps, address: String) -> StdResult<AiStatsResponse> {
+fn query_ai_stats(deps: Deps, env: Env, address: String) -> StdResult<AiStatsResponse> {
     let addr = deps.api.addr_validate(&address)?;
     let stats = AI_BATTLE_STATS.may_load(deps.storage, &addr)?.unwrap_or_default();
     let params = GAME_PARAMS.load(deps.storage)?;
@@ -1102,17 +1603,18 @@ fn query_ai_stats(deps: Deps, address: String) -> StdResult<AiStatsResponse> {
         format!("{:.2}", (stats.wins as f64 / stats.total as f64) * 100.0)
     };
     let recommended_difficulty = params.difficulty_from_win_rate(stats.wins, stats.total);
-    let today = cosmwasm_std::Timestamp::from_seconds(
-        // 用 0 占位；实际需要 env，但此处无法拿到
-        0,
-    ).seconds() / SECS_PER_DAY * SECS_PER_DAY;
-    let _ = today;
+    // 使用当前时间计算真正的今日局数（跨天时自动返回 0）
+    let today = env.block.time.seconds() / SECS_PER_DAY * SECS_PER_DAY;
+    let last_day = AI_BATTLE_DATE.may_load(deps.storage, &addr)?.unwrap_or(0);
+    let today_count = if last_day == today {
+        AI_BATTLE_COUNT.may_load(deps.storage, &addr)?.unwrap_or(0)
+    } else { 0 };
     Ok(AiStatsResponse {
         total: stats.total,
         wins: stats.wins,
         win_rate,
         recommended_difficulty,
-        today_count: AI_BATTLE_COUNT.may_load(deps.storage, &addr)?.unwrap_or(0),
+        today_count,
         daily_limit: params.daily_ai_limit,
     })
 }
@@ -1215,6 +1717,120 @@ fn query_deposit(deps: Deps, address: String) -> StdResult<DepositResponse> {
 }
 
 // ============================================================
+// PVP 查询
+// ============================================================
+
+fn pvp_status_str(s: &PvpStatus) -> String {
+    match s {
+        PvpStatus::Waiting => "waiting".into(),
+        PvpStatus::Pending => "pending".into(),
+        PvpStatus::Finished => "finished".into(),
+        PvpStatus::Cancelled => "cancelled".into(),
+    }
+}
+
+fn into_pvp_resp(m: PvpMatch) -> PvpMatchResponse {
+    PvpMatchResponse {
+        match_id: m.match_id,
+        challenger: m.challenger.to_string(),
+        opponent: m.opponent.to_string(),
+        challenger_order: m.challenger_order,
+        opponent_order: m.opponent_order,
+        winner: m.winner.map(|w| w.to_string()),
+        status: pvp_status_str(&m.status),
+        created_at: m.created_at,
+        finished_at: m.finished_at,
+        reward_claimed: m.reward_claimed,
+    }
+}
+
+fn query_pvp_match(deps: Deps, match_id: String) -> StdResult<PvpMatchResponse> {
+    let m = PVP_MATCHES.load(deps.storage, &match_id).map_err(|_| cosmwasm_std::StdError::not_found("pvp_match"))?;
+    Ok(into_pvp_resp(m))
+}
+
+fn query_list_pvp_matches(
+    deps: Deps, player: Option<String>, status: Option<String>,
+    _start_after: Option<String>, limit: Option<u32>,
+) -> StdResult<PvpListResponse> {
+    let limit = limit.unwrap_or(50) as usize;
+    let player_addr = player.map(|p| deps.api.addr_validate(&p)).transpose()?;
+
+    let mut matches: Vec<PvpMatchResponse> = PVP_MATCHES
+        .range(deps.storage, None, None, Order::Descending)
+        .filter_map(|r| r.ok().map(|(_, m)| m))
+        .filter(|m| {
+            if let Some(p) = &player_addr {
+                if &m.challenger != p && &m.opponent != p { return false; }
+            }
+            if let Some(s) = &status {
+                if &pvp_status_str(&m.status) != s { return false; }
+            }
+            true
+        })
+        .take(limit)
+        .map(into_pvp_resp)
+        .collect();
+    // 时间倒序
+    matches.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    Ok(PvpListResponse { matches })
+}
+
+// ============================================================
+// 混战查询
+// ============================================================
+
+fn royale_status_str(s: &RoyaleStatus) -> String {
+    match s {
+        RoyaleStatus::Waiting => "waiting".into(),
+        RoyaleStatus::Full => "full".into(),
+        RoyaleStatus::Finished => "finished".into(),
+        RoyaleStatus::Cancelled => "cancelled".into(),
+    }
+}
+
+fn into_royale_resp(r: RoyaleMatch) -> RoyaleResponse {
+    RoyaleResponse {
+        royale_id: r.royale_id,
+        players: r.players.iter().map(|a| a.to_string()).collect(),
+        player_orders: r.player_orders,
+        winner: r.winner.map(|w| w.to_string()),
+        status: royale_status_str(&r.status),
+        created_at: r.created_at,
+        finished_at: r.finished_at,
+        size: r.size,
+        reward_claimed: r.reward_claimed,
+    }
+}
+
+fn query_royale(deps: Deps, royale_id: String) -> StdResult<RoyaleResponse> {
+    let r = ROYALE_MATCHES.load(deps.storage, &royale_id).map_err(|_| cosmwasm_std::StdError::not_found("royale"))?;
+    Ok(into_royale_resp(r))
+}
+
+fn query_list_royale(
+    deps: Deps, status: Option<String>,
+    _start_after: Option<String>, limit: Option<u32>,
+) -> StdResult<RoyaleListResponse> {
+    let limit = limit.unwrap_or(50) as usize;
+
+    let mut royales: Vec<RoyaleResponse> = ROYALE_MATCHES
+        .range(deps.storage, None, None, Order::Descending)
+        .filter_map(|r| r.ok().map(|(_, rm)| rm))
+        .filter(|r| {
+            if let Some(s) = &status {
+                if &royale_status_str(&r.status) != s { return false; }
+            }
+            true
+        })
+        .take(limit)
+        .map(into_royale_resp)
+        .collect();
+    royales.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    Ok(RoyaleListResponse { royales })
+}
+
+// ============================================================
 // 玩家存款系统（CW20 Send+Receive 官方标准，修复费用共享漏洞）
 // ============================================================
 /// CW20 Send+Receive 模式：接收 Cw20ReceiveMsg（CW20 官方标准）
@@ -1228,7 +1844,7 @@ fn execute_receive(
     // 安全检查：必须是 token_contract 发来的（CW20 调用时 info.sender 就是代币合约地址）
     let config = CONFIG.load(deps.storage)?;
     if info.sender != config.token_contract {
-        return Err(ContractError::Unauthorized(format!(
+        return Err(ContractError::UnauthorizedReason(format!(
             "Receive must be called by token contract {}", config.token_contract
         )));
     }
@@ -1262,6 +1878,8 @@ fn execute_withdraw_deposit(
 
     // 1. 检查玩家可用存款
     let current = DEPOSITS.may_load(deps.storage, &info.sender)?.unwrap_or(0);
+    // 当前 locked 仅来自 PROPOSAL_DEPOSITS（提案质押）；若未来增加其他锁定（PVP 冻结等），
+    // 需在此扩展或引入通用 LockedDeposits Map
     let locked = PROPOSAL_DEPOSITS.may_load(deps.storage, &info.sender)?.unwrap_or(0);
     let available = current.saturating_sub(locked);
     if amount_u > available {

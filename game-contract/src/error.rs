@@ -5,10 +5,14 @@ use thiserror::Error;
 #[derive(Debug, Error)]
 pub enum ContractError {
     // ------ 通用 ------
-    #[error("Unauthorized")]
-    Unauthorized,
+    #[error("Unauthorized: {0}")]
+    UnauthorizedReason(String),
+    #[error("Not found: {0}")]
+    NotFound(String),
     #[error("Invalid input: {0}")]
     InvalidInput(String),
+    #[error("Custom error: {0}")]
+    Custom(String),
     #[error("Insufficient funds: expected {expected}, got {got}")]
     InsufficientFunds { expected: String, got: String },
     #[error("Card not found: {0}")]

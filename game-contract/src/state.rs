@@ -153,6 +153,61 @@ pub const DEPOSITS: Map<&Addr, u128> = Map::new("deposits");
 pub const PROPOSAL_DEPOSITS: Map<&Addr, u128> = Map::new("proposal_deposits");
 
 // ============================================================
+// PVP 1v1 对战
+// ============================================================
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum PvpStatus {
+    Waiting,   // 等待对手接受
+    Pending,   // 双方已提交，待结算（通常 Accept 后立即结算，此为中间态）
+    Finished,  // 已结算
+    Cancelled, // 超时或取消
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct PvpMatch {
+    pub match_id: String,
+    pub challenger: Addr,
+    pub opponent: Addr,
+    pub challenger_order: Vec<String>,  // 3 张 card_id
+    pub opponent_order: Vec<String>,    // 3 张 card_id（接受时填入）
+    pub winner: Option<Addr>,
+    pub status: PvpStatus,
+    pub created_at: u64,
+    pub finished_at: Option<u64>,
+    pub reward_claimed: bool,
+}
+
+pub const PVP_MATCHES: Map<&str, PvpMatch> = Map::new("pvp_matches");
+
+// ============================================================
+// 4-6 人混战
+// ============================================================
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum RoyaleStatus {
+    Waiting,    // 等待满人
+    Full,       // 已满人，待提交/自动结算
+    Finished,   // 已结算
+    Cancelled,  // 超时或取消
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct RoyaleMatch {
+    pub royale_id: String,
+    pub players: Vec<Addr>,
+    pub player_orders: Vec<Vec<String>>,  // 与 players 索引一一对应，每个是 3 张 card_id
+    pub winner: Option<Addr>,
+    pub status: RoyaleStatus,
+    pub created_at: u64,
+    pub finished_at: Option<u64>,
+    pub size: u8,               // 目标人数 4-6
+    pub reward_claimed: bool,
+}
+
+pub const ROYALE_MATCHES: Map<&str, RoyaleMatch> = Map::new("royale_matches");
+
+// ============================================================
 // 需求五：卡牌提案系统
 // ============================================================
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -166,6 +221,7 @@ pub struct CardTemplate {
     pub cost: Option<u32>,
     pub weight: u32,         // 抽卡权重
     pub description: Option<String>,
+    pub image_url: Option<String>,  // 卡牌图片 URL（前端优先使用）
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]

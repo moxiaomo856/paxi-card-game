@@ -55,17 +55,31 @@ pub enum ExecuteMsg {
     /// 提案者提前取消未到期的未通过提案
     CancelProposal { proposal_id: u64 },
 
-    // ---- PVP（需求二动态奖励）----
-    /// 挑战方调用，支付 6 万 TKCC
-    RequestPvpMatch { opponent: String },
-    /// 完成 PVP 对战
-    FinishPvpMatch { match_id: String, winner: String },
+    // ---- PVP 1v1 对战 ----
+    /// 挑战者创建对局：指定对手地址 + 自己的 3 张卡牌顺序，从存款扣除 6 万 TKCC 入场费
+    CreatePvpMatch { opponent: String, card_ids: Vec<String> },
+    /// 对手接受对局：填入自己 3 张卡牌顺序，从存款扣 6 万 TKCC，接受后立即触发链上结算
+    AcceptPvpMatch { match_id: String, card_ids: Vec<String> },
+    /// 挑战者取消未被接受的对局（费用不退）
+    CancelPvpMatch { match_id: String },
+    /// 赢家领取奖励（Check-Effects-Interaction：先标记后转账，防重入）
+    ClaimPvpReward { match_id: String },
 
-    // ---- 混战（需求二）----
-    /// 报名混战（支持 4-6 人）
-    JoinRoyale { royale_id: String },
-    /// 结束混战，分配奖金
-    FinishRoyale { royale_id: String, winner: String, size: u8 },
+    // ---- 4-6 人混战 ----
+    /// 创建混战房间，size=4/5/6，房主支付 6 万 TKCC 并提交 3 张卡
+    CreateRoyale { size: u8, card_ids: Vec<String> },
+    /// 加入混战房间，支付 6 万 TKCC 并提交 3 张卡；满人后状态变 Full
+    JoinRoyaleRoom { royale_id: String, card_ids: Vec<String> },
+    /// 发起结算（满人后任何参与者可调用）；赢家由合约自动计算，防作弊
+    SettleRoyale { royale_id: String },
+    /// 赢家领取奖励，防重入
+    ClaimRoyaleReward { royale_id: String },
+
+    // ---- 卡牌分解 & 升级 ----
+    /// 分解卡牌为碎片（按稀有度：5/10/20/50）
+    DecomposeCard { card_id: String },
+    /// 升级卡牌：消耗碎片 +3 攻 +2 防，最多 Lv.10
+    UpgradeCard { card_id: String },
 
     // ---- CW20 Send + Receive（官方标准存款模式，修复费用共享漏洞）----
     /// CW20 代币合约转账到本合约时自动回调（标准 Cw20ReceiveMsg）
@@ -125,6 +139,23 @@ pub enum QueryMsg {
 
     // ---- 玩家存款系统 ----
     GetDeposit { address: String },
+
+    // ---- PVP ----
+    GetPvpMatch { match_id: String },
+    ListPvpMatches {
+        player: Option<String>,
+        status: Option<String>,
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
+
+    // ---- 混战 ----
+    GetRoyale { royale_id: String },
+    ListRoyale {
+        status: Option<String>,
+        start_after: Option<String>,
+        limit: Option<u32>,
+    },
 }
 
 // ============================================================
@@ -147,6 +178,7 @@ pub struct CardInfo {
     pub attack: u32,
     pub defense: u32,
     pub star: u8,
+    pub level: u8,   // Lv.0-10，升星/升级独立成长；旧卡默认 0
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -240,4 +272,44 @@ pub struct FragmentsResponse {
 pub struct DepositResponse {
     pub available: String,   // 可用存款（未锁定）
     pub locked: String,      // 提案质押锁定金额
+}
+
+// ============================================================
+// PVP / 混战响应
+// ============================================================
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct PvpMatchResponse {
+    pub match_id: String,
+    pub challenger: String,
+    pub opponent: String,
+    pub challenger_order: Vec<String>,
+    pub opponent_order: Vec<String>,
+    pub winner: Option<String>,
+    pub status: String,   // waiting / pending / finished / cancelled
+    pub created_at: u64,
+    pub finished_at: Option<u64>,
+    pub reward_claimed: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct PvpListResponse {
+    pub matches: Vec<PvpMatchResponse>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct RoyaleResponse {
+    pub royale_id: String,
+    pub players: Vec<String>,
+    pub player_orders: Vec<Vec<String>>,
+    pub winner: Option<String>,
+    pub status: String,   // waiting / full / finished / cancelled
+    pub created_at: u64,
+    pub finished_at: Option<u64>,
+    pub size: u8,
+    pub reward_claimed: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct RoyaleListResponse {
+    pub royales: Vec<RoyaleResponse>,
 }
