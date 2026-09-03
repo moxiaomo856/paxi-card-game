@@ -2651,7 +2651,9 @@
                 }, 30);
 
                 const dupCount = count - drawn.length;
-                showToast(`🎉 抽卡成功！获得 ${drawn.length} 张新卡牌${dupCount > 0 ? `，${dupCount} 张重复转化为碎片` : ''}`, 'success');
+                let msg = `🎉 抽卡成功！获得 ${drawn.length} 张新卡牌`;
+                if (dupCount > 0) msg += `，${dupCount} 张为已有卡牌（未获得新卡）`;
+                showToast(msg, 'success');
             } catch (e) {
                 console.error('drawCards', e);
                 showToast('❌ 抽卡失败：' + (e.message || e), 'error');
