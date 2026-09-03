@@ -56,8 +56,8 @@ pub enum ExecuteMsg {
     CancelProposal { proposal_id: u64 },
 
     // ---- PVP 1v1 对战 ----
-    /// 挑战者创建对局：指定对手地址 + 自己的 3 张卡牌顺序，从存款扣除 6 万 TKCC 入场费
-    CreatePvpMatch { opponent: String, card_ids: Vec<String> },
+    /// 挑战者创建对局：指定对手地址（或公开）+ 自己的 3 张卡牌顺序，从存款扣除 6 万 TKCC 入场费
+    CreatePvpMatch { opponent: String, card_ids: Vec<String>, public: Option<bool> },
     /// 对手接受对局：填入自己 3 张卡牌顺序，从存款扣 6 万 TKCC，接受后立即触发链上结算
     AcceptPvpMatch { match_id: String, card_ids: Vec<String> },
     /// 挑战者取消未被接受的对局（费用不退）
@@ -282,6 +282,7 @@ pub struct PvpMatchResponse {
     pub match_id: String,
     pub challenger: String,
     pub opponent: String,
+    pub is_public: bool,
     pub challenger_order: Vec<String>,
     pub opponent_order: Vec<String>,
     pub winner: Option<String>,

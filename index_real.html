@@ -1284,9 +1284,12 @@
             <button class="close-btn" onclick="closePvpCreateModal()">✕</button>
             <h2>⚔️ 创建 PVP 挑战</h2>
             <p style="color:#b39b7a;font-size:12px;">从双方存款各扣 <b>60,000 TKCC</b>；接受后立即链上结算（3局2胜）。奖励根据金库档位动态发放。</p>
-            <div style="margin:10px 0;">
+            <div style="margin:10px 0; display:none;">
                 <span class="label">对手地址 (paxi1...)</span>
-                <input id="pvpOpponent" class="w3-input" placeholder="对手的钱包地址">
+                <input id="pvpOpponent" class="w3-input" placeholder="对手的钱包地址" value="public">
+            </div>
+            <div style="margin:10px 0;padding:8px 12px;background:rgba(255,200,50,0.12);border:1px solid #ffc832;border-radius:8px;color:#ffc832;font-size:12px;">
+                📣 当前为 <b>公开挑战模式</b>，其他玩家可在「对局列表」中看到并接受。
             </div>
             <div id="pvpCreateCardSelector" style="margin:10px 0;"></div>
             <div class="star-actions">
@@ -1372,7 +1375,7 @@
     </div>
 
     <!-- ===== ⭐ 升星/详情弹窗 ===== -->
-    <div class="modal-overlay card-detail-modal" id="cardDetailModal" style="display:none;">
+    <div class="modal-overlay card-detail-modal" id="cardDetailModal">
         <div class="modal">
             <button class="close-btn" onclick="closeCardDetail()">✕</button>
             <div class="card-preview">
@@ -1673,6 +1676,18 @@
         // 构建并广播交易（DApp 指南 3.4 buildAndSendTx）
         // messages: 已封装为 Any 的消息数组
         // ============================================================
+        // 安全的原生 Base64 编码（避免展开运算符栈溢出，不依赖 PaxiCosmJS.toBase64）
+        function toB64(bytes) {
+            const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+            let binary = '';
+            const chunk = 8192;
+            for (let i = 0; i < arr.length; i += chunk) {
+                binary += String.fromCharCode.apply(null, arr.subarray(i, Math.min(i + chunk, arr.length)));
+            }
+            return btoa(binary);
+        }
+
+        // ============================================================
         async function buildAndSendTx(messages, memo = "") {
             // 1. 获取 chainId
             const chainId = await fetch(`${PAXI_RPC}/status`)
@@ -1723,8 +1738,8 @@
 
             // 8. 让钱包签名并发送
             const txObj = {
-                bodyBytes:     PaxiCosmJS.toBase64(signDoc.bodyBytes),
-                authInfoBytes: PaxiCosmJS.toBase64(signDoc.authInfoBytes),
+                bodyBytes:     toB64(signDoc.bodyBytes),
+                authInfoBytes: toB64(signDoc.authInfoBytes),
                 chainId,
                 accountNumber: signDoc.accountNumber.toString()
             };
@@ -1738,7 +1753,7 @@
                 signatures:    [sigBytes]
             });
             const txBytes  = PaxiCosmJS.TxRaw.encode(txRaw).finish();
-            const base64Tx = PaxiCosmJS.toBase64(txBytes);
+            const base64Tx = toB64(txBytes);
 
             // 10. 广播
             const broadcastResult = await fetch(`${PAXI_LCD}/cosmos/tx/v1beta1/txs`, {
@@ -2295,18 +2310,22 @@
             if (!desc) desc = i18n[lang]['desc_default'] || (lang === 'en' ? 'Three Kingdoms general.' : '三国名将。');
             document.getElementById('detailDesc').textContent = desc;
 
-            // 检查是否可升星
-            const canUpgrade = (card.star || 1) < 5;
+            // 检查升星条件：星级 < 5 且存款/碎片够
+            const canUpgradeStar = (card.star || 1) < 5;
             const fees = [50000, 150000, 400000, 1000000];
             const starIdx = (card.star || 1) - 1;
             const fragNeeded = Math.ceil(fees[starIdx] / 100);
+            const needBal = fees[starIdx] * 1_000_000; // 转为最小单位
+            const haveFrag = (fragmentsData && fragmentsData[card.rarity]) || 0;
+            const canPayBal = depositBalance >= needBal;
+            const canPayFrag = haveFrag >= fragNeeded;
             // 复用上方已声明的 rarityLabel，避免重复 const 导致 SyntaxError 中断整个 script
-            if (canUpgrade) {
-                document.getElementById('detailUpgradeBtn').disabled = false;
-                document.getElementById('detailUpgradeMaxBtn').disabled = false;
-                document.getElementById('detailUpgradeFragBtn').disabled = false;
-                document.getElementById('detailUpgradeBtn').textContent = `⭐ 升1星 (${fees[starIdx].toLocaleString()} TKCC)`;
-                document.getElementById('detailUpgradeFragBtn').textContent = `✨ 碎片升星 (${fragNeeded} ${rarityLabel}碎片)`;
+            if (canUpgradeStar) {
+                document.getElementById('detailUpgradeBtn').disabled = !canPayBal;
+                document.getElementById('detailUpgradeMaxBtn').disabled = !canPayBal;
+                document.getElementById('detailUpgradeFragBtn').disabled = !canPayFrag;
+                document.getElementById('detailUpgradeBtn').textContent = `⭐ 升1星 (${fees[starIdx].toLocaleString()} TKCC)` + (!canPayBal ? ' ⚠️存款不足' : '');
+                document.getElementById('detailUpgradeFragBtn').textContent = `✨ 碎片升星 (${fragNeeded} ${rarityLabel}碎片)` + (!canPayFrag ? ' ⚠️碎片不足' : '');
             } else {
                 document.getElementById('detailUpgradeBtn').disabled = true;
                 document.getElementById('detailUpgradeMaxBtn').disabled = true;
@@ -3452,16 +3471,16 @@
 
         async function doCreatePvpMatch() {
             if (!requireWallet()) return;
-            const opponent = document.getElementById('pvpOpponent').value.trim();
-            if (!opponent) { showToast('⚠️ 请输入对手地址', 'error'); return; }
+            // 固定为公开挑战 → 跳过地址校验
+            const opponent = '';
             if (_selectedCards.length !== 3) { showToast('⚠️ 请选择 3 张卡牌出战', 'error'); return; }
             try {
                 isProcessing = true;
-                showToast('⏳ 发起 PVP 挑战中...', 'info');
+                showToast('⏳ 发起 PVP 公开挑战中...', 'info');
                 const msgs = [buildMsgExecuteGame(walletAddress, {
-                    create_pvp_match: { opponent, card_ids: _selectedCards }
+                    create_pvp_match: { opponent, card_ids: _selectedCards, public: true }
                 })];
-                await buildAndSendTx(msgs, `CreatePvpMatch vs ${opponent.slice(0,12)}...`);
+                await buildAndSendTx(msgs, 'CreatePvpMatch (public)');
                 closePvpCreateModal();
                 await refreshBalances();
                 showToast('✅ 挑战已发起，等待对手接受', 'success');
@@ -3533,7 +3552,8 @@
         async function fetchPvpMatches() {
             if (!GAME_CONTRACT || !walletAddress) return { matches: [] };
             try {
-                const q = JSON.stringify({ list_pvp_matches: { player: walletAddress, limit: 50 } });
+                // 去掉 player 过滤 → 查询全服对局，让公开房间可见
+                const q = JSON.stringify({ list_pvp_matches: { limit: 50 } });
                 const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
                 const d = await r.json();
                 return d?.data ?? { matches: [] };
@@ -3553,16 +3573,18 @@
                     const statusColor = m.status === 'waiting' ? '#a08a5e' : m.status === 'finished' ? '#79d47c' : '#a06060';
                     let actions = '';
                     if (m.status === 'waiting') {
-                        if (m.opponent === walletAddress) actions += `<button class="btn btn-gold btn-sm" onclick='acceptFromList("${m.match_id}")'>✅ 接受</button>`;
+                        // 公开房间（合约返回 is_public=true）：任何非创建者都能接受
+                        if (m.challenger !== walletAddress && m.is_public) actions += `<button class="btn btn-gold btn-sm" onclick='acceptFromList("${m.match_id}")'>✅ 接受</button>`;
+                        if (!m.is_public && m.opponent === walletAddress) actions += `<button class="btn btn-gold btn-sm" onclick='acceptFromList("${m.match_id}")'>✅ 接受</button>`;
                         if (m.challenger === walletAddress) actions += `<button class="btn btn-danger btn-sm" onclick='cancelFromList("${m.match_id}")'>❌ 取消</button>`;
                     } else if (m.status === 'finished' && m.winner === walletAddress && !m.reward_claimed) {
                         actions += `<button class="btn btn-primary btn-sm" onclick='claimPvpReward("${m.match_id}")'>🎁 领取奖励</button>`;
                     }
                     const winnerLabel = m.winner === walletAddress ? '<b style="color:#79d47c;">🏆 你赢了</b>' :
                         m.winner ? (m.winner.slice(0,12)+'...') : '-';
-                    return `<div class="row" style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center;padding:6px;border:1px solid #3a2a1a;border-radius:6px;margin-bottom:4px;">
+                    return `<div class="row" style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center;padding:6px;border:1px solid ${m.is_public?'#ffc832':'#3a2a1a'};border-radius:6px;margin-bottom:4px;background:${m.is_public?'rgba(255,200,50,0.05)':'transparent'};">
                         <div style="font-size:10px;">
-                            <div>${m.challenger.slice(0,12)}... vs ${m.opponent.slice(0,12)}...</div>
+                            <div>${m.challenger.slice(0,12)}... ${m.is_public?'🏛️公开房间':'vs '+m.opponent.slice(0,12)+'...'}</div>
                             <div style="color:#888;">创建: ${new Date(m.created_at*1000).toLocaleString()}</div>
                         </div>
                         <div>赢家: ${winnerLabel}</div>
@@ -3932,6 +3954,7 @@
         }
         async function voteProposal(id, approve) {
             if (!requireWallet()) return;
+            if (!GAME_CONTRACT) { showToast('⚠️ 游戏合约未部署', 'error'); return; }
             try {
                 isProcessing = true;
                 showToast(`⏳ ${approve?'投赞成':'投反对'}票中...`, 'info');

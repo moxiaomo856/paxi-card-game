@@ -17,11 +17,8 @@
         } catch (e) { /* 忽略 */ }
     })();
     </script>
-    <!-- 引入 Paxi 官方 CosmJS 库（DApp 指南 3.1 要求） -->
-    <script src="https://mainnet-api.paxinet.io/resources/js/paxi-cosmjs.umd.js"></script>
-    <!-- 兼容层：补充 PaxiCosmJS 缺失的 protobuf 编码器（coins/MsgSend/MsgExecuteContract 等） -->
-    <script src="compat.js"></script>
-    <style>
+    <!-- 🧪 测试版：完全离线运行 -->
+<style>
         * {
             margin: 0;
             padding: 0;
@@ -1284,9 +1281,12 @@
             <button class="close-btn" onclick="closePvpCreateModal()">✕</button>
             <h2>⚔️ 创建 PVP 挑战</h2>
             <p style="color:#b39b7a;font-size:12px;">从双方存款各扣 <b>60,000 TKCC</b>；接受后立即链上结算（3局2胜）。奖励根据金库档位动态发放。</p>
-            <div style="margin:10px 0;">
+            <div style="margin:10px 0; display:none;">
                 <span class="label">对手地址 (paxi1...)</span>
-                <input id="pvpOpponent" class="w3-input" placeholder="对手的钱包地址">
+                <input id="pvpOpponent" class="w3-input" placeholder="对手的钱包地址" value="public">
+            </div>
+            <div style="margin:10px 0;padding:8px 12px;background:rgba(255,200,50,0.12);border:1px solid #ffc832;border-radius:8px;color:#ffc832;font-size:12px;">
+                📣 当前为 <b>公开挑战模式</b>，其他玩家可在「对局列表」中看到并接受。
             </div>
             <div id="pvpCreateCardSelector" style="margin:10px 0;"></div>
             <div class="star-actions">
@@ -1372,7 +1372,7 @@
     </div>
 
     <!-- ===== ⭐ 升星/详情弹窗 ===== -->
-    <div class="modal-overlay card-detail-modal" id="cardDetailModal" style="display:none;">
+    <div class="modal-overlay card-detail-modal" id="cardDetailModal">
         <div class="modal">
             <button class="close-btn" onclick="closeCardDetail()">✕</button>
             <div class="card-preview">
@@ -1673,6 +1673,18 @@
         // 构建并广播交易（DApp 指南 3.4 buildAndSendTx）
         // messages: 已封装为 Any 的消息数组
         // ============================================================
+        // 安全的原生 Base64 编码（避免展开运算符栈溢出，不依赖 PaxiCosmJS.toBase64）
+        function toB64(bytes) {
+            const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+            let binary = '';
+            const chunk = 8192;
+            for (let i = 0; i < arr.length; i += chunk) {
+                binary += String.fromCharCode.apply(null, arr.subarray(i, Math.min(i + chunk, arr.length)));
+            }
+            return btoa(binary);
+        }
+
+        // ============================================================
         async function buildAndSendTx(messages, memo = "") {
             // 1. 获取 chainId
             const chainId = await fetch(`${PAXI_RPC}/status`)
@@ -1723,8 +1735,8 @@
 
             // 8. 让钱包签名并发送
             const txObj = {
-                bodyBytes:     PaxiCosmJS.toBase64(signDoc.bodyBytes),
-                authInfoBytes: PaxiCosmJS.toBase64(signDoc.authInfoBytes),
+                bodyBytes:     toB64(signDoc.bodyBytes),
+                authInfoBytes: toB64(signDoc.authInfoBytes),
                 chainId,
                 accountNumber: signDoc.accountNumber.toString()
             };
@@ -1738,7 +1750,7 @@
                 signatures:    [sigBytes]
             });
             const txBytes  = PaxiCosmJS.TxRaw.encode(txRaw).finish();
-            const base64Tx = PaxiCosmJS.toBase64(txBytes);
+            const base64Tx = toB64(txBytes);
 
             // 10. 广播
             const broadcastResult = await fetch(`${PAXI_LCD}/cosmos/tx/v1beta1/txs`, {
@@ -2295,18 +2307,22 @@
             if (!desc) desc = i18n[lang]['desc_default'] || (lang === 'en' ? 'Three Kingdoms general.' : '三国名将。');
             document.getElementById('detailDesc').textContent = desc;
 
-            // 检查是否可升星
-            const canUpgrade = (card.star || 1) < 5;
+            // 检查升星条件：星级 < 5 且存款/碎片够
+            const canUpgradeStar = (card.star || 1) < 5;
             const fees = [50000, 150000, 400000, 1000000];
             const starIdx = (card.star || 1) - 1;
             const fragNeeded = Math.ceil(fees[starIdx] / 100);
+            const needBal = fees[starIdx] * 1_000_000; // 转为最小单位
+            const haveFrag = (fragmentsData && fragmentsData[card.rarity]) || 0;
+            const canPayBal = depositBalance >= needBal;
+            const canPayFrag = haveFrag >= fragNeeded;
             // 复用上方已声明的 rarityLabel，避免重复 const 导致 SyntaxError 中断整个 script
-            if (canUpgrade) {
-                document.getElementById('detailUpgradeBtn').disabled = false;
-                document.getElementById('detailUpgradeMaxBtn').disabled = false;
-                document.getElementById('detailUpgradeFragBtn').disabled = false;
-                document.getElementById('detailUpgradeBtn').textContent = `⭐ 升1星 (${fees[starIdx].toLocaleString()} TKCC)`;
-                document.getElementById('detailUpgradeFragBtn').textContent = `✨ 碎片升星 (${fragNeeded} ${rarityLabel}碎片)`;
+            if (canUpgradeStar) {
+                document.getElementById('detailUpgradeBtn').disabled = !canPayBal;
+                document.getElementById('detailUpgradeMaxBtn').disabled = !canPayBal;
+                document.getElementById('detailUpgradeFragBtn').disabled = !canPayFrag;
+                document.getElementById('detailUpgradeBtn').textContent = `⭐ 升1星 (${fees[starIdx].toLocaleString()} TKCC)` + (!canPayBal ? ' ⚠️存款不足' : '');
+                document.getElementById('detailUpgradeFragBtn').textContent = `✨ 碎片升星 (${fragNeeded} ${rarityLabel}碎片)` + (!canPayFrag ? ' ⚠️碎片不足' : '');
             } else {
                 document.getElementById('detailUpgradeBtn').disabled = true;
                 document.getElementById('detailUpgradeMaxBtn').disabled = true;
@@ -2632,7 +2648,7 @@
                 }, 30);
 
                 const dupCount = count - drawn.length;
-                showToast(`🎉 抽卡成功！获得 ${drawn.length} 张新卡牌${dupCount > 0 ? `，${dupCount} 张重复卡（已自动分解得碎片）` : ''}`, 'success');
+                showToast(`🎉 抽卡成功！获得 ${drawn.length} 张新卡牌${dupCount > 0 ? `，${dupCount} 张重复转化为碎片` : ''}`, 'success');
             } catch (e) {
                 console.error('drawCards', e);
                 showToast('❌ 抽卡失败：' + (e.message || e), 'error');
@@ -3452,16 +3468,16 @@
 
         async function doCreatePvpMatch() {
             if (!requireWallet()) return;
-            const opponent = document.getElementById('pvpOpponent').value.trim();
-            if (!opponent) { showToast('⚠️ 请输入对手地址', 'error'); return; }
+            // 固定为公开挑战 → 跳过地址校验
+            const opponent = '';
             if (_selectedCards.length !== 3) { showToast('⚠️ 请选择 3 张卡牌出战', 'error'); return; }
             try {
                 isProcessing = true;
-                showToast('⏳ 发起 PVP 挑战中...', 'info');
+                showToast('⏳ 发起 PVP 公开挑战中...', 'info');
                 const msgs = [buildMsgExecuteGame(walletAddress, {
-                    create_pvp_match: { opponent, card_ids: _selectedCards }
+                    create_pvp_match: { opponent, card_ids: _selectedCards, public: true }
                 })];
-                await buildAndSendTx(msgs, `CreatePvpMatch vs ${opponent.slice(0,12)}...`);
+                await buildAndSendTx(msgs, 'CreatePvpMatch (public)');
                 closePvpCreateModal();
                 await refreshBalances();
                 showToast('✅ 挑战已发起，等待对手接受', 'success');
@@ -3533,7 +3549,8 @@
         async function fetchPvpMatches() {
             if (!GAME_CONTRACT || !walletAddress) return { matches: [] };
             try {
-                const q = JSON.stringify({ list_pvp_matches: { player: walletAddress, limit: 50 } });
+                // 去掉 player 过滤 → 查询全服对局，让公开房间可见
+                const q = JSON.stringify({ list_pvp_matches: { limit: 50 } });
                 const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
                 const d = await r.json();
                 return d?.data ?? { matches: [] };
@@ -3553,16 +3570,18 @@
                     const statusColor = m.status === 'waiting' ? '#a08a5e' : m.status === 'finished' ? '#79d47c' : '#a06060';
                     let actions = '';
                     if (m.status === 'waiting') {
-                        if (m.opponent === walletAddress) actions += `<button class="btn btn-gold btn-sm" onclick='acceptFromList("${m.match_id}")'>✅ 接受</button>`;
+                        // 公开房间（合约返回 is_public=true）：任何非创建者都能接受
+                        if (m.challenger !== walletAddress && m.is_public) actions += `<button class="btn btn-gold btn-sm" onclick='acceptFromList("${m.match_id}")'>✅ 接受</button>`;
+                        if (!m.is_public && m.opponent === walletAddress) actions += `<button class="btn btn-gold btn-sm" onclick='acceptFromList("${m.match_id}")'>✅ 接受</button>`;
                         if (m.challenger === walletAddress) actions += `<button class="btn btn-danger btn-sm" onclick='cancelFromList("${m.match_id}")'>❌ 取消</button>`;
                     } else if (m.status === 'finished' && m.winner === walletAddress && !m.reward_claimed) {
                         actions += `<button class="btn btn-primary btn-sm" onclick='claimPvpReward("${m.match_id}")'>🎁 领取奖励</button>`;
                     }
                     const winnerLabel = m.winner === walletAddress ? '<b style="color:#79d47c;">🏆 你赢了</b>' :
                         m.winner ? (m.winner.slice(0,12)+'...') : '-';
-                    return `<div class="row" style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center;padding:6px;border:1px solid #3a2a1a;border-radius:6px;margin-bottom:4px;">
+                    return `<div class="row" style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center;padding:6px;border:1px solid ${m.is_public?'#ffc832':'#3a2a1a'};border-radius:6px;margin-bottom:4px;background:${m.is_public?'rgba(255,200,50,0.05)':'transparent'};">
                         <div style="font-size:10px;">
-                            <div>${m.challenger.slice(0,12)}... vs ${m.opponent.slice(0,12)}...</div>
+                            <div>${m.challenger.slice(0,12)}... ${m.is_public?'🏛️公开房间':'vs '+m.opponent.slice(0,12)+'...'}</div>
                             <div style="color:#888;">创建: ${new Date(m.created_at*1000).toLocaleString()}</div>
                         </div>
                         <div>赢家: ${winnerLabel}</div>
@@ -3932,6 +3951,7 @@
         }
         async function voteProposal(id, approve) {
             if (!requireWallet()) return;
+            if (!GAME_CONTRACT) { showToast('⚠️ 游戏合约未部署', 'error'); return; }
             try {
                 isProcessing = true;
                 showToast(`⏳ ${approve?'投赞成':'投反对'}票中...`, 'info');
@@ -3986,366 +4006,324 @@
                 });
             } catch (e) { /* 静默失败 */ }
         }
-
+    
         // ============================================================
-        // 🧪 测试模式覆盖层：所有链上调用改为本地模拟
-        // 在真实部署版本（index_real.html）中删除此段即可
+        // 🧪 测试模式覆盖层：业务函数层面直接覆盖，完全离线
+        // 在正式版 index_real.html 中删除此段即可
         // ============================================================
 
-        // ---------- 覆盖 requireWallet：永远返回 true ----------
+        // ---- 1. requireWallet 永远 true ----
         function requireWallet() { return true; }
 
-        // ---------- 覆盖 connectWallet：自动模拟连接 ----------
+        // ---- 2. connectWallet 自动模拟连接 + 初始化数据 ----
         async function connectWallet() {
             walletAddress = 'paxi1testxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
             walletPublicKey = new Uint8Array(32).fill(1);
-            paxiBalance     = 100000000000;  // 10 万 PAXI
-            tkccBalance     = 999999999999;  // 999,999 TKCC
-            depositBalance  = 500_000 * 1_000_000; // 50 万 TKCC 可用存款
-            fragmentsData   = { common: 500, rare: 500, epic: 500, legend: 500 };
-            // 6 张初始测试卡 —— 选卡池里权重最低的 common 卡（抽传说/史诗 都是"新卡"体验）
+            paxiBalance    = 100_000 * 1_000_000;
+            tkccBalance    = 999_999 * 1_000_000;
+            depositBalance = 500_000 * 1_000_000;
+            fragmentsData  = { common: 500, rare: 500, epic: 500, legend: 500 };
+            // 初始 6 张 common（抽卡时其他 24 张都是新卡体验）
             userCards = [
-                { instance_id: 'tst_1', name: '廖化', title: '蜀中先锋', rarity: 'common', attack: 80, defense: 75, star: 1, level: 0, description: '蜀汉老将', image_url: null },
-                { instance_id: 'tst_2', name: '简雍', title: '雍容辩士', rarity: 'common', attack: 78, defense: 72, star: 1, level: 0, description: '蜀汉昭德将军', image_url: null },
-                { instance_id: 'tst_3', name: '孙乾', title: '雍容辩士', rarity: 'common', attack: 75, defense: 80, star: 1, level: 0, description: '蜀汉秉忠将军', image_url: null },
-                { instance_id: 'tst_4', name: '糜竺', title: '富商军师', rarity: 'common', attack: 76, defense: 76, star: 1, level: 0, description: '蜀汉安汉将军', image_url: null },
-                { instance_id: 'tst_5', name: '诸葛瑾', title: '敦厚长者', rarity: 'common', attack: 77, defense: 85, star: 1, level: 0, description: '吴国大将军', image_url: null },
-                { instance_id: 'tst_6', name: '鲁肃', title: '单刀赴会', rarity: 'common', attack: 82, defense: 80, star: 1, level: 0, description: '吴国横江将军', image_url: null },
+                { instance_id:'tst_1', name:'廖化',   title:'蜀中先锋', rarity:'common', attack:80, defense:75, star:1, level:0, description:'蜀汉老将', image_url:null },
+                { instance_id:'tst_2', name:'简雍',   title:'雍容辩士', rarity:'common', attack:78, defense:72, star:1, level:0, description:'蜀汉昭德将军', image_url:null },
+                { instance_id:'tst_3', name:'孙乾',   title:'秉忠使者', rarity:'common', attack:75, defense:80, star:1, level:0, description:'蜀汉秉忠将军', image_url:null },
+                { instance_id:'tst_4', name:'糜竺',   title:'富商军师', rarity:'common', attack:76, defense:76, star:1, level:0, description:'蜀汉安汉将军', image_url:null },
+                { instance_id:'tst_5', name:'诸葛瑾', title:'敦厚长者', rarity:'common', attack:77, defense:85, star:1, level:0, description:'吴国大将军', image_url:null },
+                { instance_id:'tst_6', name:'鲁肃',   title:'单刀赴会', rarity:'common', attack:82, defense:80, star:1, level:0, description:'吴国横江将军', image_url:null },
             ];
             // UI 更新
             document.getElementById('walletBtn').textContent = '✅ 测试模式已连接';
             document.getElementById('walletBtn').disabled = true;
-            document.getElementById('walletAddr').textContent = walletAddress.slice(0, 20) + '...(TEST)';
+            document.getElementById('walletAddr').textContent = walletAddress.slice(0,20) + '...(TEST)';
             document.getElementById('paxiBalance').textContent = fromMicro(paxiBalance) + ' PAXI';
             document.getElementById('tkccBalance').textContent = fromMicro(tkccBalance) + ' TKCC';
-            document.getElementById('depositBalance').textContent = fromMicro(depositBalance) + '';
-            document.getElementById('fragCommon').textContent = 500;
-            document.getElementById('fragRare').textContent  = 500;
-            document.getElementById('fragEpic').textContent = 500;
-            document.getElementById('fragLegend').textContent = 500;
-            showToast('✅ 测试模式已激活：50 万存款 + 6 张测试卡', 'success');
+            document.getElementById('depositBalance').textContent = fromMicro(depositBalance);
+            document.getElementById('fragCommon').textContent  = fragmentsData.common;
+            document.getElementById('fragRare').textContent   = fragmentsData.rare;
+            document.getElementById('fragEpic').textContent    = fragmentsData.epic;
+            document.getElementById('fragLegend').textContent  = fragmentsData.legend;
+            showToast('✅ 测试模式已激活：50 万存款 + 6 张初始卡', 'success');
             updateUI();
             updateSortArea();
             refreshAiStatsAndUI();
         }
 
-        // ---------- 覆盖 refreshBalances：只做 UI 更新 ----------
+        // ---- 3. refreshBalances 纯 UI ----
         async function refreshBalances() {
             document.getElementById('paxiBalance').textContent = fromMicro(paxiBalance) + ' PAXI';
             document.getElementById('tkccBalance').textContent = fromMicro(tkccBalance) + ' TKCC';
-            document.getElementById('depositBalance').textContent = fromMicro(depositBalance) + '';
-            document.getElementById('fragCommon').textContent = fragmentsData.common || 0;
-            document.getElementById('fragRare').textContent  = fragmentsData.rare  || 0;
-            document.getElementById('fragEpic').textContent = fragmentsData.epic   || 0;
-            document.getElementById('fragLegend').textContent = fragmentsData.legend || 0;
+            document.getElementById('depositBalance').textContent = fromMicro(depositBalance);
+            document.getElementById('fragCommon').textContent  = fragmentsData.common  || 0;
+            document.getElementById('fragRare').textContent   = fragmentsData.rare   || 0;
+            document.getElementById('fragEpic').textContent    = fragmentsData.epic    || 0;
+            document.getElementById('fragLegend').textContent  = fragmentsData.legend  || 0;
             updateUI();
             updateSortArea();
         }
-        async function loadFragments()   { /* mock */ }
         async function loadPlayerCards() { updateUI(); updateSortArea(); }
-        async function loadDeposit()      { document.getElementById('depositBalance').textContent = fromMicro(depositBalance) + ''; }
-        async function restoreBattleOrder(){ /* mock */ }
+        async function loadFragments()   { refreshBalances(); }
+        async function loadDeposit()     { document.getElementById('depositBalance').textContent = fromMicro(depositBalance); }
+        async function restoreBattleOrder(){ /* 测试版 */ }
 
-        // ---------- 覆盖 refreshAiStatsAndUI：纯本地展示 ----------
+        // ---- 4. refreshAiStatsAndUI 纯本地 ----
         let mock_ai_today = 0;
         const MOCK_AI_DAILY_LIMIT = 20;
         function refreshAiStatsAndUI() {
-            const line = document.getElementById('aiStatsLine');
-            const line2 = document.getElementById('aiDailyInfo');
             const txt = `今日 ${mock_ai_today} / ${MOCK_AI_DAILY_LIMIT} 局`;
+            const line = document.getElementById('aiStatsLine');
             if (line) line.textContent = txt;
-            if (line2) line2.textContent = txt;
         }
 
-        // ---------- Mock 辅助：从 Any 解出 action JSON ----------
-        function mock_decode_msg(anyObj) {
-            // anyObj: { typeUrl, value(base64) }
-            if (anyObj && anyObj.msg) { /* 有些调用直接传 obj */ return anyObj; }
-            if (anyObj && typeof anyObj.value === 'string') {
-                try {
-                    const bytes = Uint8Array.from(atob(anyObj.value), c => c.charCodeAt(0));
-                    // 先尝试解 MsgExecuteContract
-                    const decoded = PaxiCosmJS.MsgExecuteContract.decode(bytes);
-                    const json = new TextDecoder().decode(decoded.msg);
-                    return JSON.parse(json);
-                } catch(e) {
-                    // 可能是 MsgSend 等，返回 null
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        // 模拟本地卡池抽卡（按权重随机）
-        function mock_draw_one() {
+        // ---- 5. 抽卡 mock ----
+        function mockDrawOne() {
             const weights = { legend: 3, epic: 12, rare: 25, common: 40 };
             const r = Math.random() * (3+12+25+40);
-            let cumul = 0, rarity = 'common';
-            for (const [k, w] of Object.entries(weights)) { cumul += w; if (r < cumul) { rarity = k; break; } }
+            let cum=0, rarity='common';
+            for (const [k,w] of Object.entries(weights)) { cum+=w; if (r<cum){rarity=k;break;} }
             const pool = CARD_TEMPLATES.filter(c => c.rarity === rarity);
-            const tpl = pool[Math.floor(Math.random() * pool.length)];
-            return {
-                instance_id: 'tst_new_' + Date.now() + '_' + Math.random().toString(36).slice(2,6),
-                name: tpl.name, title: tpl.title, rarity: tpl.rarity,
-                attack: tpl.attack, defense: tpl.defense, star: 1, level: 0,
-                description: tpl.description, image_url: tpl.image_url || null,
-            };
+            const tpl = pool[Math.floor(Math.random()*pool.length)];
+            return { instance_id:'tst_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),
+                name:tpl.name, title:tpl.title, rarity, attack:tpl.attack, defense:tpl.defense,
+                star:1, level:0, description:tpl.description, image_url:tpl.image_url||null };
+        }
+        async function drawCards() {
+            if (!requireWallet()) return;
+            const isPack3 = drawMode === 3;
+            const tkccFee = (isPack3 ? 500_000 : 200_000) * 1_000_000;
+            if (depositBalance < tkccFee) { showToast('❌ 存款不足', 'error'); return; }
+            isProcessing = true;
+            depositBalance -= tkccFee;
+            const drawn = [];
+            for (let i=0;i<drawMode;i++) drawn.push(mockDrawOne());
+            drawn.forEach(c => userCards.push(c));
+            refreshBalances();
+            showToast(`🎉 抽到 ${drawn.map(c=>c.name).join('、')}！`, 'success');
+            isProcessing = false;
         }
 
-        // 从卡 ID 找本地卡
-        function findCardById(id) { return userCards.find(c => c.instance_id === id); }
-
-        // ---------- 覆盖 buildAndSendTx：本地模拟所有合约操作 ----------
-        async function buildAndSendTx(messages, memo = "") {
-            for (const any of messages) {
-                const act = mock_decode_msg(any);
-                if (!act) continue; // CW20 Send 等忽略
-
-                // ======== 抽卡（real 合约用 draw_pack / draw_pack_3 作为 action key）========
-                if (act.draw_single || act.draw_pack3 || act.draw_pack || act.draw_pack_3) {
-                    const isPack3 = !!(act.draw_pack3 || act.draw_pack_3);
-                    const count = isPack3 ? 3 : 1;
-                    const fee = isPack3 ? 500_000 : 200_000; // 20万/50万 TKCC
-                    if (depositBalance < fee) { showToast('❌ 存款不足', 'error'); return { code: 1 }; }
-                    depositBalance -= fee;
-                    const drawn = [];
-                    for (let i=0; i<count; i++) drawn.push(mock_draw_one());
-                    // 每张都加入 userCards（不同 instance_id）—— 测试模式无自动去重
-                    drawn.forEach(c => userCards.push(c));
-                    refreshBalances();
-                    showToast(`🎉 抽到 ${drawn.map(c => c.name).join('、')}！`, 'success');
-                    return { code: 0 };
-                }
-
-                // ======== AI 对战 ========
-                if (act.ai_battle) {
-                    mock_ai_today++; // 累加今日局数
-                    const diff = act.ai_battle.difficulty;
-                    const fee  = act.ai_battle.fee || 10000;
-                    if (depositBalance < fee) { showToast('❌ 存款不足', 'error'); return { code: 1 }; }
-                    if (!userBattleOrder || userBattleOrder.length < 3) {
-                        showToast('⚠️ 请先设置出战顺序（点「调整」勾选 3 张）', 'error'); return { code: 1 };
-                    }
-                    depositBalance -= fee;
-                    const orderCards = userBattleOrder.map(id => findCardById(id)).filter(Boolean);
-                    if (orderCards.length < 3) { showToast('⚠️ 出战卡牌不存在', 'error'); return { code: 1 }; }
-                    // AI 战力（难度影响）
-                    const diffBoost = [1.0, 1.0, 1.15, 1.30, 1.50][diff] || 1.0;
-                    let pw = 0, aw = 0;
-                    for (let i=0; i<3; i++) {
-                        const p = orderCards[i].attack + orderCards[i].defense;
-                        const a = Math.round((150 + Math.random()*150) * diffBoost);
-                        if (p > a) pw++; else if (a > p) aw++;
-                    }
-                    const win = pw >= 2;
-                    const reward = win ? [40000, 50000, 70000, 80000][diff-1] || 50000 : 0;
-                    if (win) depositBalance += reward;
-                    refreshBalances();
-                    refreshAiStatsAndUI();
-                    const cardEl = document.querySelector('.battle-result-card');
-                    if (cardEl) cardEl.style.display = 'block';
-                    showToast(win ? `🏆 胜利！+${(reward/1e6).toFixed(0)} TKCC` : '💀 失败', win ? 'success' : 'info');
-                    return { code: 0 };
-                }
-
-                // ======== 设置出战顺序 ========
-                if (act.set_battle_order) {
-                    userBattleOrder = act.set_battle_order.card_ids;
-                    showToast('✅ 出战顺序已设置', 'success');
-                    return { code: 0 };
-                }
-
-                // ======== 卡牌升星 ========
-                if (act.star_up || act.star_up_max) {
-                    const cardId = act.star_up?.card_id || act.star_up_max?.card_id;
-                    const card = findCardById(cardId);
-                    if (!card) { showToast('❌ 卡牌不存在', 'error'); return { code: 1 }; }
-                    const targetStar = act.star_up_max ? 5 : (card.star + 1);
-                    while (card.star < targetStar) {
-                        const fee = [50000, 150000, 400000, 1000000][card.star - 1];
-                        if (depositBalance < fee) { showToast('❌ 存款不足', 'error'); return { code: 1 }; }
-                        depositBalance -= fee;
-                        card.star++;
-                    }
-                    refreshBalances();
-                    showToast(`⭐ ${card.name} 升到 ${card.star} 星！`, 'success');
-                    // 刷新详情弹窗
-                    if (detailCard && detailCard.instance_id === card.instance_id) showCardDetail(card.instance_id);
-                    return { code: 0 };
-                }
-                if (act.star_up_fragments) {
-                    const card = findCardById(act.star_up_fragments.card_id);
-                    if (!card) { showToast('❌ 卡牌不存在', 'error'); return { code: 1 }; }
-                    const starIdx = card.star - 1;
-                    const fragCost = Math.ceil([50000, 150000, 400000, 1000000][starIdx] / 100);
-                    const r = card.rarity;
-                    if ((fragmentsData[r] || 0) < fragCost) { showToast('❌ 碎片不足', 'error'); return { code: 1 }; }
-                    fragmentsData[r] -= fragCost;
-                    card.star++;
-                    refreshBalances();
-                    showToast(`⭐ ${card.name} 升到 ${card.star} 星！(碎片)`, 'success');
-                    if (detailCard && detailCard.instance_id === card.instance_id) showCardDetail(card.instance_id);
-                    return { code: 0 };
-                }
-
-                // ======== 卡牌分解 ========
-                if (act.decompose_card) {
-                    const card = findCardById(act.decompose_card.card_id);
-                    if (!card) { showToast('❌ 卡牌不存在', 'error'); return { code: 1 }; }
-                    const r = card.rarity;
-                    const gain = { common: 5, rare: 10, epic: 20, legend: 50 }[r] || 5;
-                    fragmentsData[r] = (fragmentsData[r] || 0) + gain;
-                    userCards = userCards.filter(c => c.instance_id !== card.instance_id);
-                    detailCard = null;
-                    document.getElementById('cardDetailModal').style.display = 'none';
-                    refreshBalances();
-                    showToast(`🔥 ${card.name} 分解为 ${gain} ${r} 碎片`, 'success');
-                    return { code: 0 };
-                }
-
-                // ======== 卡牌升级（等级，不是星级） ========
-                if (act.upgrade_card) {
-                    const card = findCardById(act.upgrade_card.card_id);
-                    if (!card) { showToast('❌ 卡牌不存在', 'error'); return { code: 1 }; }
-                    const r = card.rarity;
-                    const cost = { common: 50, rare: 100, epic: 200, legend: 500 }[r] || 50;
-                    if ((card.level || 0) >= 10) { showToast('⚠️ 已满级', 'error'); return { code: 1 }; }
-                    if ((fragmentsData[r] || 0) < cost) { showToast('❌ 碎片不足', 'error'); return { code: 1 }; }
-                    fragmentsData[r] -= cost;
-                    card.level = (card.level || 0) + 1;
-                    card.attack += 3;
-                    card.defense += 2;
-                    refreshBalances();
-                    showToast(`💠 ${card.name} 升到 Lv.${card.level} (+3攻 +2防)`, 'success');
-                    if (detailCard && detailCard.instance_id === card.instance_id) showCardDetail(card.instance_id);
-                    return { code: 0 };
-                }
-
-                // ======== 合成卡牌 ========
-                if (act.craft_card) {
-                    const r = act.craft_card.rarity;
-                    const cost = { common: 30, rare: 60, epic: 150, legend: 400 }[r] || 30;
-                    if ((fragmentsData[r] || 0) < cost) { showToast('❌ 碎片不足', 'error'); return { code: 1 }; }
-                    fragmentsData[r] -= cost;
-                    // 随机选一张该稀有度的卡
-                    const pool = CARD_TEMPLATES.filter(c => c.rarity === r);
-                    const tpl = pool[Math.floor(Math.random() * pool.length)];
-                    const nc = { instance_id: 'tst_new_' + Date.now(), name: tpl.name, title: tpl.title, rarity: r, attack: tpl.attack, defense: tpl.defense, star: 1, level: 0, description: tpl.description, image_url: tpl.image_url || null };
-                    userCards.push(nc);
-                    refreshBalances();
-                    showToast(`✨ 合成成功：${nc.name}！`, 'success');
-                    return { code: 0 };
-                }
-
-                // ======== PVP 对战（本地 AI 模拟对手）=======
-                if (act.create_pvp_match) {
-                    const opponent = act.create_pvp_match.opponent || 'AI对手';
-                    const cardIds = act.create_pvp_match.card_ids;
-                    if (depositBalance < 60000_000000) { showToast('❌ 存款不足 6万 TKCC', 'error'); return { code: 1 }; }
-                    if (cardIds.length !== 3) { showToast('⚠️ 请选 3 张卡', 'error'); return { code: 1 }; }
-                    depositBalance -= 60000_000000;
-                    showToast(`⚔️ 已向 ${opponent.slice(0,16)}... 发起 PVP 挑战！（对方是本地 AI）`, 'success');
-                    // 本地 AI 自动接受 → 结算
-                    setTimeout(() => {
-                        const challengerCards = cardIds.map(findCardById).filter(Boolean);
-                        // AI 随机出 3 张（跟挑战者一样的卡池随机出）
-                        const aiPool = userCards.length >= 3 ? userCards : [mock_draw_one(), mock_draw_one(), mock_draw_one()];
-                        const aiCards = aiPool.sort(() => Math.random() - 0.5).slice(0, 3);
-                        let cw = 0, aw = 0;
-                        for (let i=0; i<3; i++) {
-                            const pc = challengerCards[i];
-                            const ac = aiCards[i];
-                            if (!pc || !ac) continue;
-                            const pp = pc.attack + pc.defense;
-                            const ap = ac.attack + ac.defense + Math.floor(Math.random()*30);
-                            if (pp > ap) cw++; else if (ap > pp) aw++;
-                        }
-                        const win = cw >= 2;
-                        const reward = 2 * 60000_000000 + (win ? 100000_000000 : 0);
-                        if (win) depositBalance += reward;
-                        refreshBalances();
-                        showToast(win ? `🏆 PVP 胜利！+${(reward/1e6).toFixed(0)} TKCC` : `💀 PVP 失败（${cw}-${aw}）损失 6 万`, win ? 'success' : 'info');
-                    }, 800);
-                    return { code: 0 };
-                }
-
-                // ======== 混战（全部本地 AI，4 人循环赛）=======
-                if (act.create_royale) {
-                    const size = act.create_royale.size || 4;
-                    const cardIds = act.create_royale.card_ids;
-                    if (depositBalance < 60000_000000 * size) { showToast(`❌ 存款不足 (需 ${size*6}万)`, 'error'); return { code: 1 }; }
-                    if (cardIds.length !== 3) { showToast('⚠️ 请选 3 张卡', 'error'); return { code: 1 }; }
-                    depositBalance -= 60000_000000;
-                    showToast(`👑 创建 ${size} 人混战房间！本地 AI 将自动挤满...`, 'success');
-                    // AI 自动加入
-                    setTimeout(() => {
-                        // 4 组玩家（1 人真 + 3 人 AI），每人 3 张卡
-                        const allOrders = [cardIds.map(findCardById).filter(Boolean)];
-                        for (let i=1; i<size; i++) {
-                            const pool = userCards.length >= 3 ? userCards : [mock_draw_one(), mock_draw_one(), mock_draw_one()];
-                            allOrders.push(pool.sort(()=>Math.random()-0.5).slice(0,3));
-                        }
-                        // 循环赛
-                        const n = size;
-                        const scores = new Array(n).fill(0);
-                        for (let i=0; i<n; i++) for (let j=i+1; j<n; j++) {
-                            let wi = 0;
-                            for (let k=0; k<3; k++) {
-                                const pi = allOrders[i][k], pj = allOrders[j][k];
-                                if (!pi || !pj) continue;
-                                const pp = pi.attack + pi.defense, ap = pj.attack + pj.defense;
-                                if (pp > ap) wi++; else if (ap > pp) wi--;
-                            }
-                            scores[i] += wi; scores[j] -= wi;
-                        }
-                        const winnerIdx = scores.indexOf(Math.max(...scores));
-                        const isMe = winnerIdx === 0;
-                        const pool = size * 60000_000000;
-                        const winAmt = Math.floor(pool * 0.70);
-                        if (isMe) depositBalance += winAmt;
-                        refreshBalances();
-                        showToast(isMe ? `🏆 混战夺冠！+${(winAmt/1e6).toFixed(0)} TKCC` : `💀 混战第 ${winnerIdx+1} 名`, isMe ? 'success' : 'info');
-                    }, 1200);
-                    return { code: 0 };
-                }
-
-                // ======== 存取款（本地 mock）=======
-                if (act.deposit) {
-                    const amount = Number(act.deposit.amount || 0);
-                    if (amount > 0) depositBalance += amount;
-                    refreshBalances();
-                    showToast(`💰 存入 ${(amount/1e6).toFixed(0)} TKCC`, 'success');
-                    return { code: 0 };
-                }
-                if (act.withdraw_deposit) {
-                    const amount = Number(act.withdraw_deposit.amount || 0);
-                    if (depositBalance < amount) { showToast('❌ 存款不足', 'error'); return { code: 1 }; }
-                    depositBalance -= amount;
-                    refreshBalances();
-                    showToast(`💳 提现 ${(amount/1e6).toFixed(0)} TKCC`, 'success');
-                    return { code: 0 };
-                }
-
-                // ======== 提案/投票（跳过，保留本地即可）=======
-                if (act.propose_card || act.vote_card || act.execute_proposal || act.cancel_proposal || act.lock_proposal_deposit || act.unlock_and_refund_deposit || act.withdraw_deposit) {
-                    showToast('ℹ️ 测试模式：此操作仅本地模拟', 'info');
-                    return { code: 0 };
-                }
-
-                // ======== PVP claim/join/cancel（本地简化）=======
-                if (act.cancel_pvp_match || act.cancel_royale) { showToast('✅ 已取消', 'success'); return { code: 0 }; }
-                if (act.claim_pvp_reward || act.claim_royale_reward) { showToast('🎉 已领取奖励（本地模拟）', 'success'); return { code: 0 }; }
-                if (act.join_royale_room || act.settle_royale || act.accept_pvp_match) { showToast('✅ 操作成功（本地模拟）', 'success'); return { code: 0 }; }
-                if (act.claim_battle_reward) { showToast('✅ 奖励已领取（本地模拟）', 'success'); return { code: 0 }; }
-
-                // ======== 未知 action ========
-                const key = Object.keys(act)[0];
-                showToast(`ℹ️ 测试模式：未实现 ${key}，跳过`, 'info');
-                return { code: 0 };
+        // ---- 6. AI 对战 mock ----
+        async function startBattle() {
+            if (!requireWallet()) return;
+            if (!battleOrder || battleOrder.length < 3) {
+                showToast('⚠️ 请先设置出战顺序（点「调整」勾选 3 张）', 'error'); return;
             }
-            return { code: 0 };
+            const diff = Number(document.querySelector('.difficulty-selector .btn-sm.active')?.getAttribute('data-diff') || 1);
+            const fee = [10000, 15000, 20000, 25000][diff-1] || 10000;
+            if (depositBalance < fee*1_000_000) { showToast('❌ 存款不足', 'error'); return; }
+            depositBalance -= fee * 1_000_000;
+            mock_ai_today++;
+            const aiPool = [mockDrawOne(), mockDrawOne(), mockDrawOne()];
+            const myCards = battleOrder.map(id => userCards.find(c => c.instance_id === id)).filter(Boolean);
+            if (myCards.length < 3) { showToast('⚠️ 出战卡牌不存在', 'error'); return; }
+            const diffBoost = [1.0, 1.0, 1.15, 1.30, 1.50][diff] || 1.0;
+            let wins=0, losses=0;
+            for (let i=0;i<3;i++) {
+                const p = myCards[i], a = aiPool[i];
+                const pp = p.attack + p.defense;
+                const ap = Math.round((a.attack + a.defense) * diffBoost);
+                if (pp >= ap) wins++; else losses++;
+            }
+            if (wins >= 2) {
+                const reward = [40000, 50000, 70000, 80000][diff-1] * 1_000_000;
+                depositBalance += reward;
+                showToast(`🏆 胜利！${wins}-${losses} · +${(reward/1e6).toFixed(0)} TKCC`, 'success');
+            } else {
+                showToast(`💀 失败 ${wins}-${losses}`, 'info');
+            }
+            refreshBalances();
+            refreshAiStatsAndUI();
+            try { displayBattleResult({ win: wins>=2, rounds: myCards.map((c,i)=>({me:c.name,ai:aiPool[i].name,win:(myCards[i].attack+myCards[i].defense)>=Math.round((aiPool[i].attack+aiPool[i].defense)*diffBoost)})) }, myCards, aiPool); } catch(e){}
         }
-    </script>
+
+        // ---- 7. 保存出战顺序 ----
+        async function saveBattleOrder() {
+            showToast('✅ 出战顺序已保存（本地模拟）', 'success');
+        }
+
+        // ---- 8. PVP 对战 mock ----
+        async function doCreatePvpMatch() {
+            if (!requireWallet()) return;
+            let opponent = document.getElementById('pvpOpponent').value.trim() || '公开匹配(AI)';
+            if (_selectedCards.length !== 3) { showToast('⚠️ 请选 3 张卡牌', 'error'); return; }
+            if (depositBalance < 60000_000000) { showToast('❌ 存款不足 6万', 'error'); return; }
+            depositBalance -= 60000_000000;
+            showToast(`⚔️ 向 ${opponent} 发起挑战！本地 AI 自动接受中...`, 'success');
+            closePvpCreateModal();
+            refreshBalances();
+            setTimeout(() => {
+                const myCards = _selectedCards.map(id => userCards.find(c=>c.instance_id===id)).filter(Boolean);
+                const aiCards = userCards.sort(()=>Math.random()-0.5).slice(0,3);
+                let wins=0;
+                for (let i=0;i<3;i++) {
+                    const pp=(myCards[i]?.attack||0)+(myCards[i]?.defense||0);
+                    const ap=(aiCards[i]?.attack||0)+(aiCards[i]?.defense||0);
+                    if (pp >= ap+Math.floor(Math.random()*30)) wins++;
+                }
+                const win = wins >= 2;
+                const reward = 2*60000_000000 + (win ? 100000_000000 : 0);
+                if (win) depositBalance += reward;
+                refreshBalances();
+                showToast(win ? `🏆 PVP 胜利！+${(reward/1e6).toFixed(0)}` : `💀 PVP 失败（${wins}-${3-wins}）`, win?'success':'info');
+            }, 900);
+        }
+        async function doAcceptPvpMatch() {
+            showToast('✅ 已接受挑战（本地模拟）', 'success');
+            closePvpAcceptModal();
+            refreshBalances();
+        }
+        function cancelPvpFromList(id) { showToast('✅ 已取消', 'success'); }
+        function claimPvpRewardFromList(id) {
+            depositBalance += 300_000 * 1_000_000;
+            refreshBalances();
+            showToast('🎉 领取奖励 +30万（本地模拟）', 'success');
+        }
+
+        // ---- 9. 混战 mock ----
+        async function doCreateRoyale() {
+            if (!requireWallet()) return;
+            if (_selectedCards.length !== 3) { showToast('⚠️ 请选 3 张卡', 'error'); return; }
+            const size = Number(document.getElementById('royaleSize').value);
+            if (depositBalance < 60000_000000 * size) { showToast(`❌ 存款不足（需 ${size*6}万）`, 'error'); return; }
+            depositBalance -= 60000_000000;
+            showToast(`👑 创建 ${size} 人混战房间！本地 AI 挤满中...`, 'success');
+            closeRoyaleCreateModal();
+            refreshBalances();
+            setTimeout(() => {
+                const allOrders = [_selectedCards.map(id=>userCards.find(c=>c.instance_id===id)).filter(Boolean)];
+                for (let i=1;i<size;i++) allOrders.push(userCards.sort(()=>Math.random()-0.5).slice(0,3));
+                const scores = new Array(size).fill(0);
+                for (let i=0;i<size;i++) for (let j=i+1;j<size;j++) {
+                    let wi=0;
+                    for (let k=0;k<3;k++) {
+                        const pi=allOrders[i][k], pj=allOrders[j][k];
+                        if (!pi||!pj) continue;
+                        const pp=pi.attack+pi.defense, ap=pj.attack+pj.defense;
+                        if (pp>ap) wi++; else if (ap>pp) wi--;
+                    }
+                    scores[i]+=wi; scores[j]-=wi;
+                }
+                const winnerIdx = scores.indexOf(Math.max(...scores));
+                const pool = size*60000_000000;
+                if (winnerIdx===0) { depositBalance += Math.floor(pool*0.70); }
+                refreshBalances();
+                showToast(winnerIdx===0 ? `🏆 混战夺冠 +${(pool*0.70/1e6).toFixed(0)}` : `💀 混战第 ${winnerIdx+1} 名`, winnerIdx===0?'success':'info');
+            }, 1200);
+        }
+        async function doJoinRoyaleRoom() {
+            showToast('✅ 已加入房间（本地模拟）', 'success');
+            closeRoyaleJoinModal();
+            refreshBalances();
+        }
+        async function settleRoyale(id) {
+            showToast('✅ 结算完成（本地模拟）', 'success');
+            refreshBalances();
+        }
+        async function claimRoyaleReward(id) {
+            depositBalance += 300_000 * 1_000_000;
+            refreshBalances();
+            showToast('🎉 领取混战奖励 +30万（本地模拟）', 'success');
+        }
+
+        // ---- 10. 存取款 ----
+        async function doDeposit(amountMicro) {
+            depositBalance += Number(amountMicro || 0);
+            refreshBalances();
+            showToast(`💰 存入 ${(amountMicro/1e6).toFixed(0)} TKCC`, 'success');
+        }
+        async function doWithdraw() {
+            const amtStr = document.getElementById('withdrawAmount').value.trim();
+            const amt = Number(amtStr);
+            if (!amt || amt <= 0) { showToast('⚠️ 请输入金额', 'error'); return; }
+            const amtMicro = Math.floor(amt * 1_000_000);
+            if (depositBalance < amtMicro) { showToast('❌ 存款不足', 'error'); return; }
+            depositBalance -= amtMicro;
+            refreshBalances();
+            document.getElementById('withdrawModal').style.display = 'none';
+            showToast(`💳 提现 ${amt} TKCC（本地模拟）`, 'success');
+        }
+
+        // ---- 11. 卡牌操作 ----
+        async function confirmUpgrade() {
+            if (!detailCard) return;
+            const fees = [50000, 150000, 400000, 1000000];
+            const fee = fees[(detailCard.star||1)-1] * 1_000_000;
+            if (depositBalance < fee) { showToast('❌ 存款不足', 'error'); return; }
+            if ((detailCard.star||1) >= 5) { showToast('⚠️ 已达满星', 'error'); return; }
+            depositBalance -= fee;
+            detailCard.star = (detailCard.star||1) + 1;
+            refreshBalances();
+            showToast(`⭐ ${detailCard.name} 升1星！现在 ${detailCard.star} 星`, 'success');
+            showCardDetail(detailCard.instance_id);
+        }
+        async function confirmUpgradeToMax() {
+            if (!detailCard) return;
+            const fees = [50000, 150000, 400000, 1000000];
+            let totalFee = 0;
+            while ((detailCard.star||1) < 5) {
+                totalFee += fees[(detailCard.star||1)-1] * 1_000_000;
+                detailCard.star = (detailCard.star||1) + 1;
+            }
+            if (depositBalance < totalFee) { showToast('❌ 存款不足', 'error'); return; }
+            depositBalance -= totalFee;
+            refreshBalances();
+            showToast(`⭐ ${detailCard.name} 升到满星！花费 ${(totalFee/1e6).toFixed(0)}`, 'success');
+            showCardDetail(detailCard.instance_id);
+        }
+        async function confirmUpgradeFragments() {
+            if (!detailCard) return;
+            const fees = [50000, 150000, 400000, 1000000];
+            const fragCost = Math.ceil(fees[(detailCard.star||1)-1] / 100);
+            const r = detailCard.rarity;
+            const have = fragmentsData[r] || 0;
+            if (have < fragCost) { showToast(`❌ ${r}碎片不足（需要 ${fragCost}，有 ${have}）`, 'error'); return; }
+            fragmentsData[r] = have - fragCost;
+            detailCard.star = (detailCard.star||1) + 1;
+            refreshBalances();
+            showToast(`✨ ${detailCard.name} 碎片升星！消耗 ${fragCost} ${r}碎片`, 'success');
+            showCardDetail(detailCard.instance_id);
+        }
+        async function decomposeCard() {
+            if (!detailCard) return;
+            const r = detailCard.rarity;
+            const gain = { common: 5, rare: 10, epic: 20, legend: 50 }[r] || 5;
+            fragmentsData[r] = (fragmentsData[r]||0) + gain;
+            userCards = userCards.filter(c => c.instance_id !== detailCard.instance_id);
+            const name = detailCard.name;
+            detailCard = null;
+            document.getElementById('cardDetailModal').style.display = 'none';
+            refreshBalances();
+            showToast(`🔥 ${name} 分解 +${gain} ${r}碎片`, 'success');
+        }
+        async function upgradeCard() {
+            if (!detailCard) return;
+            const r = detailCard.rarity;
+            const cost = { common: 50, rare: 100, epic: 200, legend: 500 }[r] || 50;
+            if ((detailCard.level||0) >= 10) { showToast('⚠️ 已满级', 'error'); return; }
+            if ((fragmentsData[r]||0) < cost) { showToast(`❌ ${r}碎片不足`, 'error'); return; }
+            fragmentsData[r] -= cost;
+            detailCard.level = (detailCard.level||0) + 1;
+            detailCard.attack += 3;
+            detailCard.defense += 2;
+            refreshBalances();
+            showToast(`💠 ${detailCard.name} 升到 Lv.${detailCard.level} (+3攻 +2防)`, 'success');
+            showCardDetail(detailCard.instance_id);
+        }
+        async function craftCard(rarity) {
+            if (!requireWallet()) return;
+            const cost = { common:30, rare:60, epic:150, legend:400 }[rarity] || 30;
+            if ((fragmentsData[rarity]||0) < cost) { showToast(`❌ ${rarity}碎片不足`, 'error'); return; }
+            fragmentsData[rarity] -= cost;
+            const pool = CARD_TEMPLATES.filter(c => c.rarity === rarity);
+            const tpl = pool[Math.floor(Math.random()*pool.length)];
+            const nc = { instance_id:'tst_'+Date.now()+'_cf', name:tpl.name, title:tpl.title, rarity,
+                attack:tpl.attack, defense:tpl.defense, star:1, level:0, description:tpl.description, image_url:tpl.image_url||null };
+            userCards.push(nc);
+            refreshBalances();
+            showToast(`✨ 合成 ${nc.name}（${rarity}）成功！`, 'success');
+        }
+
+</script>
 
 </body>
 </html>

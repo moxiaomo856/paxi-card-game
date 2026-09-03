@@ -108,8 +108,8 @@ pub fn execute(
         ExecuteMsg::CancelProposal { proposal_id } => execute_cancel_proposal(deps, env, info, proposal_id),
 
         // ---- PVP 1v1 对战 ----
-        ExecuteMsg::CreatePvpMatch { opponent, card_ids } =>
-            execute_create_pvp_match(deps, env, info, opponent, card_ids),
+        ExecuteMsg::CreatePvpMatch { opponent, card_ids, public } =>
+            execute_create_pvp_match(deps, env, info, opponent, card_ids, public),
         ExecuteMsg::AcceptPvpMatch { match_id, card_ids } =>
             execute_accept_pvp_match(deps, env, info, match_id, card_ids),
         ExecuteMsg::CancelPvpMatch { match_id } =>
@@ -241,40 +241,21 @@ fn execute_draw_pack(
         let idx = (rng_state % weighted.len() as u64) as usize;
         let tpl = &templates[weighted[idx]];
 
-        // 检查是否已拥有同名卡牌（含本轮刚加入的）
-        let is_duplicate = player_cards_ids.iter().any(|cid| {
-            if let Ok(Some(c)) = CARDS.may_load(deps.storage, cid) {
-                c.name == tpl.name
-            } else {
-                false
-            }
-        });
-
-        if is_duplicate {
-            // 重复 → 转化为碎片
-            if let Some(ri) = Fragments::rarity_index(&tpl.rarity) {
-                let frag_amount = FRAGMENT_FROM_DUPLICATE[ri].1;
-                let cur = fragments.get(&tpl.rarity);
-                fragments.set(&tpl.rarity, cur + frag_amount);
-                fragments_gained.push(format!("{}+{}", tpl.rarity, frag_amount));
-            }
-        } else {
-            // 非重复 → 正常生成卡牌（id 含 height 防秒级碰撞）
-            let card_id = format!("card_{}_{}_{}_{}", info.sender, block_key, time_key, i);
-            let card = CardInfo {
-                card_id: card_id.clone(),
-                owner: info.sender.to_string(),
-                name: tpl.name.clone(),
-                rarity: tpl.rarity.clone(),
-                attack: tpl.attack,
-                defense: tpl.defense,
-                star: 1,
-                level: 0,
-            };
-            CARDS.save(deps.storage, &card_id, &card)?;
-            player_cards_ids.push(card_id.clone());
-            new_cards.push(format!("{}({})", tpl.name, tpl.rarity));
-        }
+        // 始终生成新卡（允许玩家拥有多张同名卡，每张独立 instance_id）
+        let card_id = format!("card_{}_{}_{}_{}", info.sender, block_key, time_key, i);
+        let card = CardInfo {
+            card_id: card_id.clone(),
+            owner: info.sender.to_string(),
+            name: tpl.name.clone(),
+            rarity: tpl.rarity.clone(),
+            attack: tpl.attack,
+            defense: tpl.defense,
+            star: 1,
+            level: 0,
+        };
+        CARDS.save(deps.storage, &card_id, &card)?;
+        player_cards_ids.push(card_id.clone());
+        new_cards.push(format!("{}({})", tpl.name, tpl.rarity));
     }
     PLAYER_CARDS.save(deps.storage, &info.sender, &player_cards_ids)?;
     FRAGMENTS.save(deps.storage, &info.sender, &fragments)?;
@@ -1069,12 +1050,19 @@ fn settle_pvp(storage: &mut dyn Storage, m: &mut PvpMatch) -> Result<Addr, Contr
 }
 
 fn execute_create_pvp_match(
-    deps: DepsMut, env: Env, info: MessageInfo, opponent: String, card_ids: Vec<String>,
+    deps: DepsMut, env: Env, info: MessageInfo, opponent: String, card_ids: Vec<String>, public: Option<bool>,
 ) -> Result<Response, ContractError> {
-    let opponent_addr = deps.api.addr_validate(&opponent)?;
-    if opponent_addr == info.sender {
-        return Err(ContractError::InvalidInput("cannot challenge yourself".into()));
-    }
+    let is_public = public.unwrap_or(false);
+    let opponent_addr = if is_public {
+        // 公开房间：跳过地址验证，用空 Addr 占位
+        Addr::unchecked("")
+    } else {
+        let a = deps.api.addr_validate(&opponent)?;
+        if a == info.sender {
+            return Err(ContractError::InvalidInput("cannot challenge yourself".into()));
+        }
+        a
+    };
     validate_owned_cards(deps.storage, &info.sender, &card_ids)?;
 
     let params = GAME_PARAMS.load(deps.storage)?;
@@ -1087,6 +1075,7 @@ fn execute_create_pvp_match(
         match_id: match_id.clone(),
         challenger: info.sender.clone(),
         opponent: opponent_addr,
+        is_public,
         challenger_order: card_ids,
         opponent_order: Vec::new(),
         winner: None,
@@ -1109,8 +1098,16 @@ fn execute_accept_pvp_match(
 ) -> Result<Response, ContractError> {
     let mut m = PVP_MATCHES.load(deps.storage, &match_id)
         .map_err(|_| ContractError::NotFound(format!("pvp match {}", match_id)))?;
-    if info.sender != m.opponent {
-        return Err(ContractError::UnauthorizedReason("only opponent can accept".into()));
+    if m.is_public {
+        // 公开房间：任何非创建者都可接受（创建者不能接受自己的房间）
+        if info.sender == m.challenger {
+            return Err(ContractError::UnauthorizedReason("challenger cannot accept own public match".into()));
+        }
+    } else {
+        // 私有房间：仅指定对手可接受
+        if info.sender != m.opponent {
+            return Err(ContractError::UnauthorizedReason("only designated opponent can accept".into()));
+        }
     }
     // 7天超时：懒检查（由查询也会检查）
     let now = env.block.time.seconds();
@@ -1126,6 +1123,11 @@ fn execute_accept_pvp_match(
 
     let params = GAME_PARAMS.load(deps.storage)?;
     consume_deposit(deps.storage, &info.sender, params.pvp_fee)?;
+
+    // 公开房间：opponent 原来为空 Addr，回填为接受者
+    if m.is_public {
+        m.opponent = info.sender.clone();
+    }
 
     m.opponent_order = card_ids;
     m.status = PvpStatus::Pending;
@@ -1734,6 +1736,7 @@ fn into_pvp_resp(m: PvpMatch) -> PvpMatchResponse {
         match_id: m.match_id,
         challenger: m.challenger.to_string(),
         opponent: m.opponent.to_string(),
+        is_public: m.is_public,
         challenger_order: m.challenger_order,
         opponent_order: m.opponent_order,
         winner: m.winner.map(|w| w.to_string()),

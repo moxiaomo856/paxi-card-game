@@ -169,6 +169,7 @@ pub struct PvpMatch {
     pub match_id: String,
     pub challenger: Addr,
     pub opponent: Addr,
+    pub is_public: bool,
     pub challenger_order: Vec<String>,  // 3 张 card_id
     pub opponent_order: Vec<String>,    // 3 张 card_id（接受时填入）
     pub winner: Option<Addr>,
