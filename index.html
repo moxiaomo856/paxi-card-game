@@ -602,6 +602,47 @@
             border-top: 1px solid rgba(200, 160, 100, 0.1);
         }
 
+        /* ===== PVP 对局详情：复用战斗结果展示样式（谁 vs 谁 · 输赢） ===== */
+        .pvp-battle-detail {
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 10px;
+            padding: 8px;
+        }
+        .pvp-battle-detail .vs-banner {
+            text-align: center;
+            font-size: 18px;
+            color: #ffd700;
+            letter-spacing: 4px;
+            padding: 4px 0;
+            font-weight: bold;
+        }
+        .pvp-battle-detail .round-result {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            padding: 5px 8px;
+            border-bottom: 1px solid rgba(200, 160, 100, 0.06);
+            font-size: 13px;
+        }
+        .pvp-battle-detail .round-result:last-of-type {
+            border-bottom: none;
+        }
+        .pvp-battle-detail .round-result .win   { color: #4caf50; font-weight: bold; }
+        .pvp-battle-detail .round-result .lose  { color: #f44336; font-weight: bold; }
+        .pvp-battle-detail .round-result .draw  { color: #ffd700; font-weight: bold; }
+        .pvp-battle-detail .final-result {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 6px 0;
+            margin-top: 4px;
+            border-top: 1px solid rgba(200, 160, 100, 0.1);
+        }
+        .pvp-battle-detail .final-result.win  { color: #4caf50; }
+        .pvp-battle-detail .final-result.lose { color: #f44336; }
+        .pvp-battle-detail .final-result.draw { color: #ffd700; }
+
         /* ===== 弹窗 ===== */
         .modal-overlay {
             position: fixed;
@@ -4265,6 +4306,57 @@
             } catch (e) { return { matches: [] }; }
         }
 
+        // 从 card_id 中解析 owner 地址（card_id 格式：card_<owner>_<pool>_<ts>_<seq>）
+        function extractOwnerFromCardId(cardId) {
+            if (!cardId || typeof cardId !== 'string') return '';
+            const m = cardId.match(/^card_(paxi1[a-z0-9]{38})_/);
+            return m ? m[1] : '';
+        }
+
+        // 根据一批 card_id 批量反查卡牌信息（名称/攻击/防御/稀有度/星级）
+        // 通过 card_id 中的 owner 地址调用 player_cards，建立 card_id -> CardInfo 映射
+        // 结果缓存到 module 级，避免重复查询同一玩家
+        const _cardInfoCache = {};   // card_id -> {name, attack, defense, rarity, star}
+        const _playerCardsCache = {}; // owner -> {cards: [...]}
+        async function fetchCardsInfo(cardIds) {
+            const result = {};
+            if (!GAME_CONTRACT || !Array.isArray(cardIds) || cardIds.length === 0) return result;
+            // 先取缓存，未命中的再按 owner 分组查询
+            const owners = new Set();
+            for (const cid of cardIds) {
+                if (_cardInfoCache[cid]) { result[cid] = _cardInfoCache[cid]; continue; }
+                const owner = extractOwnerFromCardId(cid);
+                if (owner) owners.add(owner);
+            }
+            for (const owner of owners) {
+                try {
+                    if (!_playerCardsCache[owner]) {
+                        const q = JSON.stringify({ player_cards: { address: owner } });
+                        const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
+                        const d = await r.json();
+                        _playerCardsCache[owner] = (d?.data?.cards) || [];
+                    }
+                    const cards = _playerCardsCache[owner];
+                    for (const c of cards) {
+                        const info = {
+                            name: c.name || '',
+                            attack: c.attack || 0,
+                            defense: c.defense || 0,
+                            rarity: c.rarity || 'common',
+                            star: c.star || 1,
+                            level: c.level || 0,
+                        };
+                        _cardInfoCache[c.card_id] = info;
+                    }
+                } catch (_) { /* 单个玩家查询失败跳过，走兜底 */ }
+            }
+            // 二次填充结果（含刚缓存的）
+            for (const cid of cardIds) {
+                if (_cardInfoCache[cid]) result[cid] = _cardInfoCache[cid];
+            }
+            return result;
+        }
+
         async function listPvpUI() {
             if (!requireWallet()) return;
             const data = await fetchPvpMatches();
@@ -4273,7 +4365,7 @@
             if (!data.matches || data.matches.length === 0) {
                 el.innerHTML = '<div style="color:#6a5a4a;padding:8px;">暂无对局</div>';
             } else {
-                el.innerHTML = data.matches.map(m => {
+                el.innerHTML = (await Promise.all(data.matches.map(async (m) => {
                     const statusLabel = { waiting: '⏳ 等待中', pending: '结算中', finished: '🏁 已结束', cancelled: '❌ 已取消' }[m.status] || m.status;
                     const statusColor = m.status === 'waiting' ? '#a08a5e' : m.status === 'finished' ? '#79d47c' : '#a06060';
                     let actions = '';
@@ -4289,32 +4381,88 @@
                     const winnerLabel = m.winner === walletAddress ? '<b style="color:#79d47c;">🏆 你赢了</b>' :
                         m.winner ? (m.winner.slice(0,12)+'...') : '-';
 
-                    // 构造详情区域
-                    const challengerCards = (m.challenger_card_ids || m.challenger_cards || []).map(id => getCardNameById(id));
-                    const opponentCards   = (m.opponent_card_ids   || m.opponent_cards   || []).map(id => getCardNameById(id));
-                    const rounds = m.rounds || m.battle_log || [];
+                    // 构造详情区域：字段名以合约实际返回为准 challenger_order / opponent_order
+                    const challOrder = m.challenger_order || m.challenger_card_ids || m.challenger_cards || [];
+                    const oppOrder   = m.opponent_order   || m.opponent_card_ids   || m.opponent_cards   || [];
+                    const cardIdsToResolve = [...challOrder, ...oppOrder].filter(id => typeof id === 'string' && id.startsWith('card_'));
+                    const infoMap = await fetchCardsInfo(cardIdsToResolve);
+
+                    // 判断当前用户在 PVP 中的角色：挑战者 或 对手
+                    const amChallenger = m.challenger === walletAddress;
+                    const amOpponent   = m.opponent === walletAddress;
+
+                    // 卡名/战力取用工具
+                    const nameOf = (id) => {
+                        const info = infoMap[id];
+                        return (info && info.name) ? info.name : getCardNameById(id);
+                    };
+                    const powerOf = (id) => {
+                        const info = infoMap[id];
+                        return info ? (info.attack + info.defense) : getCardPowerById(id);
+                    };
+
+                    // 每局对比：按出牌顺序第 i 张 vs 第 i 张（模仿 AI 对战的直观展示）
+                    // 视角处理：默认「挑战者 vs 对手」；若当前用户是「对手」，则左右对调成「你 vs 对方」，胜负镜像
                     let roundsHtml = '';
-                    if (rounds.length > 0) {
-                        roundsHtml = rounds.map((rd, idx) => {
-                            const pName = rd.player_card ? getCardNameById(rd.player_card) : (rd.player_name || '?');
-                            const aName = rd.ai_card ? getCardNameById(rd.ai_card) : (rd.opponent_name || rd.ai_name || '?');
-                            const pPow  = rd.player_power !== undefined ? rd.player_power : getCardPowerById(rd.player_card);
-                            const aPow  = rd.ai_power    !== undefined ? rd.ai_power    : getCardPowerById(rd.ai_card);
-                            const winMark = rd.winner === 'player' ? '✅ 胜' : (rd.winner === 'opponent' || rd.winner === 'ai' ? '❌ 负' : '➖ 平');
-                            return `<div style="padding:2px 0;">第${idx+1}局：${pName} ${winMark} ${aName} <span style="color:#888;">(${pPow} vs ${aPow})</span></div>`;
-                        }).join('');
+                    if (challOrder.length > 0 && oppOrder.length > 0) {
+                        const n = Math.max(challOrder.length, oppOrder.length);
+                        for (let i = 0; i < n; i++) {
+                            const cId = challOrder[i];
+                            const oId = oppOrder[i];
+                            const cName = cId ? nameOf(cId) : '—';
+                            const oName = oId ? nameOf(oId) : '—';
+                            const cPow = cId ? powerOf(cId) : 0;
+                            const oPow = oId ? powerOf(oId) : 0;
+                            // 挑战者视角的胜负
+                            let resultText, resultClass;
+                            if (!cId || !oId) { resultText = '➖ 无数据'; resultClass = 'draw'; }
+                            else if (cPow > oPow) { resultText = '✅ 胜'; resultClass = 'win'; }
+                            else if (oPow > cPow) { resultText = '❌ 负'; resultClass = 'lose'; }
+                            else { resultText = '⚖️ 平'; resultClass = 'draw'; }
+                            // 组装显示：left 固定为挑战者，right 为对手；若当前用户是「对手」则对调并镜像胜负
+                            let leftName = cName, rightName = oName, leftPow = cPow, rightPow = oPow;
+                            let showText = resultText, showClass = resultClass;
+                            if (amOpponent) {
+                                leftName = oName; rightName = cName; leftPow = oPow; rightPow = cPow;
+                                if (resultClass === 'win')  { showText = '❌ 负'; showClass = 'lose'; }
+                                else if (resultClass === 'lose') { showText = '✅ 胜'; showClass = 'win'; }
+                            }
+                            // 自己这方加粗，方便一眼认出
+                            if (amChallenger) leftName = `<b>${leftName}</b>`;
+                            if (amOpponent)   leftName = `<b>${leftName}</b>`;
+                            const roundLabel = currentLang === 'zh' ? `第${i + 1}局` : `Round ${i + 1}`;
+                            roundsHtml += `
+                                <div class="round-result">
+                                    <span>${roundLabel}：${leftName} ⚔️ ${rightName}</span>
+                                    <span class="${showClass}">${showText} (${leftPow} vs ${rightPow})</span>
+                                </div>
+                            `;
+                        }
                     } else {
-                        roundsHtml = '<div style="color:#888;">（回合数据暂无）</div>';
+                        roundsHtml = `<div class="round-result"><span style="color:#888;">${currentLang === 'zh' ? '（回合数据暂无）' : '(No round data)'}</span></div>`;
                     }
-                    const finalWinner = m.winner === walletAddress ? '你' : (m.winner ? m.winner.slice(0,12)+'...' : '未知');
-                    const detailHtml = `<div id="pvpDetail_${m.match_id}" style="display:none;margin-top:6px;padding:8px;border-top:1px dashed #5a4030;font-size:11px;">
-                        <div style="color:#b39b7a;margin-bottom:4px;">挑战者出牌顺序：</div>
-                        <div>${challengerCards.length > 0 ? challengerCards.map((n,i)=>`${i+1}. ${n}`).join(' · ') : '（暂无）'}</div>
-                        <div style="color:#b39b7a;margin:4px 0;">对手出牌顺序：</div>
-                        <div>${opponentCards.length > 0 ? opponentCards.map((n,i)=>`${i+1}. ${n}`).join(' · ') : '（暂无）'}</div>
-                        <div style="color:#b39b7a;margin:4px 0;">每局对比：</div>
+
+                    // 最终胜负（以合约 winner 为准）
+                    const isWinner = m.winner === walletAddress;
+                    const finalClass = !m.winner ? 'draw' : (isWinner ? 'win' : 'lose');
+                    let finalText;
+                    if (!m.winner) finalText = currentLang === 'zh' ? '🤝 平局！' : '🤝 Draw!';
+                    else if (isWinner) finalText = currentLang === 'zh' ? '🎉 你赢了！' : '🎉 You win!';
+                    else finalText = currentLang === 'zh' ? '😔 你输了...' : '😔 You lost...';
+                    // 若当前用户未参与此对局（围观他人），显示地址
+                    const winnerShow = !m.winner ? (currentLang === 'zh' ? '平局' : 'Draw')
+                        : (isWinner ? (currentLang === 'zh' ? '你' : 'You') : (m.winner ? m.winner.slice(0, 12) + '...' : '未知'));
+                    const finalLine = (!amChallenger && !amOpponent)
+                        ? (currentLang === 'zh'
+                            ? `最终赢家：<b style="color:#ffd700;">${winnerShow}</b>`
+                            : `Winner: <b style="color:#ffd700;">${winnerShow}</b>`)
+                        : '';
+
+                    const detailHtml = `<div id="pvpDetail_${m.match_id}" class="pvp-battle-detail" style="display:none;margin-top:6px;padding:8px;border-top:1px dashed #5a4030;font-size:12px;">
+                        <div class="vs-banner" style="font-size:14px;">⚔️ VS ⚔️</div>
                         ${roundsHtml}
-                        <div style="color:#b39b7a;margin-top:4px;">最终赢家：<b style="color:#ffd700;">${finalWinner}</b></div>
+                        <div class="final-result ${finalClass}">${finalText}</div>
+                        ${finalLine}
                     </div>`;
 
                     return `<div class="row" style="display:grid;grid-template-columns:1fr 1fr auto auto;gap:6px;align-items:center;padding:6px;border:1px solid ${m.is_public?'#ffc832':'#3a2a1a'};border-radius:6px;margin-bottom:4px;background:${m.is_public?'rgba(255,200,50,0.05)':'transparent'};">
@@ -4327,7 +4475,7 @@
                         <div style="display:flex;gap:4px;flex-wrap:wrap;">${actions}</div>
                         ${detailHtml}
                     </div>`;
-                }).join('');
+                }))).join('');
             }
             panel.style.display = 'block';
         }
@@ -4451,7 +4599,7 @@
                 existing.innerHTML = '<h3 style="font-size:14px;color:#e8d5b8;margin:8px 0 4px;">👑 混战房间</h3><div style="color:#6a5a4a;padding:8px;">暂无房间</div>';
             } else {
                 existing.innerHTML = '<h3 style="font-size:14px;color:#e8d5b8;margin:8px 0 4px;">👑 混战房间</h3>' +
-                    data.royales.map(r => {
+                    (await Promise.all(data.royales.map(async (r) => {
                         const statusLabel = { waiting: '⏳ 等待加入', full: '🟢 满人待结算', finished: '🏁 已结束', cancelled: '❌ 已取消' }[r.status] || r.status;
                         let actions = '';
                         if (r.status === 'waiting') {
@@ -4466,17 +4614,25 @@
                         actions += `<button class="btn btn-secondary btn-sm" onclick='toggleRoyaleDetail("${r.royale_id}")'>📊 展开详情</button>`;
                         const isWinner = r.winner === walletAddress;
 
-                        // 构造混战详情区域
+                        // 构造混战详情区域：合约字段为 player_orders（与 players 一一对应的 card_id 二维数组）
                         const players = r.players || [];
-                        const playerCardIds = r.player_card_ids || r.player_cards || {};
+                        const playerOrders = r.player_orders || r.player_card_ids || r.player_cards || [];
+                        // 收集所有 card_id 用于反查名称
+                        const allCardIds = (Array.isArray(playerOrders) ? playerOrders : []).flat().filter(id => typeof id === 'string' && id.startsWith('card_'));
+                        const infoMap = await fetchCardsInfo(allCardIds);
                         let playersHtml = '';
                         if (players.length > 0) {
-                            playersHtml = players.map(addr => {
-                                const ids = playerCardIds[addr] || [];
-                                const names = ids.map(id => getCardNameById(id));
+                            playersHtml = players.map((addr, pi) => {
+                                const ids = (Array.isArray(playerOrders) && Array.isArray(playerOrders[pi])) ? playerOrders[pi] : [];
                                 const isMe = addr === walletAddress;
                                 const lbl = isMe ? '你' : addr.slice(0,10)+'...';
-                                return `<div style="padding:2px 0;">${lbl}: ${names.length > 0 ? names.map((n,i)=>`${i+1}. ${n}`).join(' · ') : '（暂无出牌）'}</div>`;
+                                if (ids.length === 0) return `<div style="padding:2px 0;">${lbl}: （暂无出牌）</div>`;
+                                const names = ids.map((id, i) => {
+                                    const info = infoMap[id];
+                                    const name = (info && info.name) ? info.name : getCardNameById(id);
+                                    return `${i+1}. ${name}`;
+                                });
+                                return `<div style="padding:2px 0;">${lbl}: ${names.join(' · ')}</div>`;
                             }).join('');
                         } else {
                             playersHtml = '<div style="color:#888;">（暂无玩家数据）</div>';
@@ -4498,7 +4654,7 @@
                             <div style="display:flex;gap:4px;flex-wrap:wrap;">${actions}</div>
                             ${detailHtml}
                         </div>`;
-                    }).join('');
+                    }))).join('');
             }
             panel.style.display = 'block';
             panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
