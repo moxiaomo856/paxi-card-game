@@ -2,7 +2,8 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="theme-color" content="#0d0a0c" />
     <title>🐉 三国卡牌 · 正式版（Paxi链）</title>
     <!-- HTTP 强制跳转 HTTPS（仅在线上部署时生效；本地 file:// / localhost 不触发） -->
     <script>
@@ -31,10 +32,13 @@
             background: #0d0a0c;
             background-image: radial-gradient(ellipse at 30% 20%, #1a1218, #0a0709);
             min-height: 100vh;
-            padding: 12px 8px;
+            min-height: 100dvh;
+            padding: calc(env(safe-area-inset-top, 0px) + 12px) 8px calc(env(safe-area-inset-bottom, 0px) + 20px);
             font-family: '华文行楷', 'STKaiti', 'KaiTi', 'SimSun', serif;
             color: #e8d5b8;
             transition: font-family 0.2s;
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
         }
         body.lang-en {
             font-family: 'Georgia', 'Times New Roman', serif;
@@ -1050,6 +1054,454 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
+
+        /* ===== 三大战区：顶部资产区（紧凑）===== */
+        .wallet-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.04);
+            backdrop-filter: blur(8px);
+            padding: 8px 14px;
+            border-radius: 14px;
+            border: 1px solid rgba(200, 160, 100, 0.12);
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            font-size: 13px;
+        }
+        .wallet-bar .addr {
+            color: #b8860b;
+            font-size: 12px;
+        }
+        .wallet-bar .bal {
+            color: #e8d5b8;
+            font-size: 13px;
+        }
+        .wallet-bar .num {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .wallet-bar .mini-btns {
+            margin-left: auto;
+            display: flex;
+            gap: 6px;
+        }
+        .wallet-bar .mini-btn {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(200,160,100,0.2);
+            color: #e8d5b8;
+            padding: 2px 8px;
+            border-radius: 14px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: 0.2s;
+        }
+        .wallet-bar .mini-btn:hover { background: rgba(255,255,255,0.18); }
+        @media (max-width: 600px) {
+            .wallet-bar { font-size: 11px; gap: 6px; padding: 6px 10px; }
+            .wallet-bar .bal { font-size: 11px; }
+            .wallet-bar .mini-btn { padding: 2px 6px; font-size: 10px; }
+        }
+
+        /* ===== Tab 标签页 ===== */
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            background: rgba(0,0,0,0.25);
+            padding: 4px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(200,160,100,0.12);
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 1;
+            min-width: 72px;
+            background: transparent;
+            border: none;
+            color: #8a7a66;
+            padding: 10px 6px;
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: 0.2s;
+            white-space: nowrap;
+        }
+        .tab-btn:hover { color: #e8d5b8; background: rgba(255,255,255,0.04); }
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(184,134,11,0.35), rgba(255,200,50,0.2));
+            color: #ffd700;
+            box-shadow: 0 2px 10px rgba(255,200,50,0.15);
+        }
+        .tab-panel { display: none; }
+        .tab-panel.active { display: block; animation: fadeTab 0.3s; }
+        @keyframes fadeTab {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== 统计卡片（横向四个）===== */
+        .stats-row {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .stat-card {
+            flex: 1;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(200,160,100,0.1);
+            border-radius: 12px;
+            padding: 8px 6px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .stat-card .stat-icon { font-size: 16px; }
+        .stat-card .stat-num {
+            display: block;
+            font-size: 15px;
+            font-weight: bold;
+            color: #ffd700;
+            margin-top: 2px;
+        }
+        .stat-card .stat-label {
+            display: block;
+            font-size: 10px;
+            color: #8a7a66;
+            margin-top: 2px;
+        }
+        @media (max-width: 600px) {
+            .stat-card { padding: 6px 2px; }
+            .stat-card .stat-num { font-size: 13px; }
+            .stat-card .stat-label { font-size: 9px; }
+        }
+
+        /* ===== 抽卡区：金色大按钮 ===== */
+        .draw-center {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin: 14px 0 10px;
+        }
+        .draw-center .btn {
+            padding: 14px 28px;
+            font-size: 16px;
+            border-radius: 16px;
+            font-family: inherit;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border: none;
+            transition: 0.2s;
+        }
+        .draw-single {
+            background: linear-gradient(135deg, #8b0000, #dc143c, #b22222);
+            color: #fff;
+            box-shadow: 0 4px 18px rgba(220,20,60,0.35);
+        }
+        .draw-single:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(220,20,60,0.5); }
+        .draw-triple {
+            background: linear-gradient(135deg, #b8860b, #ffd700, #b8860b);
+            color: #2a1a00;
+            box-shadow: 0 4px 18px rgba(255,215,0,0.35);
+        }
+        .draw-triple:hover { transform: translateY(-2px); box-shadow: 0 6px 22px rgba(255,215,0,0.5); }
+        .draw-desc-center {
+            text-align: center;
+            color: #b39b7a;
+            font-size: 12px;
+            margin-bottom: 6px;
+        }
+
+        /* ===== 30张卡牌背面占位网格 ===== */
+        .pool-back-grid {
+            display: grid;
+            grid-template-columns: repeat(10, 1fr);
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .pool-back {
+            aspect-ratio: 2/3;
+            background: linear-gradient(145deg, #2a2015, #1a1208);
+            border: 1px solid rgba(200,160,100,0.25);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: rgba(200,160,100,0.4);
+            position: relative;
+            overflow: hidden;
+        }
+        .pool-back::before {
+            content: '';
+            position: absolute;
+            inset: 2px;
+            border: 1px dashed rgba(200,160,100,0.15);
+            border-radius: 6px;
+        }
+        @media (max-width: 600px) {
+            .pool-back-grid { grid-template-columns: repeat(6, 1fr); }
+        }
+
+        /* ===== 难度胶囊按钮 ===== */
+        .diff-pill-row {
+            display: flex;
+            gap: 4px;
+            margin: 8px 0;
+            flex-wrap: wrap;
+        }
+        .diff-pill {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(200,160,100,0.25);
+            color: #8a7a66;
+            padding: 5px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .diff-pill:hover { color: #e8d5b8; }
+        .diff-pill.active {
+            background: linear-gradient(135deg, rgba(184,134,11,0.4), rgba(255,200,50,0.2));
+            color: #ffd700;
+            border-color: #b8860b;
+            box-shadow: 0 0 8px rgba(255,200,50,0.2);
+        }
+
+        /* ===== 对战子区块 ===== */
+        .battle-sub {
+            background: rgba(0,0,0,0.18);
+            border: 1px solid rgba(200,160,100,0.1);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .battle-sub h4 {
+            font-size: 14px;
+            color: #e8d5b8;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-row {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn-row .btn { flex: 1; min-width: 80px; font-size: 12px; padding: 8px 10px; }
+
+        /* ===== ⓘ Tooltip ===== */
+        .tip-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: rgba(255,200,50,0.15);
+            border: 1px solid rgba(255,200,50,0.4);
+            color: #ffd700;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: help;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .tip-icon .tip-body {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1208;
+            border: 1px solid rgba(200,160,100,0.4);
+            color: #e8d5b8;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            white-space: pre-line;
+            min-width: 180px;
+            max-width: 260px;
+            z-index: 999;
+            transition: 0.2s;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            pointer-events: none;
+        }
+        .tip-icon:hover .tip-body,
+        .tip-icon:active .tip-body {
+            visibility: visible;
+            opacity: 1;
+        }
+        @media (max-width: 600px) {
+            .tip-icon .tip-body {
+                position: fixed;
+                bottom: auto;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                max-width: 85vw;
+                width: auto;
+            }
+        }
+
+        /* ===== ⚙️ 齿轮设置菜单 ===== */
+        .settings-wrap {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 10px);
+            right: 10px;
+            z-index: 1000;
+        }
+        .settings-btn {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(200,160,100,0.3);
+            color: #e8d5b8;
+            font-size: 18px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(6px);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .settings-btn:hover { background: rgba(255,200,50,0.15); transform: rotate(90deg); }
+        .settings-menu {
+            display: none;
+            position: absolute;
+            top: 46px;
+            right: 0;
+            background: #1a1208;
+            border: 1px solid rgba(200,160,100,0.3);
+            border-radius: 12px;
+            padding: 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            min-width: 180px;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .settings-menu.open { display: flex; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform: translateY(0); } }
+        .settings-menu .menu-item {
+            background: transparent;
+            border: none;
+            color: #e8d5b8;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            border-radius: 8px;
+            text-align: left;
+            transition: 0.15s;
+        }
+        .settings-menu .menu-item:hover { background: rgba(255,200,50,0.12); color: #ffd700; }
+        .settings-menu .menu-item.danger:hover { background: rgba(220,50,50,0.15); color: #ff8080; }
+        .settings-menu .menu-divider {
+            height: 1px;
+            background: rgba(200,160,100,0.2);
+            margin: 4px 8px;
+        }
+
+        /* ===== 我的卡牌 Tab ===== */
+        .sort-area {
+            background: rgba(0,0,0,0.18);
+            border: 1px solid rgba(200,160,100,0.1);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .sort-area label { color: #e8d5b8; }
+        .sort-area .sort-actions {
+            display: flex;
+            gap: 4px;
+            margin-left: auto;
+        }
+        .sort-area .sort-actions .btn { font-size: 11px; padding: 4px 8px; }
+
+        /* ===== 手机端全局优化 ===== */
+        @media (max-width: 600px) {
+            .header {
+                padding: 6px 10px;
+                margin-bottom: 6px;
+                gap: 4px;
+            }
+            .header h1 { font-size: 16px; letter-spacing: 1px; }
+            .header .badge { display: none; } /* 手机隐藏 Paxi 标签 */
+            .btn-lang { display: none; } /* 语言切换移到齿轮 */
+
+            /* wallet-bar 横向滚动更自然 */
+            .wallet-bar {
+                padding: 6px 10px;
+                gap: 6px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .wallet-bar::-webkit-scrollbar { display: none; }
+            .wallet-bar .mini-btns { flex-shrink: 0; }
+
+            /* Tab 更紧凑 */
+            .tab-btn { font-size: 13px; padding: 8px 4px; }
+            .tab-bar { padding: 3px; gap: 2px; }
+
+            /* 抽卡主按钮更大更好点 */
+            .draw-center .btn { padding: 12px 22px; font-size: 15px; letter-spacing: 1px; }
+
+            /* 齿轮在手机顶部 */
+            .settings-btn {
+                width: 34px;
+                height: 34px;
+                font-size: 16px;
+                right: 6px;
+            }
+
+            /* 统计卡片缩小 */
+            .stat-card { padding: 6px 2px; border-radius: 8px; }
+            .stat-card .stat-num { font-size: 13px; }
+            .stat-card .stat-label { font-size: 9px; }
+
+            /* 卡牌网格手机 3 列 */
+            .card-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+            .card { height: 180px; }
+
+            /* 弹窗手机适配 */
+            .modal { max-width: 95vw; max-height: 90vh; padding: 14px; }
+            .modal input, .modal select, .modal textarea { font-size: 16px; } /* 防止 iOS 自动缩放 */
+        }
+        @media (max-width: 380px) {
+            /* 小屏手机（iPhone SE 等）再压 */
+            .header h1 { font-size: 14px; }
+            .header-actions .btn-wallet { font-size: 11px; padding: 3px 8px; }
+            .header-actions #helpBtn { display: none; }
+            .wallet-bar .bal { font-size: 10px; }
+            .wallet-bar .num { font-size: 11px; }
+            .tab-btn { font-size: 12px; min-width: 60px; }
+            .diff-pill { padding: 4px 10px; font-size: 12px; }
+            .card { height: 150px; }
+            .pool-back-grid { grid-template-columns: repeat(5, 1fr); }
+        }
+
+        /* iOS 点击延迟消除 */
+        button, .btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+        input, select, textarea { font-size: 16px; }
     </style>
 </head>
 <body>
@@ -1059,129 +1511,177 @@
         <div class="header">
             <div class="header-left">
                 <h1>⚔️ 三国·<span>卡牌</span></h1>
-                <span class="badge">🔗 正式版·Paxi链</span>
+                <span class="badge">🔗 Paxi</span>
             </div>
             <div class="header-actions">
                 <button class="btn-wallet" id="walletBtn" onclick="connectWallet()">🔗 连接钱包</button>
                 <button class="btn btn-secondary btn-sm" onclick="openHelp()" id="helpBtn" data-i18n="help_btn">📖 玩法</button>
-                <button class="btn-lang active" data-lang="zh" onclick="switchLang('zh')">中文</button>
-                <button class="btn-lang" data-lang="en" onclick="switchLang('en')">EN</button>
             </div>
         </div>
 
-        <!-- ===== 钱包/余额显示（正式版新增） ===== -->
+        <!-- ===== 顶部资产区（紧凑单行） ===== -->
         <div class="wallet-bar" id="walletBar">
             <span class="addr" id="walletAddr">未连接钱包</span>
             <span class="bal">PAXI: <span class="num" id="paxiBalance">-</span></span>
             <span class="bal">TKCC: <span class="num" id="tkccBalance">-</span></span>
             <span class="bal" title="可用于抽卡/对战/升星的存款">💾 存款: <span class="num" id="depositBalance">-</span></span>
-            <button class="btn btn-primary btn-sm" onclick="showDepositModal()">💰 充值</button>
-            <button class="btn btn-secondary btn-sm" onclick="showWithdrawModal()">💳 提现</button>
-            <button class="btn btn-secondary btn-sm" onclick="refreshBalances()">🔄 刷新</button>
+            <span class="mini-btns">
+                <button class="mini-btn" onclick="showDepositModal()" title="充值">💰</button>
+                <button class="mini-btn" onclick="showWithdrawModal()" title="提现">💳</button>
+                <button class="mini-btn" onclick="refreshBalances()" title="刷新">🔄</button>
+            </span>
         </div>
 
-        <!-- ===== 统计面板 ===== -->
-        <div class="stats-panel" id="statsPanel">
-            <div class="stat-item"><span class="number" id="winCount">0</span><span class="label" data-i18n="wins">🏆 胜场</span></div>
-            <div class="stat-item"><span class="number" id="cardCount">0</span><span class="label" data-i18n="cards">🃏 卡牌</span></div>
-            <div class="stat-item"><span class="number" id="battleCount">0</span><span class="label" data-i18n="battles">⚔️ 总对战</span></div>
-            <div class="stat-item"><span class="number" id="fragCommon" style="color:#aaa;">0</span><span class="label">🟤 普通碎片</span></div>
-            <div class="stat-item"><span class="number" id="fragRare" style="color:#4a9eff;">0</span><span class="label">🔵 稀有碎片</span></div>
-            <div class="stat-item"><span class="number" id="fragEpic" style="color:#b14aff;">0</span><span class="label">🟣 史诗碎片</span></div>
-            <div class="stat-item"><span class="number" id="fragLegend" style="color:#ffd700;">0</span><span class="label">🟡 传说碎片</span></div>
+        <!-- ===== 齿轮设置菜单（右下角） ===== -->
+        <div class="settings-wrap">
+            <button class="settings-btn" onclick="toggleSettingsMenu()" id="settingsBtn" title="设置">⚙️</button>
+            <div class="settings-menu" id="settingsMenu">
+                <button class="menu-item" onclick="switchLang('zh');document.querySelectorAll('.btn-lang').forEach(b=>b.classList.toggle('active',b.dataset.lang==='zh'));toggleSettingsMenu()" id="langZhBtn">🇨🇳 中文</button>
+                <button class="menu-item" onclick="switchLang('en');document.querySelectorAll('.btn-lang').forEach(b=>b.classList.toggle('active',b.dataset.lang==='en'));toggleSettingsMenu()" id="langEnBtn">🇺🇸 English</button>
+                <div class="menu-divider"></div>
+                <button class="menu-item" onclick="showDepositModal();toggleSettingsMenu()">💰 充值</button>
+                <button class="menu-item" onclick="showWithdrawModal();toggleSettingsMenu()">💳 提现</button>
+                <div class="menu-divider"></div>
+                <button class="menu-item" onclick="openCraftModal();toggleSettingsMenu()">✨ 合成卡牌</button>
+                <button class="menu-item" onclick="openProposalModal();toggleSettingsMenu()">🗳 新卡牌提案</button>
+                <button class="menu-item" onclick="listProposalsUI();toggleSettingsMenu()">📜 提案列表</button>
+                <div class="menu-divider"></div>
+                <button class="menu-item danger" onclick="resetGame();toggleSettingsMenu()" data-i18n="reset_btn">🔄 重置数据</button>
+            </div>
         </div>
 
-        <!-- ===== 战斗动画区 ===== -->
+        <!-- ===== 统计卡片（4 横向） ===== -->
+        <div class="stats-row">
+            <div class="stat-card">
+                <span class="stat-icon">🏆</span>
+                <span class="stat-num" id="winCount">0</span>
+                <span class="stat-label" data-i18n="wins">胜场</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">🃏</span>
+                <span class="stat-num" id="cardCount">0</span>
+                <span class="stat-label" data-i18n="cards">总卡牌</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">⚔️</span>
+                <span class="stat-num" id="battleCount">0</span>
+                <span class="stat-label" data-i18n="battles">总对战</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-icon">🧩</span>
+                <span class="stat-num" id="fragLegend" style="color:#ffd700;">0</span>
+                <span class="stat-label">🟡传说 <span id="fragEpic" style="color:#b14aff;">0</span>🟣<span id="fragRare" style="color:#4a9eff;">0</span>🔵<span id="fragCommon" style="color:#aaa;">0</span>🟤</span>
+            </div>
+        </div>
+
+        <!-- ===== 战斗动画区（悬浮覆盖，保持原位置） ===== -->
         <div class="battle-arena" id="battleArena">
             <div id="battleContent"></div>
         </div>
 
-        <!-- ===== 操作区（三按钮一行） ===== -->
-        <div class="actions">
-            <div class="action-box">
-                <h4 data-i18n="draw_title">🎁 抽卡</h4>
-                <div class="draw-mode-switch">
-                    <button class="btn btn-sm btn-secondary" id="drawMode1Btn" onclick="setDrawMode(1)">单抽</button>
-                    <button class="btn btn-sm btn-secondary active" id="drawMode3Btn" onclick="setDrawMode(3)">三连抽</button>
-                </div>
-                <div class="desc" id="drawDesc">消耗 30 PAXI + 500,000 TKCC（三连抽）</div>
-                <button class="btn btn-primary" onclick="drawCards()" id="drawBtn">抽 3 张</button>
+        <!-- ===== Tab 核心战区 ===== -->
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('draw', this)">🎁 抽卡</button>
+            <button class="tab-btn" onclick="switchTab('battle', this)">⚔️ 对战</button>
+            <button class="tab-btn" onclick="switchTab('cards', this)">🃏 我的卡牌</button>
+        </div>
+
+        <!-- ===== Tab1: 抽卡 ===== -->
+        <div class="tab-panel active" id="tab-draw">
+            <!-- 切换胶囊 -->
+            <div class="draw-mode-switch" style="display:flex;gap:6px;justify-content:center;margin-top:4px;">
+                <button class="diff-pill" id="drawMode1Btn" onclick="setDrawMode(1)">🗡️ 单抽</button>
+                <button class="diff-pill active" id="drawMode3Btn" onclick="setDrawMode(3)">🎴 三连抽</button>
             </div>
-            <div class="action-box">
-                <h4 data-i18n="battle_title">🤖 打 AI</h4>
-                <div class="desc">消耗 10k~25k TKCC（赢+3万~+5.5万）</div>
-                <div class="difficulty-selector">
-                    <button class="btn btn-sm btn-secondary active" data-diff="1" onclick="setDifficulty(1)" data-i18n="diff_easy">简</button>
-                    <button class="btn btn-sm btn-secondary" data-diff="2" onclick="setDifficulty(2)" data-i18n="diff_normal">普</button>
-                    <button class="btn btn-sm btn-secondary" data-diff="3" onclick="setDifficulty(3)" data-i18n="diff_hard">难</button>
-                    <button class="btn btn-sm btn-secondary" data-diff="4" onclick="setDifficulty(4)" data-i18n="diff_legend">传</button>
-                </div>
-                <div id="aiStatsLine" style="font-size:10px;color:#b39b7a;margin-top:2px;">今日 0 / 20 局</div>
-                <button class="btn btn-success" id="battleBtn" onclick="startBattle()" data-i18n="battle_btn">⚔️ 打</button>
+            <div class="draw-desc-center" id="drawDesc">消耗 30 PAXI + 500,000 TKCC（三连抽）</div>
+            <div class="draw-center">
+                <button class="btn draw-triple" onclick="drawCards()" id="drawBtn">🎴 抽 3 张</button>
             </div>
-            <div class="action-box">
-                <h4>⚔️ PVP 1v1</h4>
-                <div class="desc" style="font-size:10px;">消耗 60k TKCC · 3局2胜 · 链上结算</div>
-                <div style="display:flex;gap:4px;">
-                    <button class="btn btn-primary btn-sm" style="flex:1;" onclick="showPvpCreateModal()">发起挑战</button>
-                    <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="listPvpUI()">对局列表</button>
+
+            <!-- 30 张卡牌背面占位网格 -->
+            <div style="margin-top:12px;">
+                <h3 style="font-size:14px;color:#b39b7a;margin-bottom:6px;" data-i18n="card_pool">📚 三国卡池（30张）</h3>
+                <div class="pool-back-grid">
+                    <!-- 30 张卡牌背面占位 -->
+                    <div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div>
+                    <div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div>
+                    <div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div><div class="pool-back">?</div>
                 </div>
             </div>
-            <div class="action-box">
-                <h4>👑 4-6 人混战</h4>
-                <div class="desc" style="font-size:10px;">消耗 60k · 赢者 70% · 15%销毁 · 15%金库</div>
-                <div style="display:flex;gap:4px;">
-                    <button class="btn btn-primary btn-sm" style="flex:1;" onclick="showRoyaleCreateModal()">创建房间</button>
-                    <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="showRoyaleJoinModal()">加入房间</button>
+            <!-- 保留 poolGrid id 供 JS 使用（隐藏） -->
+            <div id="poolGrid" style="display:none;"></div>
+        </div>
+
+        <!-- ===== Tab2: 对战 ===== -->
+        <div class="tab-panel" id="tab-battle">
+            <!-- 🤖 打 AI -->
+            <div class="battle-sub">
+                <h4>🤖 打 AI <span class="tip-icon">ⓘ<span class="tip-body">消耗：普通难度 10k TKCC，传说难度 25k TKCC
+奖励：赢 +3万~+5.5万 TKCC，输 -0（只扣消耗）
+每日限 20 局</span></span></h4>
+                <div class="diff-pill-row">
+                    <button class="diff-pill active" data-diff="1" onclick="setDifficulty(1)" data-i18n="diff_easy">简</button>
+                    <button class="diff-pill" data-diff="2" onclick="setDifficulty(2)" data-i18n="diff_normal">普</button>
+                    <button class="diff-pill" data-diff="3" onclick="setDifficulty(3)" data-i18n="diff_hard">难</button>
+                    <button class="diff-pill" data-diff="4" onclick="setDifficulty(4)" data-i18n="diff_legend">传</button>
                 </div>
-                <button class="btn btn-sm btn-gold" style="margin-top:4px;width:100%;" onclick="listRoyaleUI()">📋 房间列表</button>
+                <div id="aiStatsLine" style="font-size:11px;color:#b39b7a;margin-bottom:8px;">今日 0 / 20 局</div>
+                <div class="btn-row">
+                    <button class="btn btn-success" id="battleBtn" onclick="startBattle()" data-i18n="battle_btn">⚔️ 开战</button>
+                </div>
             </div>
-            <div class="action-box">
-                <h4 data-i18n="reset_title">🔄 重置</h4>
-                <div class="desc" data-i18n="reset_desc">清除数据</div>
-                <button class="btn btn-danger" onclick="resetGame()" data-i18n="reset_btn">重置</button>
+
+            <!-- ⚔️ PVP 1v1 -->
+            <div class="battle-sub">
+                <h4>⚔️ PVP 1v1 <span class="tip-icon">ⓘ<span class="tip-body">双方各扣 60,000 TKCC
+3 局 2 胜，链上实时结算
+公开挑战：其他玩家可在「对局列表」中接受</span></span></h4>
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="showPvpCreateModal()">发起挑战</button>
+                    <button class="btn btn-secondary" onclick="listPvpUI()">对局列表</button>
+                </div>
+            </div>
+
+            <!-- 👑 混战 -->
+            <div class="battle-sub">
+                <h4>👑 4-6 人混战 <span class="tip-icon">ⓘ<span class="tip-body">每人 60,000 TKCC
+70% 奖池给赢家，15% 销毁，15% 入金库
+满人后由任意玩家发起结算</span></span></h4>
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="showRoyaleCreateModal()">创建房间</button>
+                    <button class="btn btn-secondary" onclick="showRoyaleJoinModal()">加入房间</button>
+                    <button class="btn btn-gold" onclick="listRoyaleUI()">📋 房间列表</button>
+                </div>
+            </div>
+
+            <!-- PVP / 混战对局列表（动态渲染） -->
+            <div class="match-list-panel" id="matchListPanel" style="display:none;margin-top:8px;">
+                <h3 style="font-size:14px;color:#e8d5b8;margin-bottom:4px;">📜 PVP / 混战对局</h3>
+                <div id="pvpListContent"></div>
             </div>
         </div>
 
-        <!-- ===== PVP 对局列表区域（动态渲染） ===== -->
-        <div class="match-list-panel" id="matchListPanel" style="display:none;margin-top:8px;">
-            <h3 style="font-size:14px;color:#e8d5b8;margin-bottom:4px;">📜 PVP / 混战对局</h3>
-            <div id="pvpListContent"></div>
-        </div>
-
-        <!-- ===== 卡牌排序区 ===== -->
-        <div class="sort-area" id="sortArea">
-            <label data-i18n="sort_label">📋 出战顺序（点击调整）：</label>
-            <span id="sortSlots">请先抽卡</span>
-            <span style="font-size:10px;color:#6a5a4a;margin-left:auto;" data-i18n="sort_tip">💡 田忌赛马</span>
-        </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
-            <button class="btn btn-gold" style="font-size:12px;padding:6px 10px;" onclick="saveBattleOrder()" data-i18n="save_battle_order_btn">💾 保存出战顺序（链上）</button>
-            <button class="btn btn-primary" style="font-size:12px;padding:6px 10px;" onclick="openProposalModal()" data-i18n="open_proposal_btn">🗳 新卡牌提案（社区）</button>
-            <button class="btn btn-secondary" style="font-size:12px;padding:6px 10px;" onclick="listProposalsUI()" data-i18n="list_proposal_btn">📜 提案列表</button>
-            <button class="btn btn-success" style="font-size:12px;padding:6px 10px;" onclick="openCraftModal()">✨ 合成卡牌</button>
-        </div>
-
-        <!-- ===== 我的卡牌 ===== -->
-        <div style="margin-top:4px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;gap:4px;align-items:flex-end;">
-                    <h3 style="display:inline-block; border-bottom:2px solid rgba(200,160,100,0.2); padding-bottom:4px; font-size:16px; color:#e8d5b8;" data-i18n="my_cards">我的卡牌</h3>
-                </div>
-                <div style="display:flex;gap:4px;">
-                    <button class="btn btn-sm btn-secondary active" onclick="switchMyCardsView('mine', this)">🎴 我的卡牌</button>
-                    <button class="btn btn-sm btn-secondary" onclick="openCodexModal()">📚 图鉴</button>
-                </div>
+        <!-- ===== Tab3: 我的卡牌 ===== -->
+        <div class="tab-panel" id="tab-cards">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+                <h3 style="font-size:15px;color:#e8d5b8;margin:0;" data-i18n="my_cards">我的卡牌</h3>
+                <div style="flex:1;"></div>
+                <button class="btn btn-sm btn-secondary active" onclick="switchMyCardsView('mine', this)">🎴 我的卡牌</button>
+                <button class="btn btn-sm btn-secondary" onclick="openCodexModal()">📚 图鉴</button>
             </div>
             <div class="card-grid" id="cardGrid">
                 <div class="empty-state" style="grid-column:1/-1; text-align:center; color:#6a5a4a; padding:20px 0;" data-i18n="empty_cards">点击「抽卡」获取卡牌</div>
             </div>
-        </div>
 
-        <!-- ===== 卡牌池 ===== -->
-        <div style="margin-top:16px;">
-            <h3 style="display:inline-block; border-bottom:2px solid rgba(200,160,100,0.2); padding-bottom:4px; font-size:16px; color:#e8d5b8;" data-i18n="card_pool">📚 全部卡牌 (30张)</h3>
-            <div class="card-grid" id="poolGrid"></div>
+            <!-- 出战顺序区（田忌赛马） -->
+            <div class="sort-area" id="sortArea" style="margin-top:10px;">
+                <label data-i18n="sort_label">📋 出战顺序：</label>
+                <span id="sortSlots">请先抽卡</span>
+                <span style="font-size:10px;color:#6a5a4a;" data-i18n="sort_tip">💡 田忌赛马</span>
+                <span class="sort-actions" style="margin-left:auto;">
+                    <button class="btn btn-gold" onclick="saveBattleOrder()" data-i18n="save_battle_order_btn">💾 保存顺序</button>
+                </span>
+            </div>
         </div>
     </div>
 
@@ -1220,7 +1720,7 @@
                 <div style="grid-column:1/3;">
                     <span class="label">卡牌图片 <span style="color:#f44336;">*</span></span>
                     <div style="display:flex;gap:8px;align-items:center;margin-top:4px;">
-                        <input id="prop_image" class="w3-input" placeholder="图片 URL（上传后自动填入）" readonly>
+                        <input id="prop_image" class="w3-input" placeholder="粘贴图片URL，或点📤上传后自动填入">
                         <button class="btn btn-primary btn-sm" onclick="uploadCardImage()">📤 上传图片</button>
                     </div>
                     <div id="imagePreview" style="margin-top:4px;display:none;">
@@ -1412,6 +1912,29 @@
     <!-- ============================================================ -->
     <script>
         // ============================================================
+        // 🎨 界面重构：Tab 切换 + 设置菜单
+        // ============================================================
+        function switchTab(name, btn) {
+            ['draw', 'battle', 'cards'].forEach(n => {
+                const el = document.getElementById('tab-' + n);
+                if (el) el.classList.toggle('active', n === name);
+            });
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+        }
+        function toggleSettingsMenu() {
+            document.getElementById('settingsMenu').classList.toggle('open');
+        }
+        // 点击齿轮菜单外部时自动关闭
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('settingsMenu');
+            const btn = document.getElementById('settingsBtn');
+            if (menu && !menu.contains(e.target) && !btn.contains(e.target)) {
+                menu.classList.remove('open');
+            }
+        });
+
+        // ============================================================
         // 📌 链上配置（按 DApp 指南 3.2 / 游戏说明）
         // 部署合约后请把下面两个地址填入！
         // ============================================================
@@ -1552,7 +2075,14 @@
                 walletPublicKey = sender.public_key;
                 document.getElementById('walletBtn').textContent = '✅ 已连接';
                 document.getElementById('walletBtn').disabled = true;
-                document.getElementById('walletAddr').textContent = walletAddress;
+                // 钱包地址自动截断显示，点击可复制完整地址
+                const addrEl = document.getElementById('walletAddr');
+                addrEl.textContent = walletAddress.slice(0, 8) + '...' + walletAddress.slice(-4);
+                addrEl.title = '点击复制完整地址：' + walletAddress;
+                addrEl.style.cursor = 'pointer';
+                addrEl.onclick = () => {
+                    navigator.clipboard?.writeText(walletAddress).then(() => showToast('📋 已复制钱包地址', 'info'));
+                };
                 showToast('✅ 钱包已连接：' + walletAddress.slice(0, 12) + '...', 'success');
                 await refreshBalances();
                 // 钱包连接后再恢复出战顺序（页面加载时 walletAddress 为空，setTimeout 无效）
@@ -1646,7 +2176,7 @@
                     send: {
                         contract: GAME_CONTRACT,
                         amount: String(amountMicro),  // CW20 金额用最小单位
-                        msg: null  // 空消息即可,游戏合约只需要知道 amount 和 sender
+                        msg: ""  // 空消息即可,游戏合约只需要知道 amount 和 sender
                     }
                 };
                 const sendAny = buildMsgExecuteGame(walletAddress, sendMsg, PRC20_CONTRACT);
@@ -2256,11 +2786,11 @@
                 </div>
             `;
             document.getElementById('helpContent').innerHTML = currentLang === 'zh' ? zhContent : enContent;
-            modal.classList.add('active');
+            modal.style.display = 'flex';
         }
 
         function closeHelp() {
-            document.getElementById('helpModal').classList.remove('active');
+            document.getElementById('helpModal').style.display = 'none';
         }
 
         // ============================================================
@@ -2611,7 +3141,7 @@
                 const tkccTotal = isPack3 ? PACK3_TKCC_TOTAL : SINGLE_TKCC_TOTAL;
 
                 // 游戏合约已部署 → 根据模式调用 draw_pack 或 draw_pack_3
-                const msgKey = isPack3 ? 'draw_pack_3' : 'draw_pack';
+                const msgKey = isPack3 ? 'draw_pack3' : 'draw_pack';
                 const msgs = [
                     buildMsgExecuteGameWithFunds(walletAddress,
                         { [msgKey]: { tap_index: tapIndex } },
@@ -3746,35 +4276,37 @@
         }
 
         // ============================================================
-        // 📤 提案图片上传（ImgBB，用户替换 API Key）
+        // 📤 提案图片上传（ImgBB，多 key 随机轮换）
         // ============================================================
-        const IMGBB_API_KEY = 'YOUR_IMGBB_API_KEY'; // 用户替换为实际 Key
+        const IMGBB_API_KEYS = ['ca48b21f1a93e90b85bee090e34b36f2', '98eb5c71d6b0ee63b1384f05bc4f0a81'];
         async function uploadCardImage() {
-            if (IMGBB_API_KEY === 'YOUR_IMGBB_API_KEY') {
-                showToast('⚠️ 请先在脚本中填入你的 IMGBB_API_KEY，或手动粘贴图片URL到输入框', 'warning');
-            }
             const input = document.createElement('input');
             input.type = 'file';
             input.accept = 'image/*';
             input.onchange = async function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
-                // 预览
+                // 预览（本地即时显示）
                 const reader = new FileReader();
                 reader.onload = (ev) => {
                     document.getElementById('previewImg').src = ev.target.result;
                     document.getElementById('imagePreview').style.display = 'block';
                 };
                 reader.readAsDataURL(file);
-                if (IMGBB_API_KEY !== 'YOUR_IMGBB_API_KEY') {
+
+                // 随机选一个 key，失败自动换另一个重试
+                const base64 = await new Promise(resolve => {
+                    const r = new FileReader();
+                    r.onload = (ev) => resolve(ev.target.result.split(',')[1]);
+                    r.readAsDataURL(file);
+                });
+                // 打乱顺序依次尝试
+                const keys = [...IMGBB_API_KEYS].sort(() => Math.random() - 0.5);
+                let lastErr = null;
+                for (const key of keys) {
                     try {
-                        const base64 = await new Promise(resolve => {
-                            const r = new FileReader();
-                            r.onload = (e) => resolve(e.target.result.split(',')[1]);
-                            r.readAsDataURL(file);
-                        });
                         const formData = new FormData();
-                        formData.append('key', IMGBB_API_KEY);
+                        formData.append('key', key);
                         formData.append('image', base64);
                         const resp = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: formData });
                         const data = await resp.json();
@@ -3782,13 +4314,15 @@
                             document.getElementById('prop_image').value = data.data.url;
                             document.getElementById('previewImg').src = data.data.url;
                             showToast('✅ 图片上传成功', 'success');
+                            return;
                         } else {
-                            showToast('⚠️ 上传失败：' + (data.error?.message || '未知错误'), 'warning');
+                            lastErr = data.error?.message || '未知错误';
                         }
                     } catch (e) {
-                        showToast('⚠️ 上传异常：' + (e.message || e), 'warning');
+                        lastErr = e.message || e;
                     }
                 }
+                showToast('⚠️ 两个 key 都上传失败：' + lastErr + '，请手动粘贴图片URL', 'warning');
             };
             input.click();
         }
