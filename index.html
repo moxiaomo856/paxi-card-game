@@ -1528,8 +1528,8 @@
             <span class="bal">TKCC: <span class="num" id="tkccBalance">-</span></span>
             <span class="bal" title="可用于抽卡/对战/升星的存款"><span data-i18n="deposit_label">💾 存款:</span> <span class="num" id="depositBalance">-</span></span>
             <span class="mini-btns">
-                <button class="mini-btn" onclick="showDepositModal()" title="充值" data-i18n-title="tip_deposit">💰</button>
-                <button class="mini-btn" onclick="showWithdrawModal()" title="提现" data-i18n-title="tip_withdraw">💳</button>
+                <button class="mini-btn" onclick="showDepositModal()" title="充值" data-i18n-title="tip_deposit">💰 充值</button>
+                <button class="mini-btn" onclick="showWithdrawModal()" title="提现" data-i18n-title="tip_withdraw">💳 提现</button>
                 <button class="mini-btn" onclick="refreshBalances()" title="刷新" data-i18n-title="tip_refresh">🔄</button>
             </span>
         </div>
@@ -3234,17 +3234,32 @@
             if (!requireWallet()) return;
             const btn = document.getElementById('drawBtn');
             const originalBtnText = btn ? btn.textContent : '';
+
+            // 抽卡前先刷新存款余额，避免合约中不存钱导致一直抽卡失败
+            try { await loadDeposit(); } catch (_) {}
+
+            const isPack3 = drawMode === 3;
+            const paxiFee = isPack3 ? PACK3_PAXI_FEE : SINGLE_PAXI_FEE;
+            const tkccTotal = isPack3 ? PACK3_TKCC_TOTAL : SINGLE_TKCC_TOTAL;
+            // 存款余额 depositBalance 为最小单位（utkcc），需与 tkccTotal*1e6 比较
+            const needMicro = tkccTotal * 1_000_000;
+            if (typeof depositBalance !== 'number' || isNaN(depositBalance) || depositBalance < needMicro) {
+                const cur = (typeof depositBalance === 'number' && !isNaN(depositBalance)) ? fromMicro(depositBalance) : '0';
+                const tip = currentLang === 'zh'
+                    ? `⚠️ 存款不足！当前存款 ${cur} TKCC，抽卡需要 ${tkccTotal.toLocaleString()} TKCC。\n\n请先充值后再抽卡。`
+                    : `⚠️ Insufficient deposit! Current ${cur} TKCC, need ${tkccTotal.toLocaleString()} TKCC.\n\nPlease deposit first.`;
+                if (window.confirm(tip + (currentLang === 'zh' ? '\n\n点击「确定」去充值，取消关闭。' : '\n\nOK to deposit, Cancel to close.'))) {
+                    if (typeof showDepositModal === 'function') showDepositModal();
+                }
+                return;
+            }
+
             try {
                 isProcessing = true;
                 if (btn) { btn.disabled = true; btn.textContent = '⏳ 抽卡中...'; }
                 showToast('⏳ 正在发送抽卡交易...', 'info');
 
                 const tapIndex = Math.floor(Math.random() * TAP_ADDRESSES.length);
-
-                // 根据模式选择费用和合约消息
-                const isPack3 = drawMode === 3;
-                const paxiFee = isPack3 ? PACK3_PAXI_FEE : SINGLE_PAXI_FEE;
-                const tkccTotal = isPack3 ? PACK3_TKCC_TOTAL : SINGLE_TKCC_TOTAL;
 
                 // 游戏合约已部署 → 根据模式调用 draw_pack 或 draw_pack_3
                 const msgKey = isPack3 ? 'draw_pack3' : 'draw_pack';
