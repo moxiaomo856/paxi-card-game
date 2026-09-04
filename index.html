@@ -1510,25 +1510,25 @@
         <!-- ===== 头部 ===== -->
         <div class="header">
             <div class="header-left">
-                <h1>⚔️ 三国·<span>卡牌</span></h1>
+                <h1 data-i18n="title">⚔️ 三国·<span>卡牌</span></h1>
                 <span class="badge">🔗 Paxi</span>
             </div>
             <div class="header-actions">
-                <button class="btn-wallet" id="walletBtn" onclick="connectWallet()">🔗 连接钱包</button>
+                <button class="btn-wallet" id="walletBtn" onclick="connectWallet()" data-i18n="wallet_btn">🔗 连接钱包</button>
                 <button class="btn btn-secondary btn-sm" onclick="openHelp()" id="helpBtn" data-i18n="help_btn">📖 玩法</button>
             </div>
         </div>
 
         <!-- ===== 顶部资产区（紧凑单行） ===== -->
         <div class="wallet-bar" id="walletBar">
-            <span class="addr" id="walletAddr">未连接钱包</span>
+            <span class="addr" id="walletAddr" data-i18n="wallet_disconnected">未连接钱包</span>
             <span class="bal">PAXI: <span class="num" id="paxiBalance">-</span></span>
             <span class="bal">TKCC: <span class="num" id="tkccBalance">-</span></span>
-            <span class="bal" title="可用于抽卡/对战/升星的存款">💾 存款: <span class="num" id="depositBalance">-</span></span>
+            <span class="bal" title="可用于抽卡/对战/升星的存款"><span data-i18n="deposit_label">💾 存款:</span> <span class="num" id="depositBalance">-</span></span>
             <span class="mini-btns">
-                <button class="mini-btn" onclick="showDepositModal()" title="充值">💰</button>
-                <button class="mini-btn" onclick="showWithdrawModal()" title="提现">💳</button>
-                <button class="mini-btn" onclick="refreshBalances()" title="刷新">🔄</button>
+                <button class="mini-btn" onclick="showDepositModal()" title="充值" data-i18n-title="tip_deposit">💰</button>
+                <button class="mini-btn" onclick="showWithdrawModal()" title="提现" data-i18n-title="tip_withdraw">💳</button>
+                <button class="mini-btn" onclick="refreshBalances()" title="刷新" data-i18n-title="tip_refresh">🔄</button>
             </span>
         </div>
 
@@ -1536,15 +1536,15 @@
         <div class="settings-wrap">
             <button class="settings-btn" onclick="toggleSettingsMenu()" id="settingsBtn" title="设置">⚙️</button>
             <div class="settings-menu" id="settingsMenu">
-                <button class="menu-item" onclick="switchLang('zh');document.querySelectorAll('.btn-lang').forEach(b=>b.classList.toggle('active',b.dataset.lang==='zh'));toggleSettingsMenu()" id="langZhBtn">🇨🇳 中文</button>
-                <button class="menu-item" onclick="switchLang('en');document.querySelectorAll('.btn-lang').forEach(b=>b.classList.toggle('active',b.dataset.lang==='en'));toggleSettingsMenu()" id="langEnBtn">🇺🇸 English</button>
+                <button class="menu-item" onclick="switchLang('zh');toggleSettingsMenu()" id="langZhBtn">🇨🇳 中文</button>
+                <button class="menu-item" onclick="switchLang('en');toggleSettingsMenu()" id="langEnBtn">🇺🇸 English</button>
                 <div class="menu-divider"></div>
-                <button class="menu-item" onclick="showDepositModal();toggleSettingsMenu()">💰 充值</button>
-                <button class="menu-item" onclick="showWithdrawModal();toggleSettingsMenu()">💳 提现</button>
+                <button class="menu-item" onclick="showDepositModal();toggleSettingsMenu()" data-i18n="menu_deposit">💰 充值</button>
+                <button class="menu-item" onclick="showWithdrawModal();toggleSettingsMenu()" data-i18n="menu_withdraw">💳 提现</button>
                 <div class="menu-divider"></div>
-                <button class="menu-item" onclick="openCraftModal();toggleSettingsMenu()">✨ 合成卡牌</button>
-                <button class="menu-item" onclick="openProposalModal();toggleSettingsMenu()">🗳 新卡牌提案</button>
-                <button class="menu-item" onclick="listProposalsUI();toggleSettingsMenu()">📜 提案列表</button>
+                <button class="menu-item" onclick="openCraftModal();toggleSettingsMenu()" data-i18n="menu_craft">✨ 合成卡牌</button>
+                <button class="menu-item" onclick="openProposalModal();toggleSettingsMenu()" data-i18n="menu_proposal">🗳 新卡牌提案</button>
+                <button class="menu-item" onclick="listProposalsUI();toggleSettingsMenu()" data-i18n="menu_proposal_list">📜 提案列表</button>
                 <div class="menu-divider"></div>
                 <button class="menu-item danger" onclick="resetGame();toggleSettingsMenu()" data-i18n="reset_btn">🔄 重置数据</button>
             </div>
@@ -1570,7 +1570,7 @@
             <div class="stat-card">
                 <span class="stat-icon">🧩</span>
                 <span class="stat-num" id="fragLegend" style="color:#ffd700;">0</span>
-                <span class="stat-label">🟡传说 <span id="fragEpic" style="color:#b14aff;">0</span>🟣<span id="fragRare" style="color:#4a9eff;">0</span>🔵<span id="fragCommon" style="color:#aaa;">0</span>🟤</span>
+                <span class="stat-label">🟡<span data-i18n="frag_legend_text">传说</span> <span id="fragEpic" style="color:#b14aff;">0</span>🟣<span id="fragRare" style="color:#4a9eff;">0</span>🔵<span id="fragCommon" style="color:#aaa;">0</span>🟤</span>
             </div>
         </div>
 
@@ -1581,21 +1581,21 @@
 
         <!-- ===== Tab 核心战区 ===== -->
         <div class="tab-bar">
-            <button class="tab-btn active" onclick="switchTab('draw', this)">🎁 抽卡</button>
-            <button class="tab-btn" onclick="switchTab('battle', this)">⚔️ 对战</button>
-            <button class="tab-btn" onclick="switchTab('cards', this)">🃏 我的卡牌</button>
+            <button class="tab-btn active" onclick="switchTab('draw', this)" data-i18n="tab_draw">🎁 抽卡</button>
+            <button class="tab-btn" onclick="switchTab('battle', this)" data-i18n="tab_battle">⚔️ 对战</button>
+            <button class="tab-btn" onclick="switchTab('cards', this)" data-i18n="tab_cards">🃏 我的卡牌</button>
         </div>
 
         <!-- ===== Tab1: 抽卡 ===== -->
         <div class="tab-panel active" id="tab-draw">
             <!-- 切换胶囊 -->
             <div class="draw-mode-switch" style="display:flex;gap:6px;justify-content:center;margin-top:4px;">
-                <button class="diff-pill" id="drawMode1Btn" onclick="setDrawMode(1)">🗡️ 单抽</button>
-                <button class="diff-pill active" id="drawMode3Btn" onclick="setDrawMode(3)">🎴 三连抽</button>
+                <button class="diff-pill" id="drawMode1Btn" onclick="setDrawMode(1)" data-i18n="draw_single">🗡️ 单抽</button>
+                <button class="diff-pill active" id="drawMode3Btn" onclick="setDrawMode(3)" data-i18n="draw_triple_mode">🎴 三连抽</button>
             </div>
-            <div class="draw-desc-center" id="drawDesc">消耗 30 PAXI + 500,000 TKCC（三连抽）</div>
+            <div class="draw-desc-center" id="drawDesc" data-i18n="draw_desc_triple">消耗 30 PAXI + 500,000 TKCC（三连抽）</div>
             <div class="draw-center">
-                <button class="btn draw-triple" onclick="drawCards()" id="drawBtn">🎴 抽 3 张</button>
+                <button class="btn draw-triple" onclick="drawCards()" id="drawBtn" data-i18n="draw_btn">🎴 抽 3 张</button>
             </div>
 
             <!-- 30 张卡牌背面占位网格 -->
@@ -1616,7 +1616,7 @@
         <div class="tab-panel" id="tab-battle">
             <!-- 🤖 打 AI -->
             <div class="battle-sub">
-                <h4>🤖 打 AI <span class="tip-icon">ⓘ<span class="tip-body">消耗：普通难度 10k TKCC，传说难度 25k TKCC
+                <h4 data-i18n="ai_title">🤖 打 AI <span class="tip-icon">ⓘ<span class="tip-body">消耗：普通难度 10k TKCC，传说难度 25k TKCC
 奖励：赢 +3万~+5.5万 TKCC，输 -0（只扣消耗）
 每日限 20 局</span></span></h4>
                 <div class="diff-pill-row">
@@ -1633,24 +1633,24 @@
 
             <!-- ⚔️ PVP 1v1 -->
             <div class="battle-sub">
-                <h4>⚔️ PVP 1v1 <span class="tip-icon">ⓘ<span class="tip-body">双方各扣 60,000 TKCC
+                <h4 data-i18n="pvp_title">⚔️ PVP 1v1 <span class="tip-icon">ⓘ<span class="tip-body">双方各扣 60,000 TKCC
 3 局 2 胜，链上实时结算
 公开挑战：其他玩家可在「对局列表」中接受</span></span></h4>
                 <div class="btn-row">
-                    <button class="btn btn-primary" onclick="showPvpCreateModal()">发起挑战</button>
-                    <button class="btn btn-secondary" onclick="listPvpUI()">对局列表</button>
+                    <button class="btn btn-primary" onclick="showPvpCreateModal()" data-i18n="btn_challenge">发起挑战</button>
+                    <button class="btn btn-secondary" onclick="listPvpUI()" data-i18n="btn_match_list">对局列表</button>
                 </div>
             </div>
 
             <!-- 👑 混战 -->
             <div class="battle-sub">
-                <h4>👑 4-6 人混战 <span class="tip-icon">ⓘ<span class="tip-body">每人 60,000 TKCC
+                <h4 data-i18n="royale_title">👑 4-6 人混战 <span class="tip-icon">ⓘ<span class="tip-body">每人 60,000 TKCC
 70% 奖池给赢家，15% 销毁，15% 入金库
 满人后由任意玩家发起结算</span></span></h4>
                 <div class="btn-row">
-                    <button class="btn btn-primary" onclick="showRoyaleCreateModal()">创建房间</button>
-                    <button class="btn btn-secondary" onclick="showRoyaleJoinModal()">加入房间</button>
-                    <button class="btn btn-gold" onclick="listRoyaleUI()">📋 房间列表</button>
+                    <button class="btn btn-primary" onclick="showRoyaleCreateModal()" data-i18n="btn_create_room">创建房间</button>
+                    <button class="btn btn-secondary" onclick="showRoyaleJoinModal()" data-i18n="btn_join_room">加入房间</button>
+                    <button class="btn btn-gold" onclick="listRoyaleUI()" data-i18n="btn_room_list">📋 房间列表</button>
                 </div>
             </div>
 
@@ -1953,7 +1953,7 @@
         // 部署 game-contract/ 后把得到的地址填入这里！
         // 部署方法：bash deploy.sh <your_key_name>
         // 部署前这里留空，前端会自动检测并提示
-        const GAME_CONTRACT  = 'paxi1dylfuacwf7j7adra6j8dufmcym2k4wgn4p6krjh0txrr7cfl9qhq8prac4';
+        const GAME_CONTRACT  = 'paxi1lqjxm6zdvz9sf0lx3280gjj598lqenxeraesfv5334gpnsarc7eqku0zwu';
 
         // 黑洞地址（永久销毁，游戏说明 5.3）
         const BURN_ADDRESS = 'paxi1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq';
@@ -2502,7 +2502,41 @@
                 'desc_lu_su': '吴国横江将军，主张联刘抗曹。',
                 'desc_cheng_yu': '魏国谋士，兖州之谋主。',
                 'desc_jia_xu': '毒士，三国第一谋士，乱武天下。',
-                'desc_default': '三国名将，骁勇善战。'
+                'desc_default': '三国名将，骁勇善战。',
+                'title': '⚔️ 三国·卡牌',
+                'wallet_btn': '🔗 连接钱包',
+                'wallet_disconnected': '未连接钱包',
+                'deposit_label': '💾 存款:',
+                'tip_deposit': '充值',
+                'tip_withdraw': '提现',
+                'tip_refresh': '刷新',
+                'menu_deposit': '💰 充值',
+                'menu_withdraw': '💳 提现',
+                'menu_craft': '✨ 合成卡牌',
+                'menu_proposal': '🗳 新卡牌提案',
+                'menu_proposal_list': '📜 提案列表',
+                'tab_draw': '🎁 抽卡',
+                'tab_battle': '⚔️ 对战',
+                'tab_cards': '🃏 我的卡牌',
+                'draw_single': '🗡️ 单抽',
+                'draw_triple_mode': '🎴 三连抽',
+                'draw_desc_single': '消耗 10 PAXI + 200,000 TKCC（单抽）',
+                'draw_desc_triple': '消耗 30 PAXI + 500,000 TKCC（三连抽）',
+                'ai_title': '🤖 打 AI',
+                'ai_stats_today': '今日',
+                'ai_stats_limit': '局',
+                'pvp_title': '⚔️ PVP 1v1',
+                'royale_title': '👑 4-6 人混战',
+                'btn_challenge': '发起挑战',
+                'btn_match_list': '对局列表',
+                'btn_create_room': '创建房间',
+                'btn_join_room': '加入房间',
+                'btn_room_list': '📋 房间列表',
+                'frag_legend': '🟡传说',
+                'frag_legend_text': '传说',
+                'frag_epic': '🟣',
+                'frag_rare': '🔵',
+                'frag_common': '🟤'
             },
             en: {
                 'wins': '🏆 Wins',
@@ -2563,7 +2597,41 @@
                 'desc_lu_su': 'Wu general, advocated alliance.',
                 'desc_cheng_yu': 'Wei strategist, key planner.',
                 'desc_jia_xu': 'Poison Strategist, top adviser.',
-                'desc_default': 'Three Kingdoms general, brave and skilled.'
+                'desc_default': 'Three Kingdoms general, brave and skilled.',
+                'title': '⚔️ Three Kingdoms · Cards',
+                'wallet_btn': '🔗 Connect Wallet',
+                'wallet_disconnected': 'Wallet not connected',
+                'deposit_label': '💾 Deposit:',
+                'tip_deposit': 'Deposit',
+                'tip_withdraw': 'Withdraw',
+                'tip_refresh': 'Refresh',
+                'menu_deposit': '💰 Deposit',
+                'menu_withdraw': '💳 Withdraw',
+                'menu_craft': '✨ Craft Card',
+                'menu_proposal': '🗳 New Card Proposal',
+                'menu_proposal_list': '📜 Proposals',
+                'tab_draw': '🎁 Draw',
+                'tab_battle': '⚔️ Battle',
+                'tab_cards': '🃏 My Cards',
+                'draw_single': '🗡️ Single',
+                'draw_triple_mode': '🎴 Triple',
+                'draw_desc_single': 'Cost 10 PAXI + 200,000 TKCC (Single)',
+                'draw_desc_triple': 'Cost 30 PAXI + 500,000 TKCC (Triple)',
+                'ai_title': '🤖 VS AI',
+                'ai_stats_today': 'Today',
+                'ai_stats_limit': 'battles',
+                'pvp_title': '⚔️ PVP 1v1',
+                'royale_title': '👑 4-6 Player Royale',
+                'btn_challenge': 'Create Challenge',
+                'btn_match_list': 'Match List',
+                'btn_create_room': 'Create Room',
+                'btn_join_room': 'Join Room',
+                'btn_room_list': '📋 Room List',
+                'frag_legend': '🟡 Legend',
+                'frag_legend_text': 'Legend',
+                'frag_epic': '🟣',
+                'frag_rare': '🔵',
+                'frag_common': '🟤'
             }
         };
 
@@ -2625,8 +2693,6 @@
         function switchLang(lang) {
             if (lang === currentLang) return;
             currentLang = lang;
-            document.querySelectorAll('.btn-lang').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.btn-lang[data-lang="${lang}"]`).classList.add('active');
             document.body.classList.toggle('lang-en', lang === 'en');
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
@@ -2634,6 +2700,15 @@
                     el.innerHTML = i18n[lang][key];
                 }
             });
+            // 翻译 title 属性（tooltip）
+            document.querySelectorAll('[data-i18n-title]').forEach(el => {
+                const key = el.getAttribute('data-i18n-title');
+                if (i18n[lang] && i18n[lang][key] !== undefined) {
+                    el.title = i18n[lang][key];
+                }
+            });
+            // 刷新抽卡描述（含动态数字）
+            if (typeof drawMode !== 'undefined') setDrawMode(drawMode);
             if (document.getElementById('helpModal').classList.contains('active')) {
                 openHelp();
             }
@@ -3117,13 +3192,23 @@
             if (mode === 1) {
                 btn1.classList.add('active');
                 btn3.classList.remove('active');
-                desc.textContent = `消耗 ${SINGLE_PAXI_FEE} PAXI + ${SINGLE_TKCC_TOTAL.toLocaleString()} TKCC（单抽）`;
-                drawBtn.textContent = '抽 1 张';
+                if (currentLang === 'en') {
+                    desc.textContent = `Cost ${SINGLE_PAXI_FEE} PAXI + ${SINGLE_TKCC_TOTAL.toLocaleString()} TKCC (Single)`;
+                    drawBtn.textContent = 'Draw 1';
+                } else {
+                    desc.textContent = `消耗 ${SINGLE_PAXI_FEE} PAXI + ${SINGLE_TKCC_TOTAL.toLocaleString()} TKCC（单抽）`;
+                    drawBtn.textContent = '抽 1 张';
+                }
             } else {
                 btn1.classList.remove('active');
                 btn3.classList.add('active');
-                desc.textContent = `消耗 ${PACK3_PAXI_FEE} PAXI + ${PACK3_TKCC_TOTAL.toLocaleString()} TKCC（三连抽）`;
-                drawBtn.textContent = '抽 3 张';
+                if (currentLang === 'en') {
+                    desc.textContent = `Cost ${PACK3_PAXI_FEE} PAXI + ${PACK3_TKCC_TOTAL.toLocaleString()} TKCC (Triple)`;
+                    drawBtn.textContent = 'Draw 3';
+                } else {
+                    desc.textContent = `消耗 ${PACK3_PAXI_FEE} PAXI + ${PACK3_TKCC_TOTAL.toLocaleString()} TKCC（三连抽）`;
+                    drawBtn.textContent = '抽 3 张';
+                }
             }
         }
 
@@ -3219,8 +3304,9 @@
 
         function setDifficulty(level) {
             selectedDifficulty = level;
-            document.querySelectorAll('.difficulty-selector .btn').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.difficulty-selector .btn[data-diff="${level}"]`).classList.add('active');
+            document.querySelectorAll('.diff-pill').forEach(b => b.classList.remove('active'));
+            const target = document.querySelector(`.diff-pill[data-diff="${level}"]`);
+            if (target) target.classList.add('active');
         }
 
         // ============================================================
@@ -3254,42 +3340,54 @@
                 const aiCards = generateAIDeck(selectedDifficulty);
                 const result = simulateBattle(playerCards, aiCards, selectedDifficulty);
 
-                // 2. 链上支付挑战费 + 提交战斗结果
+                // 2. 链上支付挑战费 + 发起战斗
+                // 合约独立结算！前端模拟仅供展示，实际结果以链上为准
                 const fee = AI_BATTLE_FEE[selectedDifficulty - 1];
                 showToast(`⏳ 正在支付挑战费 ${fee.toLocaleString()} TKCC...`, 'info');
 
                 const battleHash = `${walletAddress}_${Date.now()}_${selectedDifficulty}`;
-                const battleResultEnum = result.finalResult === 'win' ? 'win' : 'lose';
 
-                // 游戏合约已部署 → 调用 ai_battle，挑战费从玩家个人存款扣除
+                // 游戏合约已部署 → 调用 ai_battle
                 // 合约 BattleResult 枚举序列化为 { "win": {} } / { "lose": {} }
+                // 注意：合约端 result 仅供回退兼容，实际胜负由合约独立结算
                 const msgs = [
                     buildMsgExecuteGame(walletAddress, {
                         ai_battle: {
                             difficulty: selectedDifficulty,
-                            result: result.finalResult === 'win' ? { win: {} } : { lose: {} },
+                            result: { win: {} },  // 占位，合约忽略
                             battle_hash: battleHash
                         }
                     })
                 ];
 
-                await buildAndSendTx(msgs, `AI Battle: ${fee} TKCC (diff ${selectedDifficulty}) ${battleResultEnum}`);
+                btn.textContent = currentLang === 'zh' ? '⏳ 链上结算中...' : '⏳ On-chain...';
+                const txResult = await buildAndSendTx(msgs, `AI Battle: ${fee} TKCC (diff ${selectedDifficulty})`);
 
-                // 交易成功后再累加本地统计（避免交易失败时污染数据）
-                battleCount++;
-                if (result.finalResult === 'win') winCount++;
+                // 从链上交易返回中解析实际结果（合约 emit 的 attributes）
+                let chainResult = 'lose';
+                const events = txResult?.tx_response?.events || [];
+                for (const ev of events) {
+                    if (ev.type === 'execute' || ev.type === 'wasm') {
+                        const resultAttr = ev.attributes?.find(a => a.key === 'result' || a.key === '"result"');
+                        if (resultAttr) { chainResult = resultAttr.value || resultAttr.value; break; }
+                    }
+                }
 
-                // 3. 显示战斗结果
-                btn.textContent = currentLang === 'zh' ? '⏳ 战斗中...' : '⏳ Fighting...';
+                // 3. 显示战斗结果（基于链上真实结果）
+                btn.textContent = currentLang === 'zh' ? '⏳ 展示结果...' : '⏳ Showing...';
                 await new Promise(r => setTimeout(r, 100));
-                displayBattleResult(result, playerCards, aiCards);
+                // 用前端模拟数据展示卡牌对撞效果，但结果以链上为准
+                displayBattleResult({
+                    finalResult: chainResult,
+                    playerRoundWins: chainResult === 'win' ? 2 : 1,
+                }, playerCards, null, true);  // isChainResult=true
 
-                // 4. 胜利后领取奖励
-                if (result.finalResult === 'win') {
-                    const reward = AI_BATTLE_REWARD[selectedDifficulty - 1];
-                    showToast(`🎉 胜利！正在领取 ${reward.toLocaleString()} TKCC 奖励...`, 'success');
-                    // 注意：battle_id 由合约生成，前端需要从交易回执中解析
-                    // 简化处理：查询玩家 pending_rewards 后逐个 claim
+                // 4. 累加本地统计 + 胜利后领取奖励（基于链上真实结果）
+                battleCount++;
+                if (chainResult === 'win') {
+                    winCount++;
+                    showToast('🎉 战斗胜利！正在领取奖励...', 'success');
+                    // 从合约 pending_rewards 查询并逐个领取（battle_id 由合约生成，前端不必手动追踪）
                     try {
                         await claimPendingRewards();
                     } catch (claimErr) {
@@ -3662,6 +3760,7 @@
                         attack: c.attack,
                         defense: c.defense,
                         star: c.star || 1,
+                        level: c.level || 0,      // 碎片升级等级
                         description: tpl.description || '',
                     };
                 });
@@ -4531,15 +4630,22 @@
                 const limit = Number(s.daily_limit || 20);
                 const rec = Number(s.recommended_difficulty || 1);
                 const line = document.getElementById('aiStatsLine');
-                if (line) line.textContent = `今日 ${today} / ${limit} 局 · 推荐难度 ${['','简','普','难','传'][rec] || '简'}`;
+                if (line) {
+                    if (currentLang === 'en') {
+                        line.textContent = `Today ${today} / ${limit} · Recommended ${['','Easy','Normal','Hard','Legend'][rec] || 'Easy'}`;
+                    } else {
+                        line.textContent = `今日 ${today} / ${limit} 局 · 推荐难度 ${['','简','普','难','传'][rec] || '简'}`;
+                    }
+                }
                 // 高亮推荐难度按钮
-                document.querySelectorAll('.difficulty-selector .btn-sm').forEach(b => {
+                document.querySelectorAll('.diff-pill[data-diff]').forEach(b => {
                     b.classList.remove('active');
                     const diff = Number(b.getAttribute('data-diff'));
                     if (diff === rec) {
                         b.classList.add('active');
-                        if (!b.textContent.includes('推荐')) {
-                            b.innerHTML = b.textContent.trim() + ' <span style="font-size:9px;color:#ffd54f;">(推荐)</span>';
+                        const recTag = currentLang === 'en' ? '(rec)' : '(推荐)';
+                        if (!b.textContent.includes('推荐') && !b.textContent.includes('rec')) {
+                            b.innerHTML = b.textContent.trim() + ` <span style="font-size:9px;color:#ffd54f;">${recTag}</span>`;
                         }
                     }
                 });
