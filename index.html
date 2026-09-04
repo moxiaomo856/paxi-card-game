@@ -2646,11 +2646,23 @@
         // ============================================================
         let userCards = [];
         let battleOrder = [];
-        let winCount = 0;
-        let battleCount = 0;
+        // 任务二：胜场数/对战总次数持久化（防刷新丢失）
+        // 优先从 localStorage 读取，刷新页面后保留
+        let winCount    = Number(localStorage.getItem('winCount')    || 0);
+        let battleCount = Number(localStorage.getItem('battleCount') || 0);
         let selectedDifficulty = 1;
         let isBattling = false;
         let currentLang = 'zh';
+
+        // 任务二：同步刷新顶部统计卡片，确保首屏显示正确的本地累计值
+        (function syncStatsFromLocal() {
+            try {
+                const wEl = document.getElementById('winCount');
+                const bEl = document.getElementById('battleCount');
+                if (wEl) wEl.textContent = winCount;
+                if (bEl) bEl.textContent = battleCount;
+            } catch (_) {}
+        })();
 
         // 升星弹窗状态
         let detailCard = null;
@@ -3431,16 +3443,23 @@
                 // 3. 显示战斗结果（基于链上真实结果）
                 if (btn) btn.textContent = currentLang === 'zh' ? '⏳ 展示结果...' : '⏳ Showing...';
                 await new Promise(r => setTimeout(r, 100));
-                // 用前端模拟数据展示卡牌对撞效果，但结果以链上为准
-                displayBattleResult({
-                    finalResult: chainResult,
-                    playerRoundWins: chainResult === 'win' ? 2 : 1,
-                }, playerCards, null, true);  // isChainResult=true
+                // 任务一：用前端模拟数据（保留每局对撞详情）展示卡牌对撞效果，
+                // 但最终胜负以链上 chainResult 为准（覆盖模拟结论）
+                const displayResult = {
+                    rounds: result.rounds,        // 保留每局对战详情（卡牌+战力对比）
+                    finalResult: chainResult,     // 链上真实结果
+                    playerWins: chainResult === 'win' ? Math.max(result.playerWins, 2) : (chainResult === 'lose' ? Math.min(result.playerWins, 1) : result.playerWins),
+                    aiWins:     chainResult === 'lose' ? Math.max(result.aiWins, 2) : (chainResult === 'win' ? Math.min(result.aiWins, 1) : result.aiWins),
+                };
+                displayBattleResult(displayResult, playerCards, aiCards, true);  // isChainResult=true
 
                 // 4. 累加本地统计 + 胜利后领取奖励（基于链上真实结果）
                 battleCount++;
+                // 任务二：持久化写入 localStorage（防刷新丢失）
+                try { localStorage.setItem('battleCount', battleCount); } catch (_) {}
                 if (chainResult === 'win') {
                     winCount++;
+                    try { localStorage.setItem('winCount', winCount); } catch (_) {}
                     showToast('🎉 战斗胜利！正在领取奖励...', 'success');
                     // 从合约 pending_rewards 查询并逐个领取（battle_id 由合约生成，前端不必手动追踪）
                     try {
@@ -3579,7 +3598,7 @@
             return { rounds, finalResult, playerWins, aiWins };
         }
 
-        function displayBattleResult(result, playerCards, aiCards) {
+        function displayBattleResult(result, playerCards, aiCards, isChainResult) {
             const arena = document.getElementById('battleArena');
             const content = document.getElementById('battleContent');
 
@@ -3589,23 +3608,43 @@
                 <span>🔴 AI</span>
             </div>`;
 
-            result.rounds.forEach((r, i) => {
-                const resultText = r.result === 'win' ? '✅ 胜' : r.result === 'lose' ? '❌ 负' : '⚖️ 平';
-                const resultClass = r.result === 'win' ? 'win' : r.result === 'lose' ? 'lose' : 'draw';
-                html += `
-                    <div class="round-result">
-                        <span>${currentLang === 'zh' ? '第' : 'Round '}${i+1}${currentLang === 'zh' ? '局' : ''}：${r.pCard.name} ⚔️ ${r.aCard.name}</span>
-                        <span class="${resultClass}">${resultText} (${r.pPower} vs ${r.aPower})</span>
-                    </div>
-                `;
-            });
+            // 任务一：渲染每局对战详情（双方卡牌名称 + 战力数值对比 + 胜/负/平）
+            if (Array.isArray(result.rounds) && result.rounds.length > 0) {
+                result.rounds.forEach((r, i) => {
+                    const resultText = r.result === 'win' ? '✅ 胜' : r.result === 'lose' ? '❌ 负' : '⚖️ 平';
+                    const resultClass = r.result === 'win' ? 'win' : r.result === 'lose' ? 'lose' : 'draw';
+                    const pName = (r.pCard && r.pCard.name) || '-';
+                    const aName = (r.aCard && r.aCard.name) || '-';
+                    const pPow = (typeof r.pPower === 'number') ? r.pPower : 0;
+                    const aPow = (typeof r.aPower === 'number') ? r.aPower : 0;
+                    const roundLabel = currentLang === 'zh' ? `第${i + 1}局` : `Round ${i + 1}`;
+                    html += `
+                        <div class="round-result">
+                            <span>${roundLabel}：${pName} ⚔️ ${aName}</span>
+                            <span class="${resultClass}">${resultText} (${pPow} vs ${aPow})</span>
+                        </div>
+                    `;
+                });
+            } else {
+                // 兜底：若未传入 rounds（旧调用方式），仅显示最终结果
+                html += `<div class="round-result"><span style="color:#8a7a6a;">${currentLang === 'zh' ? '无对局详情' : 'No battle detail'}</span></div>`;
+            }
 
             const finalClass = result.finalResult === 'win' ? 'win' : result.finalResult === 'lose' ? 'lose' : 'draw';
             let finalText;
             if (result.finalResult === 'win') finalText = currentLang === 'zh' ? '🎉 你赢了！' : '🎉 You win!';
             else if (result.finalResult === 'lose') finalText = currentLang === 'zh' ? '😔 你输了...' : '😔 You lost...';
             else finalText = currentLang === 'zh' ? '🤝 平局！' : '🤝 Draw!';
-            html += `<div class="final-result ${finalClass}">${finalText} (${result.playerWins} : ${result.aiWins})</div>`;
+
+            // 任务一：奖励以链上结果为准时给出提示，避免玩家误以为前端模拟即最终
+            const chainTag = isChainResult
+                ? (currentLang === 'zh'
+                    ? ' <span style="font-size:10px;color:#8a7a6a;">（以链上为准 · 前端对局仅供参考）</span>'
+                    : ' <span style="font-size:10px;color:#8a7a6a;">(chain-truth · simulation for display only)</span>')
+                : '';
+            const pw = (typeof result.playerWins === 'number') ? result.playerWins : 0;
+            const aw = (typeof result.aiWins     === 'number') ? result.aiWins     : 0;
+            html += `<div class="final-result ${finalClass}">${finalText} (${pw} : ${aw})${chainTag}</div>`;
 
             content.innerHTML = html;
             arena.classList.add('show');
@@ -4735,6 +4774,33 @@
                         }
                     }
                 });
+
+                // 任务二（可选进阶）：尝试从链上查询历史总战绩 total_battles / total_wins
+                // 若合约支持，则覆盖本地 localStorage 的累计值；否则保持本地数据不变
+                try {
+                    const q2 = JSON.stringify({ player_stats: { address: walletAddress } });
+                    const r2 = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q2));
+                    const d2 = await r2.json();
+                    const s2 = d2?.data;
+                    if (s2 && (typeof s2.total_battles === 'number' || typeof s2.total_wins === 'number')) {
+                        const chainBattles = Number(s2.total_battles || 0);
+                        const chainWins    = Number(s2.total_wins    || 0);
+                        // 以链上为权威源，避免不同设备/清缓存导致本地计数漂移
+                        if (chainBattles > 0 || chainWins > 0) {
+                            battleCount = chainBattles;
+                            winCount    = chainWins;
+                            try { localStorage.setItem('battleCount', battleCount); } catch (_) {}
+                            try { localStorage.setItem('winCount',    winCount);    } catch (_) {}
+                            // 立即刷新顶部统计卡片
+                            const wEl = document.getElementById('winCount');
+                            const bEl = document.getElementById('battleCount');
+                            if (wEl) wEl.textContent = winCount;
+                            if (bEl) bEl.textContent = battleCount;
+                        }
+                    }
+                } catch (_) {
+                    // 合约未实现 player_stats 查询 → 静默回落到 localStorage
+                }
             } catch (e) { /* 静默失败 */ }
         }
     </script>
