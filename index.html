@@ -1694,8 +1694,8 @@
 
         <!-- ===== Tab2: 对战 ===== -->
         <div class="tab-panel" id="tab-battle">
-            <!-- 🤖 打 AI（暂时关闭：AI 配置过强，玩家打不过） -->
-            <div class="battle-sub" style="display:none;">
+            <!-- 🤖 打 AI（合约 ai_base 已调低为玩家同量级：简单140/普通210/困难260/传说304×1.25，玩家可赢） -->
+            <div class="battle-sub">
                 <h4 data-i18n="ai_title">🤖 打 AI <span class="tip-icon">ⓘ<span class="tip-body">消耗：普通难度 10k TKCC，传说难度 25k TKCC
 奖励：赢 +3万~+5.5万 TKCC，输 -0（只扣消耗）
 每日限 20 局</span></span></h4>
@@ -3456,9 +3456,6 @@
         // 胜利后调用游戏合约 ClaimReward 从金库领取奖励
         // ============================================================
         async function startBattle() {
-            // AI 对战暂时关闭（AI 配置过强，玩家打不过）
-            showToast('🛠️ AI 对战暂时维护中，敬请期待', 'warning');
-            return;
             if (isBattling) return;
             if (userCards.length < 3) {
                 showToast('⚠️ 至少需要3张卡牌！先抽卡吧', 'error');
