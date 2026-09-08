@@ -1694,8 +1694,8 @@
 
         <!-- ===== Tab2: 对战 ===== -->
         <div class="tab-panel" id="tab-battle">
-            <!-- 🤖 打 AI（合约 ai_base 已调低为玩家同量级：简单140/普通210/困难260/传说304×1.25，玩家可赢） -->
-            <div class="battle-sub">
+            <!-- 🤖 打 AI（暂时隐藏，保留 PVP / 混战） -->
+            <div class="battle-sub" style="display:none;">
                 <h4 data-i18n="ai_title">🤖 打 AI <span class="tip-icon">ⓘ<span class="tip-body">消耗：普通难度 10k TKCC，传说难度 25k TKCC
 奖励：赢 +3万~+5.5万 TKCC，输 -0（只扣消耗）
 每日限 20 局</span></span></h4>
@@ -2728,9 +2728,17 @@
         // ============================================================
         let userCards = [];
         let battleOrder = [];
-        // 胜场数/对战总次数：从合约 AiStats 查询获取（跨设备一致，无需 localStorage）
-        let winCount    = 0;
-        let battleCount = 0;
+        // 对战统计（Hybrid 混合计数：AI 链上 + PVP/混战 localStorage）
+        // 合约只存了 AI_BATTLE_STATS.total/wins，PVP 和混战合约端没记录任何玩家统计
+        // 所以 PVP/混战用 localStorage 补；清 localStorage 会丢这部分，但 AI 数据链上清不掉
+        const _statsKeys = ['pvpCount', 'pvpWins', 'royaleCount', 'royaleWins'];
+        const _readLocal = (k) => { try { return Number(localStorage.getItem(k) || 0); } catch (_) { return 0; } };
+        let pvpCount  = _readLocal('pvpCount');
+        let pvpWins   = _readLocal('pvpWins');
+        let royaleCount = _readLocal('royaleCount');
+        let royaleWins  = _readLocal('royaleWins');
+        let winCount    = 0;   // AI wins（链上）+ pvpWins + royaleWins
+        let battleCount = 0;   // AI total（链上）+ pvpCount + royaleCount
         let selectedDifficulty = 1;
         let isBattling = false;
         let currentLang = 'zh';
@@ -3840,10 +3848,22 @@
 
             userCards = [];
             battleOrder = [];
+            // 清掉 PVP/混战本地计数 + 防重复表；AI 部分链上清不掉
+            try {
+                localStorage.removeItem('pvpCount');
+                localStorage.removeItem('pvpWins');
+                localStorage.removeItem('royaleCount');
+                localStorage.removeItem('royaleWins');
+                localStorage.removeItem('_bumpedStats');
+            } catch (_) {}
+            pvpCount = pvpWins = royaleCount = royaleWins = 0;
+            battleCount = winCount = 0;
             document.getElementById('battleArena').classList.remove('show');
             showToast(currentLang === 'zh' ? '🔄 已重置游戏' : '🔄 Game reset', 'info');
             updateUI();
             updateSortArea();
+            // 重新拉链上 AI 统计
+            if (walletAddress) refreshAiStatsAndUI();
         }
 
         // ============================================================
@@ -4279,6 +4299,18 @@
                 })];
                 await buildAndSendTx(msgs, `AcceptPvpMatch ${_currentPvpMatchId.slice(0,16)}...`);
                 closePvpAcceptModal();
+                // 合约 accept 后自动判定胜负，查 winner 判断我方输赢
+                try {
+                    const q = JSON.stringify({ get_pvp_match: { match_id: _currentPvpMatchId } });
+                    const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
+                    const d = await r.json();
+                    const m = d?.data || {};
+                    if (m.status === 'finished') {
+                        const didWin = m.winner === walletAddress;
+                        _bumpLocalStats('pvp', didWin, 'pvp_' + _currentPvpMatchId);
+                        await refreshAllStatsAndUI();
+                    }
+                } catch (_) {}
                 await refreshBalances();
                 showToast('⚔️ 对战已结算！可在对局列表中查看结果并领取奖励', 'success');
                 listPvpUI();
@@ -4309,6 +4341,9 @@
                 showToast('⏳ 领取 PVP 奖励...', 'info');
                 const msgs = [buildMsgExecuteGame(walletAddress, { claim_pvp_reward: { match_id } })];
                 await buildAndSendTx(msgs, `ClaimPvpReward`);
+                // claim 成功 = 我方是赢家，bump 一次（带 uniqueKey 防 accept 方先 bump 时重复）
+                _bumpLocalStats('pvp', true, 'pvp_' + match_id);
+                await refreshAllStatsAndUI();
                 await refreshBalances();
                 showToast('🎉 奖励已到账！', 'success');
                 listPvpUI();
@@ -4577,6 +4612,18 @@
                 isProcessing = true;
                 const msgs = [buildMsgExecuteGame(walletAddress, { settle_royale: { royale_id: id } })];
                 await buildAndSendTx(msgs, `SettleRoyale ${id.slice(0,12)}`);
+                // settle 后合约判了 winner，查一下我方是否赢了，然后 bump
+                try {
+                    const q = JSON.stringify({ get_royale: { royale_id: id } });
+                    const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
+                    const d = await r.json();
+                    const royale = d?.data || {};
+                    if (royale.status === 'finished') {
+                        const didWin = royale.winner === walletAddress;
+                        _bumpLocalStats('royale', didWin, 'royale_' + id);
+                        await refreshAllStatsAndUI();
+                    }
+                } catch (_) {}
                 await refreshBalances();
                 showToast('🏆 混战已结算', 'success');
                 listRoyaleUI();
@@ -4590,6 +4637,8 @@
                 showToast('⏳ 领取混战奖励...', 'info');
                 const msgs = [buildMsgExecuteGame(walletAddress, { claim_royale_reward: { royale_id: id } })];
                 await buildAndSendTx(msgs, `ClaimRoyaleReward`);
+                _bumpLocalStats('royale', true, 'royale_' + id);
+                await refreshAllStatsAndUI();
                 await refreshBalances();
                 showToast('🎉 奖励已到账！', 'success');
                 listRoyaleUI();
@@ -4947,6 +4996,39 @@
         // - 已在上方重写 listProposalsUI
 
         // ============================================================
+        // 📊 对战统计 Helper（Hybrid：AI 链上 / PVP/混战 localStorage）
+        // ============================================================
+        function _bumpLocalStats(type, didWin, uniqueKey) {
+            // type: 'pvp' | 'royale', uniqueKey: 可选（match_id/royale_id），用于防重复 bump
+            if (uniqueKey) {
+                try {
+                    const bumped = JSON.parse(localStorage.getItem('_bumpedStats') || '{}');
+                    if (bumped[uniqueKey]) return;  // 已 bump 过，跳过
+                    bumped[uniqueKey] = 1;
+                    // 只保留最近 50 条防重复，避免 localStorage 越来越大
+                    const keys = Object.keys(bumped);
+                    if (keys.length > 50) {
+                        keys.slice(0, keys.length - 50).forEach(k => delete bumped[k]);
+                    }
+                    localStorage.setItem('_bumpedStats', JSON.stringify(bumped));
+                } catch (_) {}
+            }
+            const kCount = type === 'pvp' ? 'pvpCount'  : 'royaleCount';
+            const kWins  = type === 'pvp' ? 'pvpWins'   : 'royaleWins';
+            if (type === 'pvp')  pvpCount++;  else royaleCount++;
+            if (didWin) { if (type === 'pvp') pvpWins++; else royaleWins++; }
+            try {
+                localStorage.setItem(kCount, String(type === 'pvp' ? pvpCount  : royaleCount));
+                localStorage.setItem(kWins,  String(type === 'pvp' ? pvpWins   : royaleWins));
+            } catch (_) {}
+        }
+        // PVP/混战结束后统一更新 UI：battleCount/winCount 重新合并显示
+        async function refreshAllStatsAndUI() {
+            await refreshAiStatsAndUI();   // 内部已经合并 aiTotal + pvpCount + royaleCount
+            updateUI();
+        }
+
+        // ============================================================
         // 🤖 AI 体验优化：今日次数 + 推荐难度高亮
         // ============================================================
         async function refreshAiStatsAndUI() {
@@ -4956,9 +5038,11 @@
                 const r = await fetch(`${PAXI_LCD}/cosmwasm/wasm/v1/contract/${GAME_CONTRACT}/smart/` + btoa(q));
                 const d = await r.json();
                 const s = d?.data || {};
-                // ← 从合约 AiStatsResponse 取 total/wins，链上权威数据
-                battleCount = Number(s.total || 0);
-                winCount    = Number(s.wins  || 0);
+                // ← Hybrid：AI 链上 + PVP/混战 localStorage 合并
+                const aiTotal = Number(s.total || 0);
+                const aiWins  = Number(s.wins  || 0);
+                battleCount = aiTotal + pvpCount + royaleCount;
+                winCount    = aiWins  + pvpWins  + royaleWins;
                 const today = Number(s.today_count || 0);
                 const limit = Number(s.daily_limit || 20);
                 const rec   = Number(s.recommended_difficulty || 1);
