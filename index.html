@@ -1350,6 +1350,20 @@
         }
 
         /* ===== 对战子区块 ===== */
+        /* ===== 卡牌升级入口（跳转新版游戏中心） ===== */
+        .upgrade-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            background: linear-gradient(135deg, rgba(184,134,11,0.22), rgba(0,0,0,0.18));
+            border: 1px solid rgba(255,215,0,0.28);
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 10px;
+        }
+        .upgrade-row .upgrade-btn { flex: 0 0 auto; white-space: nowrap; }
+        .upgrade-note { flex: 1 1 200px; font-size: 11px; line-height: 1.5; color: #ffca6b; }
         .battle-sub {
             background: rgba(0,0,0,0.18);
             border: 1px solid rgba(200,160,100,0.1);
@@ -1694,6 +1708,14 @@
 
         <!-- ===== Tab2: 对战 ===== -->
         <div class="tab-panel" id="tab-battle">
+            <!-- ⬆️ 卡牌升级入口（跳转新版游戏中心） -->
+            <div class="upgrade-row">
+                <button class="btn btn-gold upgrade-btn"
+                        onclick="window.open('https://moxiaomo856.github.io/paxi-game-hub/','_blank')"
+                        data-i18n="card_upgrade_btn" data-i18n-title="tip_card_upgrade">⬆️ 卡牌升级</button>
+                <span class="upgrade-note" data-i18n="card_upgrade_note">📢 卡牌游戏全新升级，10月31前完成卡牌迁移和合约内资产提取，过期停止服务。</span>
+            </div>
+
             <!-- 🤖 打 AI（暂时隐藏，保留 PVP / 混战） -->
             <div class="battle-sub" style="display:none;">
                 <h4 data-i18n="ai_title">🤖 打 AI <span class="tip-icon">ⓘ<span class="tip-body">消耗：普通难度 10k TKCC，传说难度 25k TKCC
@@ -2616,6 +2638,9 @@
                 'btn_create_room': '创建房间',
                 'btn_join_room': '加入房间',
                 'btn_room_list': '📋 房间列表',
+                'card_upgrade_btn': '⬆️ 卡牌升级',
+                'card_upgrade_note': '📢 卡牌游戏全新升级，10月31前完成卡牌迁移和合约内资产提取，过期停止服务。',
+                'tip_card_upgrade': '前往新版卡牌游戏中心',
                 'frag_legend': '🟡传说',
                 'frag_legend_text': '传说',
                 'frag_epic': '🟣',
@@ -2715,6 +2740,9 @@
                 'btn_create_room': 'Create Room',
                 'btn_join_room': 'Join Room',
                 'btn_room_list': '📋 Room List',
+                'card_upgrade_btn': '⬆️ Card Upgrade',
+                'card_upgrade_note': '📢 The card game has been fully upgraded. Complete card migration and withdraw your on-chain assets before Oct 31 — service will stop after that.',
+                'tip_card_upgrade': 'Go to the new card game hub',
                 'frag_legend': '🟡 Legend',
                 'frag_legend_text': 'Legend',
                 'frag_epic': '🟣',
