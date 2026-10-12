@@ -1270,6 +1270,8 @@
     { id: 'stage',     key: 'tab_stage' },
     { id: 'cultivate', key: 'tab_cultivate' },
     { id: 'ranked',    key: 'tab_ranked' },
+    { id: 'pvp',       key: 'tab_pvp' },
+    { id: 'royale',    key: 'tab_royale' },
     { id: 'dailytask', key: 'tab_dailytask' },
     { id: 'help',      key: 'tab_help' },
     { id: 'gift',      key: 'tab_gift' },
