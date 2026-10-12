@@ -1273,7 +1273,8 @@
     { id: 'dailytask', key: 'tab_dailytask' },
     { id: 'help',      key: 'tab_help' },
     { id: 'gift',      key: 'tab_gift' },
-    { id: 'ledger',    key: 'tab_ledger', admin: true },
+    // 🟢 2026-10-12：收入对账 tab 移除——对账数据是老合约的抽水事件，新合约无意义（用户拍板取消）
+    // { id: 'ledger',    key: 'tab_ledger', admin: true },
   ];
 
   // 🟢 合规配置缓存（sanguo_compliance 查询；老合约没有该查询时返回 null → 走旧逻辑）
