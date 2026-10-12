@@ -1,0 +1,20 @@
+{
+  "name": "Paxi 游戏中心",
+  "short_name": "PaxiHub",
+  "description": "三国卡牌（免费抽卡 / 买卡买碎片 / 关卡 / 天梯）",
+  "lang": "zh-CN",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0f1a",
+  "theme_color": "#0b0f1a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
