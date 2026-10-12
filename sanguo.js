@@ -945,6 +945,42 @@
   // 链上卡牌模板（P1-8：图鉴优先读链上 sanguo_templates，失败回退本地硬编码）
   // ============================================================
   let _sgTemplatesCache = null;   // 链上模板缓存
+  let SG_TPL_COUNT = CARD_TEMPLATES.length;   // 图鉴入口计数（链上加载后动态更新）
+
+  // 新增 30 张卡（31-60）的称号/阵营兜底（链上 CardTemplate 只存 id/name/rarity/attack/defense/weight，
+  // 不带 title/identity 展示字段；图鉴与详情按名字查此表补齐）
+  const SG_NEW_META = {
+    '刘备': { title: '昭烈帝', identity: '蜀·昭烈帝' },
+    '孙权': { title: '吴大帝', identity: '吴·吴大帝' },
+    '孙坚': { title: '武烈皇帝', identity: '吴·武烈皇帝' },
+    '董卓': { title: '太师', identity: '群·太师' },
+    '郭嘉': { title: '鬼才', identity: '魏·鬼才' },
+    '许褚': { title: '虎痴', identity: '魏·虎痴' },
+    '张郃': { title: '巧变', identity: '魏·巧变' },
+    '黄盖': { title: '苦肉', identity: '吴·苦肉' },
+    '孙尚香': { title: '弓腰姬', identity: '吴·弓腰姬' },
+    '马岱': { title: '临危', identity: '蜀·临危' },
+    '华佗': { title: '神医', identity: '群·神医' },
+    '颜良': { title: '河北庭柱', identity: '群·河北庭柱' },
+    '荀彧': { title: '王佐', identity: '魏·王佐' },
+    '甄姬': { title: '洛神', identity: '魏·洛神' },
+    '大乔': { title: '国色', identity: '吴·国色' },
+    '小乔': { title: '天香', identity: '吴·天香' },
+    '周泰': { title: '幼平', identity: '吴·幼平' },
+    '黄月英': { title: '机关', identity: '蜀·机关' },
+    '关兴': { title: '安国', identity: '蜀·安国' },
+    '张苞': { title: '虎嗣', identity: '蜀·虎嗣' },
+    '陈宫': { title: '公台', identity: '群·公台' },
+    '貂蝉': { title: '闭月', identity: '群·闭月' },
+    '曹洪': { title: '骠骑', identity: '魏·骠骑' },
+    '许攸': { title: '谋乱', identity: '魏·谋乱' },
+    '张昭': { title: '文侯', identity: '吴·文侯' },
+    '朱然': { title: '义封', identity: '吴·义封' },
+    '关平': { title: '坦之', identity: '蜀·坦之' },
+    '周仓': { title: '山贼', identity: '蜀·山贼' },
+    '田丰': { title: '元皓', identity: '群·元皓' },
+    '审配': { title: '正南', identity: '群·正南' },
+  };
   async function loadSanguoTemplates(force) {
     if (_sgTemplatesCache && !force) return _sgTemplatesCache;
     try {
@@ -953,14 +989,20 @@
                 : (r && Array.isArray(r)) ? r
                 : [];
       if (arr.length) {
-        _sgTemplatesCache = arr.map((tp) => ({
-          name: tp.name,
-          title: tp.title || '',
-          rarity: tp.rarity || 'common',
-          attack: Number(tp.attack || 0),
-          defense: Number(tp.defense || 0),
-          identity: tp.identity || tp.faction || '',
-        }));
+        _sgTemplatesCache = arr.map((tp) => {
+          const meta = SG_NEW_META[tp.name] || {};
+          return {
+            name: tp.name,
+            title: tp.title || meta.title || '',
+            rarity: tp.rarity || 'common',
+            attack: Number(tp.attack || 0),
+            defense: Number(tp.defense || 0),
+            identity: tp.identity || tp.faction || meta.identity || '',
+          };
+        });
+        SG_TPL_COUNT = _sgTemplatesCache.length;
+        const cnt = document.getElementById('sgCodexCount');
+        if (cnt) cnt.textContent = SG_TPL_COUNT;
         return _sgTemplatesCache;
       }
     } catch (e) {
@@ -1329,7 +1371,7 @@
           <div class="desc">${t('sg_subtitle')}</div>
         </div>
         <div class="card">
-          <button class="btn btn-gold" onclick="openCodex()" style="width:100%">${tf('codex_open', { n: CARD_TEMPLATES.length })}</button>
+          <button class="btn btn-gold" onclick="openCodex()" style="width:100%">${tf('codex_open', { n: '<span id="sgCodexCount">' + SG_TPL_COUNT + '</span>' })}</button>
         </div>
         <div id="sgTabs">
           ${SANGUO_TABS.filter((tb) => !tb.admin || isSgAdmin()).map((tb) => tabBtn(tb.id, t(tb.key))).join('')}
@@ -1342,6 +1384,11 @@
     });
     updateSgTabs();
     renderSanguoTab();
+    // 图鉴入口计数异步刷新（链上模板加载完成后自动更新 30 → 60）
+    loadSanguoTemplates().then((arr) => {
+      const el = document.getElementById('sgCodexCount');
+      if (el && Array.isArray(arr)) el.textContent = arr.length;
+    }).catch(() => {});
     sgSyncWallet();
   }
 
