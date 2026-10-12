@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>三国卡牌 · 加卡上传工具</title>
+<style>
+  :root{ --bg:#0e1424; --card:#16203a; --line:#27344f; --gold:#d4af37; --txt:#e8eefc; --mut:#9fb3d1; --ok:#37d67a; --warn:#ffb020; --err:#ff5b6e; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--txt); font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif; font-size:14px; }
+  .wrap{ max-width:1080px; margin:0 auto; padding:16px; }
+  h1{ font-size:20px; color:var(--gold); margin:0 0 4px; }
+  .sub{ color:var(--mut); font-size:12px; margin-bottom:14px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; }
+  .card-title{ font-weight:700; color:var(--gold); margin-bottom:10px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:8px; }
+  label{ display:block; font-size:11px; color:var(--mut); margin-bottom:3px; }
+  input,select{ width:100%; padding:8px; background:#0c1322; border:1px solid var(--line); border-radius:6px; color:var(--txt); }
+  .btn{ cursor:pointer; border:none; border-radius:6px; padding:9px 14px; font-weight:600; font-size:13px; }
+  .btn-primary{ background:var(--gold); color:#1a1206; }
+  .btn-ghost{ background:#22304f; color:var(--txt); }
+  .btn-sm{ padding:5px 9px; font-size:12px; }
+  .row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+  table{ width:100%; border-collapse:collapse; font-size:12px; }
+  th,td{ border:1px solid var(--line); padding:6px 7px; text-align:left; }
+  th{ background:#1c2840; color:var(--mut); }
+  .hint{ font-size:12px; color:var(--mut); }
+  .ok{ color:var(--ok); } .warn{ color:var(--warn); } .err{ color:var(--err); }
+  textarea{ width:100%; height:150px; background:#0c1322; border:1px solid var(--line); border-radius:6px; color:var(--txt); font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12px; padding:8px; }
+  .pill{ display:inline-block; padding:1px 7px; border-radius:10px; font-size:11px; }
+  .r-common{ background:#3a4a66; color:#cfe0ff; } .r-rare{ background:#2f6db0; color:#dff0ff; }
+  .r-epic{ background:#7a3fb0; color:#f1e0ff; } .r-legend{ background:#b8860b; color:#fff; }
+  a{ color:var(--gold); }
+  .copy{ font-size:11px; margin-left:8px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>三国卡牌 · 加卡上传工具</h1>
+  <div class="sub">管理员零部署加卡（<code>add_templates</code>）。链上卡牌仅含 <b>id / name / rarity / attack / defense / weight</b>；称号·阵营(<code>identity</code>) 为前端展示层，生成 <code>SG_CARD_META</code> 片段粘贴到 sanguo.js。卡图建议托管在 <b>GitHub Pages</b>（仓库 <code>assets/cards/</code> 目录），图片按 <code>id.webp</code> 命名，前端用 <code>CARD_IMAGES</code> 字典按名字映射。卡池上限 150（common90/rare30/epic20/legend10）。</div>
+
+  <!-- 表单 -->
+  <div class="card">
+    <div class="card-title">① 单卡设计</div>
+    <div class="grid">
+      <div><label>卡牌ID（唯一，如 sgx_001）</label><input id="f_id" placeholder="sgx_001"></div>
+      <div><label>名称（楷书，如 刘备）</label><input id="f_name" placeholder="刘备"></div>
+      <div><label>称号/官职（前端展示）</label><input id="f_title" placeholder="昭烈帝"></div>
+      <div><label>阵营·官职（identity，如 蜀·昭烈帝）</label><input id="f_identity" placeholder="蜀·昭烈帝"></div>
+      <div><label>稀有度</label>
+        <select id="f_rarity">
+          <option value="common">common（普通）</option>
+          <option value="rare">rare（稀有）</option>
+          <option value="epic">epic（史诗）</option>
+          <option value="legend">legend（传说）</option>
+        </select>
+      </div>
+      <div><label>攻击 attack</label><input id="f_atk" type="number" placeholder="100"></div>
+      <div><label>防御 defense</label><input id="f_def" type="number" placeholder="105"></div>
+      <div><label>权重 weight（抽卡）</label><input id="f_weight" type="number" placeholder="3"></div>
+    </div>
+    <div class="row">
+      <button class="btn btn-primary" id="addBtn">加入列表</button>
+      <button class="btn btn-ghost" id="load30Btn">载入 30 张设计卡</button>
+      <button class="btn btn-ghost" id="clearBtn">清空</button>
+      <span id="balHint" class="hint"></span>
+    </div>
+  </div>
+
+  <!-- 列表 -->
+  <div class="card">
+    <div class="card-title">② 批次列表（<span id="cnt">0</span>/150）</div>
+    <div style="overflow:auto;max-height:320px">
+      <table id="tbl">
+        <thead><tr><th>#</th><th>ID</th><th>名称</th><th>称号</th><th>identity</th><th>稀有度</th><th>攻</th><th>防</th><th>权重</th><th>战力</th><th>校验</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 生成 -->
+  <div class="card">
+    <div class="card-title">③ 生成产物</div>
+    <div style="margin-bottom:10px">
+      <label>GitHub Pages 图片基础地址（CARD_IMAGE_BASE，替换成你的仓库）</label>
+      <input id="f_base" placeholder="https://moxiaomo856.github.io/paxi-card-game/assets/cards/">
+    </div>
+    <div class="row">
+      <button class="btn btn-ghost" id="genJson">生成 add_templates JSON</button>
+      <button class="btn btn-ghost" id="genMeta">生成 SG_CARD_META 片段</button>
+      <button class="btn btn-ghost" id="genImages">生成 CARD_IMAGES 片段</button>
+      <button class="btn btn-ghost" id="genLink">生成可用链接</button>
+    </div>
+    <div style="margin-top:10px">
+      <div><b>add_templates JSON</b><button class="btn btn-sm btn-ghost copy" data-c="outJson">复制</button></div>
+      <textarea id="outJson" readonly></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <div><b>SG_CARD_META 片段（粘贴进 sanguo.js 的 CARD_TEMPLATES 数组）</b><button class="btn btn-sm btn-ghost copy" data-c="outMeta">复制</button></div>
+      <textarea id="outMeta" readonly></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <div><b>CARD_IMAGES 片段（粘贴进 sanguo.js 的 CARD_IMAGES 字典，卡名→图片URL）</b><button class="btn btn-sm btn-ghost copy" data-c="outImages">复制</button></div>
+      <textarea id="outImages" readonly></textarea>
+    </div>
+    <div style="margin-top:10px">
+      <div><b>可用链接</b><button class="btn btn-sm btn-ghost copy" data-c="outLink">复制</button></div>
+      <div id="outLink" class="hint" style="word-break:break-all"></div>
+    </div>
+  </div>
+
+  <!-- 接入游戏 -->
+  <div class="card">
+    <div class="card-title">④ 接入游戏（部署步骤）</div>
+    <ol class="hint" style="line-height:1.7;margin:0;padding-left:18px">
+      <li><b>链上加卡</b>：用管理员钱包对合约执行上方 <code>add_templates</code> JSON（Keplr→Execute，或你的部署脚本）。合约按 <code>RARITY_MAX</code> 与权重区间校验，重复 id 自动跳过。</li>
+      <li><b>前端 lore</b>：把 <code>SG_CARD_META</code> 片段粘贴进 sanguo.js 的 <code>CARD_TEMPLATES</code> 数组（现有 30 张之后），<code>identity</code> 即「阵营·官职」小字、<code>title</code> 即称号。</li>
+      <li><b>前端图片</b>：把 <code>CARD_IMAGES</code> 片段粘贴进 sanguo.js 的 <code>CARD_IMAGES</code> 字典（卡名→图片URL）；图片文件按 <code>id.webp</code> 命名，上传到仓库 <code>assets/cards/</code> 目录并提交（GitHub Pages 自动发布，URL = CARD_IMAGE_BASE + 'id.webp'）。</li>
+      <li><b>生效</b>：加卡后该卡立即进入抽卡权重池与图鉴（codex）；无需重新编译 wasm、无需 migrate。</li>
+      <li><b>可用链接</b>：本页地址栏带 <code>?data=…</code> 的链接可重开即还原当前设计，便于你保存或发给协作者。</li>
+    </ol>
+  </div>
+</div>
+
+<script>
+// ===== 规则常量（与合约一致）=====
+const RARITY_MAX = { common:90, rare:30, epic:20, legend:10 };
+const WEIGHT_RANGE = { common:[35,45], rare:[20,30], epic:[10,15], legend:[2,5] };
+const POWER_CAP = { common:110, rare:165, epic:195, legend:230 }; // 攻+防 软上限（超出仅警告）
+const RARITY_LABEL = { common:'普通', rare:'稀有', epic:'史诗', legend:'传说' };
+
+let cards = [];
+
+function uid(){ return 'sgx_' + String(cards.length+1).padStart(3,'0'); }
+
+function suggestWeight(r){
+  const [lo,hi] = WEIGHT_RANGE[r];
+  // 传说/史诗取偏低（更稀有），普通取偏高
+  return r==='common' ? hi-3 : r==='rare' ? Math.round((lo+hi)/2) : lo+1;
+}
+
+function validate(c){
+  const errs = [];
+  if(!c.id) errs.push('缺ID');
+  if(cards.some(x=>x.id===c.id)) errs.push('ID重复');
+  if(!c.name) errs.push('缺名称');
+  if(!RARITY_MAX[c.rarity]) errs.push('稀有度非法');
+  const [lo,hi] = WEIGHT_RANGE[c.rarity] || [0,1e9];
+  if(c.weight<lo || c.weight>hi) errs.push('权重越界');
+  if(c.attack<1 || c.defense<1) errs.push('攻防≥1');
+  const sum = c.attack + c.defense;
+  let warn = '';
+  if(sum > POWER_CAP[c.rarity]) warn = '战力超软上限'+POWER_CAP[c.rarity];
+  return { errs, warn, sum };
+}
+
+function render(){
+  const tb = document.querySelector('#tbl tbody');
+  tb.innerHTML = cards.map((c,i)=>{
+    const {errs,warn,sum} = validate(c);
+    const cls = errs.length ? 'err' : (warn ? 'warn' : 'ok');
+    const msg = errs.length ? errs.join('、') : warn;
+    return `<tr>
+      <td>${i+1}</td><td>${esc(c.id)}</td><td>${esc(c.name)}</td><td>${esc(c.title)}</td>
+      <td>${esc(c.identity)}</td>
+      <td><span class="pill r-${c.rarity}">${RARITY_LABEL[c.rarity]}</span></td>
+      <td>${c.attack}</td><td>${c.defense}</td><td>${c.weight}</td><td>${sum}</td>
+      <td class="${cls}">${msg||'✓'}</td>
+      <td><button class="btn btn-sm btn-ghost" data-del="${i}">删</button></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('cnt').textContent = cards.length;
+  tb.querySelectorAll('button[data-del]').forEach(b=> b.onclick=()=>{ cards.splice(+b.dataset.del,1); render(); });
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m])); }
+
+function addCard(){
+  const r = document.getElementById('f_rarity').value;
+  const c = {
+    id: document.getElementById('f_id').value.trim() || uid(),
+    name: document.getElementById('f_name').value.trim(),
+    title: document.getElementById('f_title').value.trim(),
+    identity: document.getElementById('f_identity').value.trim(),
+    rarity: r,
+    attack: Math.max(0, parseInt(document.getElementById('f_atk').value||'0',10)||0),
+    defense: Math.max(0, parseInt(document.getElementById('f_def').value||'0',10)||0),
+    weight: Math.max(0, parseInt(document.getElementById('f_weight').value||'0',10)||0),
+  };
+  if(!c.name){ show('balHint','请填名称','err'); return; }
+  cards.push(c);
+  // 清空输入（保留稀有度）
+  ['f_id','f_name','f_title','f_identity','f_atk','f_def','f_weight'].forEach(id=>document.getElementById(id).value='');
+  render();
+}
+
+function show(id,msg,cls){ const e=document.getElementById(id); e.textContent=msg; e.className='hint '+(cls||''); }
+
+document.getElementById('f_rarity').onchange = ()=>{ document.getElementById('f_weight').value = suggestWeight(document.getElementById('f_rarity').value); };
+document.getElementById('addBtn').onclick = addCard;
+document.getElementById('clearBtn').onclick = ()=>{ cards=[]; render(); };
+
+// 30 张设计卡预设（避开现有 30 张，数值落在各自稀有度基准内）
+const PRESET = [
+  ['刘备','昭烈帝','蜀·昭烈帝','legend',100,105,3],
+  ['孙权','吴大帝','吴·大帝','legend',98,102,3],
+  ['孙坚','武烈皇帝','吴·武烈','legend',108,92,4],
+  ['董卓','太师','群·太师','legend',112,88,4],
+  ['郭嘉','鬼才','魏·鬼才','epic',78,92,12],
+  ['许褚','虎痴','魏·虎痴','epic',95,78,11],
+  ['张郃','巧变','魏·巧变','epic',88,82,12],
+  ['黄盖','苦肉','吴·苦肉','epic',86,80,12],
+  ['孙尚香','弓腰姬','吴·弓腰姬','epic',90,72,13],
+  ['马岱','临危','蜀·临危','epic',84,76,12],
+  ['华佗','神医','群·神医','epic',60,95,14],
+  ['颜良','河北庭柱','群·河北庭柱','epic',96,74,11],
+  ['荀彧','王佐','魏·王佐','rare',62,78,25],
+  ['甄姬','洛神','魏·洛神','rare',58,72,26],
+  ['大乔','国色','吴·国色','rare',55,70,27],
+  ['小乔','天香','吴·天香','rare',54,68,27],
+  ['周泰','幼平','吴·幼平','rare',78,66,22],
+  ['黄月英','机关','蜀·机关','rare',60,70,25],
+  ['关兴','安国','蜀·安国','rare',76,64,23],
+  ['张苞','虎嗣','蜀·虎嗣','rare',78,62,22],
+  ['陈宫','公台','群·公台','rare',60,72,25],
+  ['貂蝉','闭月','群·闭月','rare',52,66,27],
+  ['曹洪','骠骑','魏·骠骑','common',52,48,42],
+  ['许攸','谋乱','魏·谋乱','common',46,44,43],
+  ['张昭','文侯','吴·文侯','common',42,50,44],
+  ['朱然','安国','吴·安国','common',50,46,42],
+  ['关平','坦之','蜀·坦之','common',54,44,41],
+  ['周仓','山贼','蜀·山贼','common',56,42,40],
+  ['田丰','元皓','群·元皓','common',44,46,44],
+  ['审配','正南','群·正南','common',46,48,43],
+];
+document.getElementById('load30Btn').onclick = ()=>{
+  if(cards.length && !confirm('将向当前列表追加 30 张设计卡（不覆盖现有）？')) return;
+  PRESET.forEach((p,i)=> cards.push({ id:'sgx_'+String(i+1).padStart(3,'0'), name:p[0], title:p[1], identity:p[2], rarity:p[3], attack:p[4], defense:p[5], weight:p[6] }));
+  render();
+};
+
+function genJson(){
+  const tpl = cards.map(c=>({ id:c.id, name:c.name, rarity:c.rarity, attack:c.attack, defense:c.defense, weight:c.weight }));
+  const json = JSON.stringify({ add_templates:{ templates:tpl } }, null, 2);
+  document.getElementById('outJson').value = json;
+  return json;
+}
+function genMeta(){
+  const lines = cards.map(c=>`  { name: '${c.name}', title: '${c.title}', rarity: '${c.rarity}', attack: ${c.attack}, defense: ${c.defense}, identity: '${c.identity}' },`);
+  document.getElementById('outMeta').value = lines.join('\n');
+}
+function genImages(){
+  const base = (document.getElementById('f_base').value.trim() || 'https://<用户名>.github.io/<仓库>/assets/cards/');
+  const lines = cards.map(c=>`  '${c.name}': '${base}${c.id}.webp',`);
+  document.getElementById('outImages').value = lines.join('\n');
+}
+function genLink(){
+  const payload = btoa(unescape(encodeURIComponent(JSON.stringify(cards))));
+  const url = location.pathname + '?data=' + payload;
+  document.getElementById('outLink').textContent = url;
+  // 同时写入地址栏，便于直接复制
+  history.replaceState(null,'',url);
+}
+document.getElementById('genJson').onclick = ()=>{ if(!cards.length){show('balHint','列表为空','warn');return;} genJson(); };
+document.getElementById('genMeta').onclick = ()=>{ if(!cards.length){show('balHint','列表为空','warn');return;} genMeta(); };
+document.getElementById('genImages').onclick = ()=>{ if(!cards.length){show('balHint','列表为空','warn');return;} genImages(); };
+document.getElementById('genLink').onclick = ()=>{ if(!cards.length){show('balHint','列表为空','warn');return;} genLink(); show('balHint','已生成并重写地址栏','ok'); };
+
+document.querySelectorAll('.copy').forEach(b=> b.onclick=()=>{
+  const t = document.getElementById(b.dataset.c);
+  if(!t.value && b.dataset.c!=='outLink') return;
+  const v = b.dataset.c==='outLink' ? location.href : t.value;
+  navigator.clipboard.writeText(v).then(()=> show('balHint','已复制','ok'));
+});
+
+// 载入 ?data= 还原
+(function(){
+  const m = location.search.match(/[?&]data=([^&]+)/);
+  if(m){ try{ cards = JSON.parse(decodeURIComponent(escape(atob(m[1])))); render(); }catch(e){ console.warn('解析 data 失败',e); } }
+})();
+render();
+</script>
+</body>
+</html>

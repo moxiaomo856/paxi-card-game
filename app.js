@@ -44,7 +44,7 @@ const $ = (id) => document.getElementById(id);
 // ============================================================
 const HUB_I18N = {
   zh: {
-    tab_home: '大厅', tab_wallet: '钱包', tab_me: '我的',
+    tab_home: '游戏', tab_wallet: '钱包', tab_me: '我的',
     btn_connect: '连接',
     title_home: '游戏大厅', title_wallet: '钱包', title_me: '我的',
     banner_title: '⚠️ 尚未配置游戏合约',
@@ -232,7 +232,7 @@ const HUB_I18N = {
     game_disabled: (id) => `游戏 "${id}" 已停用`,
   },
   en: {
-    tab_home: 'Home', tab_wallet: 'Wallet', tab_me: 'Me',
+    tab_home: 'Game', tab_wallet: 'Wallet', tab_me: 'Me',
     btn_connect: 'Connect',
     title_home: 'Game Hub', title_wallet: 'Wallet', title_me: 'My Account',
     banner_title: '⚠️ Game contract not configured',
@@ -578,7 +578,13 @@ function switchTab(tab) {
   const titles = { home: hubT('title_home'), wallet: hubT('title_wallet'), me: hubT('title_me') };
   $('pageTitle').textContent = titles[tab] || hubT('title_home');
 
-  if (tab === 'home') renderHome();
+  if (tab === 'home') {
+    // 🟢 2026-10-12：「游戏」tab——直回三国页（openSanguo 异常时才兜底渲染大厅）
+    if (typeof window.openSanguo === 'function') {
+      try { window.openSanguo(); return; } catch (e) { console.warn('openSanguo 失败', e); }
+    }
+    renderHome();
+  }
   else if (tab === 'wallet') renderWallet();
   else renderMe();
 }
