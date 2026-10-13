@@ -55,44 +55,9 @@
     { name: '贾诩', title: '毒士乱武', rarity: 'common', attack: 46, defense: 44, identity: '魏·太尉' },
   ];
 
-  // 卡牌图片地址（名字→URL 字典，消除「顺序数组」错位裂图隐患）
-  // GitHub Pages 托管基础地址：把仓库开启 Pages 后，图片放在 assets/cards/ 下即获得公开 URL
+  // 卡牌图片统一托管在 GitHub Pages：assets/cards/<名字>.png
+  // 原始 30 张与新增 30 张均已自托管，不再依赖第三方图床（消除图床删图/防盗链导致裂图隐患）
   const CARD_IMAGE_BASE = 'https://moxiaomo856.github.io/paxi-card-game/assets/cards/';
-  // 旧卡（前 30 张）仍用 imgbb，保持线上不变；待统一迁移到 GitHub Pages 时改为 CARD_IMAGE_BASE + 'id.webp' 即可
-  const CARD_IMAGES = {
-    '曹操': 'https://i.ibb.co/0pXyCqvs/image.png',
-    '诸葛亮': 'https://i.ibb.co/vvKKdPCq/image.png',
-    '关羽': 'https://i.ibb.co/6743V8cB/image.png',
-    '赵云': 'https://i.ibb.co/z98s8dS/image.png',
-    '吕布': 'https://i.ibb.co/S7Qjr3Hk/image.png',
-    '司马懿': 'https://i.ibb.co/S7RB8T90/image.png',
-    '张飞': 'https://i.ibb.co/xSX7Bv0q/image.png',
-    '马超': 'https://i.ibb.co/jkFY9h1Z/image.png',
-    '黄忠': 'https://i.ibb.co/70bYyjF/image.png',
-    '姜维': 'https://i.ibb.co/k2HxGQ25/image.png',
-    '周瑜': 'https://i.ibb.co/99p7TBpH/image.png',
-    '陆逊': 'https://i.ibb.co/BKc8bJgc/image.png',
-    '夏侯惇': 'https://i.ibb.co/Pz35X0Hc/image.png',
-    '张辽': 'https://i.ibb.co/4wwW0yRv/image.png',
-    '魏延': 'https://i.ibb.co/99DDBg1y/image.png',
-    '庞统': 'https://i.ibb.co/mrpP4bYk/image.png',
-    '法正': 'https://i.ibb.co/jpMd1Bw/image.png',
-    '甘宁': 'https://i.ibb.co/JVxVCnV/image.png',
-    '太史慈': 'https://i.ibb.co/dhWs803/image.png',
-    '孙策': 'https://i.ibb.co/VWm6yT7W/image.png',
-    '吕蒙': 'https://i.ibb.co/WpvPY4y9/image.png',
-    '邓艾': 'https://i.ibb.co/KxZZb9RF/image.png',
-    '廖化': 'https://i.ibb.co/W4wfdFWg/image.png',
-    '简雍': 'https://i.ibb.co/vCLxJLyP/image.png',
-    '孙乾': 'https://i.ibb.co/PGMxkthb/image.png',
-    '糜竺': 'https://i.ibb.co/Z6sBmsxK/image.png',
-    '诸葛瑾': 'https://i.ibb.co/yF6JZxTC/image.png',
-    '鲁肃': 'https://i.ibb.co/tPPt4J3c/image.png',
-    '程昱': 'https://i.ibb.co/fmGRNrc/image.png',
-    '贾诩': 'https://i.ibb.co/pvjK82Yb/image.png',
-    // 新卡示例（把图片命名为 id.webp 上传到 assets/cards/ 即可）：
-    // '刘备': CARD_IMAGE_BASE + 'sgx_001.webp',
-  };
 
   // ============================================================
   // 多语言（沿用原始三国词库；同时响应大厅全局语言切换）
@@ -932,8 +897,8 @@
   // 工具
   // ============================================================
   function getCardImage(name) {
-    // 旧 30 张走 imgbb 硬编码；新卡（及缺图时）回退到 GitHub Pages（按 name 命名）
-    return (CARD_IMAGES[name] || (CARD_IMAGE_BASE + name + '.png'));
+    // 全部卡牌统一按名字取本地托管图（assets/cards/<名字>.png）
+    return (CARD_IMAGE_BASE + name + '.png');
   }
   // 皮肤图片（按 skin_id 命名，部署到仓库 assets/skins/）
   const SKIN_IMAGE_BASE = 'https://moxiaomo856.github.io/paxi-card-game/assets/skins/';

@@ -1,9 +1,9 @@
 // 🟢 2A：CACHE 与 index.html 的 window.HUB_BUILD 联动
 //   ⚠️ 维护约定：每次改前端代码，必须【同时】改这两处版本号，保持一致：
-//     ① index.html: <script>window.HUB_BUILD = '20261012-5';</script>
-//     ② service-worker.js: const BUILD = '20261012-5';
+//     ① index.html: <script>window.HUB_BUILD = '20261013-1';</script>
+//     ② service-worker.js: const BUILD = '20261013-1';
 //   这样 SW 文件字节变化 → 重装 → CACHE 名变化 → 旧缓存清空 → 干净拉新。
-const BUILD = '20261012-5';
+const BUILD = '20261013-1';
 const V = '?v=' + BUILD;
 const CACHE = 'paxihub-' + BUILD;
 const SHELL = [
