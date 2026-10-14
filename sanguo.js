@@ -131,6 +131,9 @@
       // ---- 合规版：商店 / 关卡 / 免费抽卡 ----
       'tab_shop': '🛒 商店',
       'tab_stage': '🗺️ 关卡',
+      'sg_group_play': '🎮 玩法',
+      'sg_group_battle': '⚔️ 对战',
+      'sg_group_more': '🧰 更多',
       'draw_free_title': '🎴 免费抽卡',
       'draw_free_desc': '合规版抽卡完全免费，不消耗任何 PAXI / TKCC。',
       'draw_remaining': '今日剩余次数',
@@ -607,6 +610,9 @@
       // ---- Compliance: shop / stages / free draw ----
       'tab_shop': '🛒 Shop',
       'tab_stage': '🗺️ Stages',
+      'sg_group_play': '🎮 Play',
+      'sg_group_battle': '⚔️ Battle',
+      'sg_group_more': '🧰 More',
       'draw_free_title': '🎴 Free Draw',
       'draw_free_desc': 'Compliance edition: drawing is completely free — no PAXI / TKCC consumed.',
       'draw_remaining': 'Draws left today',
@@ -1077,7 +1083,40 @@
     '周仓': { title: '山贼', identity: '蜀·山贼' },
     '田丰': { title: '元皓', identity: '群·元皓' },
     '审配': { title: '正南', identity: '群·正南' },
+    // 🟢 原 30 张补齐（链上 CardTemplate 无 title/identity，此前 fallback 显示拼音 faction）
+    '曹操': { title: '魏武', identity: '魏·魏武' },
+    '诸葛亮': { title: '卧龙', identity: '蜀·卧龙' },
+    '关羽': { title: '武圣', identity: '蜀·武圣' },
+    '赵云': { title: '虎威', identity: '蜀·虎威' },
+    '吕布': { title: '飞将', identity: '群·飞将' },
+    '司马懿': { title: '冢虎', identity: '魏·冢虎' },
+    '张飞': { title: '桓侯', identity: '蜀·桓侯' },
+    '马超': { title: '锦马超', identity: '蜀·锦马超' },
+    '黄忠': { title: '烈弓', identity: '蜀·烈弓' },
+    '姜维': { title: '幼麟', identity: '蜀·幼麟' },
+    '周瑜': { title: '美周郎', identity: '吴·美周郎' },
+    '陆逊': { title: '儒将', identity: '吴·儒将' },
+    '夏侯惇': { title: '元让', identity: '魏·元让' },
+    '张辽': { title: '止啼', identity: '魏·止啼' },
+    '魏延': { title: '文长', identity: '蜀·文长' },
+    '庞统': { title: '凤雏', identity: '蜀·凤雏' },
+    '法正': { title: '孝直', identity: '蜀·孝直' },
+    '甘宁': { title: '锦帆', identity: '吴·锦帆' },
+    '太史慈': { title: '子义', identity: '吴·子义' },
+    '孙策': { title: '小霸王', identity: '吴·小霸王' },
+    '吕蒙': { title: '子明', identity: '吴·子明' },
+    '邓艾': { title: '士载', identity: '魏·士载' },
+    '廖化': { title: '元俭', identity: '蜀·元俭' },
+    '简雍': { title: '宪和', identity: '蜀·宪和' },
+    '孙乾': { title: '公祐', identity: '蜀·公祐' },
+    '糜竺': { title: '子仲', identity: '蜀·子仲' },
+    '诸葛瑾': { title: '子瑜', identity: '吴·子瑜' },
+    '鲁肃': { title: '子敬', identity: '吴·子敬' },
+    '程昱': { title: '仲德', identity: '魏·仲德' },
+    '贾诩': { title: '毒士', identity: '魏·毒士' },
   };
+  // 链上 faction 拼音 → 汉字（identity 最终 fallback，杜绝拼音外漏）
+  const SG_FACTION_ZH = { wei: '魏', shu: '蜀', wu: '吴', qun: '群', han: '汉' };
   async function loadSanguoTemplates(force) {
     if (_sgTemplatesCache && !force) return _sgTemplatesCache;
     try {
@@ -1094,7 +1133,7 @@
             rarity: tp.rarity || 'common',
             attack: Number(tp.attack || 0),
             defense: Number(tp.defense || 0),
-            identity: tp.identity || meta.identity || tp.faction || '',
+            identity: tp.identity || meta.identity || SG_FACTION_ZH[tp.faction] || tp.faction || '',
             // 🟢 O-1：保留编队 cost（CardTemplate.cost，Σcost ≤ params.team_cost_cap），
             //    供战斗前预检，避免 Σcost 超限的必败交易白烧 gas
             cost: (tp.cost != null) ? Number(tp.cost) : null,
@@ -1139,7 +1178,7 @@
   function sgCardIdentity(c) {
     if (!c) return '';
     const tpl = sgTplByName(c.name);
-    return (tpl && (tpl.identity || tpl.faction)) || c.identity || '';
+    return (tpl && (tpl.identity || SG_FACTION_ZH[tpl.faction] || tpl.faction)) || c.identity || '';
   }
   // 阵营配色：取 identity「·」前首字（魏/蜀/吴/汉/群），其余用中性色
   const SG_FACTION_COLORS = { '魏': '#5aa7ff', '蜀': '#ff6b5e', '吴': '#3ecf8e', '汉': '#e8b04b', '群': '#b48cff' };
@@ -1502,20 +1541,21 @@
 
   // 合规版页签（2026-10-10）：免费抽卡 → 我的卡 → 商店 → 关卡 → 养成 → 收入对账(管理员)
   // AI对战 / PVP / 混战 / 提案在合规合约下被禁（涉代币博弈），入口整体下线。
+  // 🟢 美化（20261014-8）：group 分三组渲染（玩法/对战/更多），替代 12 键平铺
   const SANGUO_TABS = [
-    { id: 'draw',      key: 'tab_draw' },
-    { id: 'mycards',   key: 'tab_mycards' },
-    { id: 'shop',      key: 'tab_shop' },
-    { id: 'stage',     key: 'tab_stage' },
-    { id: 'cultivate', key: 'tab_cultivate' },
-    { id: 'ranked',    key: 'tab_ranked' },
-    { id: 'pvp',       key: 'tab_pvp' },
-    { id: 'royale',    key: 'tab_royale' },
-    { id: 'dailytask', key: 'tab_dailytask' },
-    { id: 'help',      key: 'tab_help' },
-    { id: 'gift',      key: 'tab_gift' },
+    { id: 'draw',      key: 'tab_draw',      group: 'play' },
+    { id: 'mycards',   key: 'tab_mycards',   group: 'play' },
+    { id: 'shop',      key: 'tab_shop',      group: 'play' },
+    { id: 'stage',     key: 'tab_stage',     group: 'play' },
+    { id: 'cultivate', key: 'tab_cultivate', group: 'play' },
+    { id: 'ranked',    key: 'tab_ranked',    group: 'battle' },
+    { id: 'pvp',       key: 'tab_pvp',       group: 'battle' },
+    { id: 'royale',    key: 'tab_royale',    group: 'battle' },
+    { id: 'dailytask', key: 'tab_dailytask', group: 'more' },
+    { id: 'help',      key: 'tab_help',      group: 'more' },
+    { id: 'gift',      key: 'tab_gift',      group: 'more' },
     // 🟢 参数收敛（2026-10-14）：战斗系数管理员热更面板（克制/稀有度/技能/连携强度）
-    { id: 'battleparams', key: 'tab_battleparams', admin: true },
+    { id: 'battleparams', key: 'tab_battleparams', group: 'more', admin: true },
     // 🟢 2026-10-12：收入对账 tab 移除——对账数据是老合约的抽水事件，新合约无意义（用户拍板取消）
     // { id: 'ledger',    key: 'tab_ledger', admin: true },
   ];
@@ -1618,7 +1658,9 @@
           <button class="btn btn-gold" onclick="openCodex()" style="width:100%">${tf('codex_open', { n: '<span id="sgCodexCount">' + SG_TPL_COUNT + '</span>' })}</button>
         </div>
         <div id="sgTabs">
-          ${SANGUO_TABS.filter((tb) => !tb.admin || isSgAdmin()).map((tb) => tabBtn(tb.id, t(tb.key))).join('')}
+          ${sgTabsGroupHtml('play', 'sg_group_play')}
+          ${sgTabsGroupHtml('battle', 'sg_group_battle')}
+          ${sgTabsGroupHtml('more', 'sg_group_more')}
         </div>
         <div id="sgBody"></div>
         <div class="battle-arena" id="battleArena"></div>
@@ -1638,6 +1680,15 @@
 
   function tabBtn(id, label) {
     return `<button class="sg-tab btn btn-ghost btn-sm" data-tab="${id}" style="white-space:nowrap">${label}</button>`;
+  }
+  // 🟢 美化（20261014-8）：按组渲染页签（玩法/对战/更多），空组自动隐藏
+  function sgTabsGroupHtml(group, labelKey) {
+    const list = SANGUO_TABS.filter((tb) => tb.group === group && (!tb.admin || isSgAdmin()));
+    if (!list.length) return '';
+    return `<div class="sg-tgroup">
+      <div class="sg-tgroup-lb">${t(labelKey)}</div>
+      <div class="sg-tgroup-grid">${list.map((tb) => tabBtn(tb.id, t(tb.key))).join('')}</div>
+    </div>`;
   }
   function updateSgTabs() {
     document.querySelectorAll('#sgTabs .sg-tab').forEach((b) => {
@@ -4160,7 +4211,7 @@
       const cls = rarityClass(tpl.rarity);
       const have = ownedNames.has(tpl.name);
       // 🟢 阵营行与「我的卡」保持一致（2026-09-29）
-      const idt = (tpl.identity || tpl.faction) || '';
+      const idt = (tpl.identity || SG_FACTION_ZH[tpl.faction] || tpl.faction) || '';
       const ffHtml = idt ? `<div class="ff" style="color:${sgFactionColor(idt)}">${esc(idt)}</div>` : '';
       const ttHtml = tpl.title ? `<div class="tt">${esc(tpl.title)}</div>` : '';
       // 🟢 图鉴战斗属性（2026-10-14）：兵种 + 技能名

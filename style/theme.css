@@ -431,3 +431,18 @@ body { padding-bottom: calc(72px + var(--safe-bottom)); }
 .sg-cult-card .sg-cult-acts .btn, .sg-cult-card .btn { min-height: 40px; }
 .codex-fbtn, .codex-sort, .codex-search { min-height: 40px; }
 .quick { min-height: 36px; padding: 7px 12px; }
+
+/* ========== 26. 主界面页签分组（20261014-8：玩法/对战/更多，替代 12 键平铺） ========== */
+#sgTabs { display: flex; flex-direction: column; gap: 14px; }
+.sg-tgroup-lb {
+  font-size: 11px; font-weight: 600; letter-spacing: 3px;
+  color: var(--c-muted, #8fa3bf); opacity: .8;
+  margin: 0 2px 6px; display: flex; align-items: center; gap: 8px;
+}
+.sg-tgroup-lb::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--c-line), transparent); }
+.sg-tgroup-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.sg-tgroup-grid .sg-tab { width: 100%; margin: 0; border-radius: 12px; font-weight: 600; }
+.sg-tgroup-grid .sg-tab.btn-primary {
+  box-shadow: 0 0 0 1px rgba(255, 200, 50, .5), 0 4px 16px rgba(255, 200, 50, .14);
+}
+@media (max-width: 380px) { .sg-tgroup-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
