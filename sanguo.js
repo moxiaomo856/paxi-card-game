@@ -3142,21 +3142,24 @@
         const col = rarityColor(c.rarity);
         const img = getCardImage(c.name);
         const tplc = sgTplByName(c.name) || {};
-        // 🟢 养成页战斗属性（2026-10-14）：兵种 / 技能（3★ 解锁态）/ 连携
+        // 🟢 养成页战斗属性（20261014-15）：兵种 / 技能（3★ 解锁态）/ 连携 合并一行
         const stC = c.star || 1;
+        const _cParts = [];
+        if (tplc.troop) _cParts.push(`⚔️ ${t('troop_' + tplc.troop)}`);
         const skC = tplc.skill_id ? sgFindSkill(tplc.skill_id) : null;
-        const skillLine = skC
-          ? `<div style="font-size:10px;color:${stC >= 3 ? '#ffd700' : '#9fb3d1'}">✦ ${stC >= 3 ? sgSkillDesc(tplc.skill_id) : tf('skill_locked', { name: skC[0] })}</div>`
-          : '';
-        const troopLine = tplc.troop ? `<div style="font-size:10px;color:#9fb3d1">⚔️ ${t('troop_' + tplc.troop)}</div>` : '';
-        const bondLine = (tplc.bonds && tplc.bonds.length) ? `<div style="font-size:9px;color:#9fb3d1">🔗 ${esc(sgBondNames(tplc.bonds))}</div>` : '';
+        if (skC) {
+          const skTxt = (stC >= 3 ? sgSkillDesc(tplc.skill_id) : tf('skill_locked', { name: skC[0] }));
+          _cParts.push(`<span style="color:${stC >= 3 ? '#ffd700' : '#9fb3d1'}">✦ ${skTxt}</span>`);
+        }
+        if (tplc.bonds && tplc.bonds.length) _cParts.push(`🔗 ${t('bond_label')}：${esc(sgBondNames(tplc.bonds))}`);
+        const battleLine = _cParts.length ? `<div style="font-size:10px;color:#9fb3d1">${_cParts.join('<span style="color:#5a6b8c"> · </span>')}</div>` : '';
         // 🟢 养成页：卡牌图（小尺寸）+ 下方「升星 / 升星·F / 升级 / 分解」按钮。
         //    渲染结构变化，按钮动作仍走原 doStarUp / doUpgrade / doDecompose，逻辑零改动。
         return `<div class="sg-cult-card" style="border-color:${col}">
           <div class="sg-cult-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
           <div class="sg-cult-info">
             <div class="rr" style="color:${col}">${rarityLabel(c.rarity)} ★${c.star||1} Lv${c.level||0} · ${power(c)}</div>
-            ${troopLine}${skillLine}${bondLine}
+            ${battleLine}
           </div>
           <div class="sg-cult-acts">
             <button class="btn btn-sm btn-ghost" data-act="star_frag" data-cid="${c.card_id}">${t('starup_btn')}·F</button>
@@ -3744,14 +3747,18 @@
     });
     // 🟢 战斗属性补全（2026-10-14）：兵种 / 技能（3★ 解锁态）/ 连携
     const tplB = sgTplByName(card.name) || {};
+    // 🟢 兵种 / 技能 / 连携 合并为一行（20261014-15）
     let extra = '';
-    if (tplB.troop) extra += `<div style="font-size:11px;color:#9fb3d1;margin-top:4px">⚔️ ${t('troop_' + tplB.troop)}</div>`;
+    const _bParts = [];
+    if (tplB.troop) _bParts.push(`⚔️ ${t('troop_' + tplB.troop)}`);
     const skD = tplB.skill_id ? sgFindSkill(tplB.skill_id) : null;
     if (skD) {
       const st = card.star || 1;
-      extra += `<div style="font-size:11px;color:${st >= 3 ? '#ffd700' : '#9fb3d1'};margin-top:2px">✦ ${st >= 3 ? sgSkillDesc(tplB.skill_id) : tf('skill_locked', { name: skD[0] })}</div>`;
+      const skTxt = (st >= 3 ? sgSkillDesc(tplB.skill_id) : tf('skill_locked', { name: skD[0] }));
+      _bParts.push(`<span style="color:${st >= 3 ? '#ffd700' : '#9fb3d1'}">✦ ${skTxt}</span>`);
     }
-    if (tplB.bonds && tplB.bonds.length) extra += `<div style="font-size:10px;color:#9fb3d1;margin-top:2px">🔗 ${t('bond_label')}：${esc(sgBondNames(tplB.bonds))}</div>`;
+    if (tplB.bonds && tplB.bonds.length) _bParts.push(`🔗 ${t('bond_label')}：${esc(sgBondNames(tplB.bonds))}`);
+    if (_bParts.length) extra = `<div style="font-size:11px;color:#9fb3d1;margin-top:4px">${_bParts.join('<span style="color:#5a6b8c"> · </span>')}</div>`;
     let hostB = document.getElementById('detailBattle');
     if (extra) {
       if (!hostB && dDesc && dDesc.parentNode) {
