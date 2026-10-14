@@ -663,25 +663,24 @@ async function execAnyContract(contractAddr, msg, funds = [], memo = '', opts = 
 
   // 🟢 无感通道白名单：只有明确列出的游戏消息才走会话签名，其余一律主钱包
   // （资产进出 / 注册 / 授权 / Swap 等敏感操作默认走主钱包，避免误用会话地址）
+  // 🟢 2026-10-14 合并 API 同步：战斗入口已合并为 sanguo_battle_pvp / sanguo_battle_ai，
+  //    旧多消息变体（create_pvp/accept_pvp/create_royale/…/ai_battle/ranked_battle）
+  //    与已删除入口（提案 4 个、buy_fragments）全部移除——白名单必须与合约
+  //    ExecuteMsg 一一对应，否则战斗会静默跌回主钱包签名、无感通道失效。
   const SEAMLESS_VARIANTS = new Set([
-    'play', 'sanguo_draw', 'sanguo_ai_battle', 'sanguo_claim_reward',
+    'play', 'sanguo_draw', 'sanguo_claim_reward',
     'sanguo_set_battle_order', 'sanguo_star_up', 'sanguo_decompose',
-    'sanguo_upgrade', 'sanguo_craft', 'sanguo_propose_card', 'sanguo_vote_card',
-    'sanguo_execute_proposal', 'sanguo_cancel_proposal',
-    'sanguo_create_pvp', 'sanguo_accept_pvp', 'sanguo_cancel_pvp',
-    'sanguo_claim_pvp_reward',
-    'sanguo_create_royale', 'sanguo_join_royale', 'sanguo_settle_royale',
-    'sanguo_claim_royale_reward',
+    'sanguo_upgrade', 'sanguo_craft',
+    // 🟢 战斗（合并 API：PVP 单挑/混战 8 动作 + AI 休闲/天梯）
+    'sanguo_battle_pvp', 'sanguo_battle_ai',
     // 🟢 老合约迁移也走无感通道：合约 migrate_from_old 同样走 sanguo_auth 会话验签
     //    （action="migrate", spend=0），与抽卡/对战同机制，应享受免密。
     'sanguo_migrate_from_old',
-    // 🟢 合规版新增：买卡 / 买碎片 / 关卡批量提交（均走 sanguo_auth 会话验签）。
-    //    买卡/买碎片虽带 funds，仍可由会话地址发 tx（缺口合约从内部余额扣），
-    //    享受 feegrant 代付 gas + 免密。
-    'sanguo_buy_card', 'sanguo_buy_fragments', 'sanguo_submit_stage_batch',
-    // 🆕 新玩法：体力 / 皮肤 / 赛季通行证 / 天梯 / 每日任务（全部走 sanguo_auth 无感验签）
+    // 🟢 商店付费：买卡 / 关卡批量提交（带 funds 或内部余额扣款，仍由会话地址发 tx）
+    'sanguo_buy_card', 'sanguo_submit_stage_batch',
+    // 🆕 体力 / 皮肤 / 赛季通行证 / 每日任务（全部走 sanguo_auth 无感验签）
     'sanguo_buy_stamina', 'sanguo_buy_skin', 'sanguo_buy_season_pass',
-    'sanguo_claim_season_tier', 'sanguo_ranked_battle', 'sanguo_claim_daily_task',
+    'sanguo_claim_season_tier', 'sanguo_claim_daily_task',
     // 🟢 4A：赠送系统（合约侧已走 sanguo_auth，白名单补齐后享受免密）
     'sanguo_gift_card', 'sanguo_gift_fragments', 'sanguo_gift_skin',
   ]);

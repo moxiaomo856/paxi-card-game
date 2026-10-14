@@ -64,8 +64,8 @@
   // ============================================================
   const i18n = {
     zh: {
-      'sg_title': '🀄 三国·卡牌',
-      'sg_subtitle': '合规休闲卡牌：免费抽卡、买卡买碎片、关卡对战，不涉及代币博弈。',
+      'sg_title': '🀄 逐雄三国2.0',
+      'sg_subtitle': '合规休闲卡牌：免费抽卡、买卡买碎片、9v9 三组对战，不涉及代币博弈。',
       'tab_draw': '🎴 抽卡',
       'tab_mycards': '🃏 我的卡',
       'draw_single': '🗡️ 单抽',
@@ -266,6 +266,62 @@
       'claim_in_burn': '✅ 已到账 {amt} TKCC（合约另销毁 {burned} TKCC）',
       'spent_tip': '✅ {what} · 本次消耗 {amt} TKCC（合约内余额扣除）',
       'need_three': '请先选择 3 张卡牌',
+      'need_nine': '请先选择 9 张卡牌',
+      'pick_limit': '请先选择 {n} 张卡牌',
+      'team_cost_over': '编队 cost 超上限：{total} > {cap}，请更换部分卡牌后重试',
+      'tab_battleparams': '战斗参数',
+      'bp_title': '战斗系数热更',
+      'bp_desc': '管理员专用：改完点「保存」全量上链即时生效（填 0 = 回退默认）。技能/连携强度为全局系数：10000 = 100%，上限 30000（3×）。阵营克制链 wei→shu→wu→qun→wei；兵种克制链 骑→弓→军师→守→骑。',
+      'bp_default': '默认',
+      'bp_json_title': '完整参数 JSON（高级）',
+      'bp_json_hint': '表单改动自动同步进 JSON；也可直接编辑后保存（服务端会强制归零废弃计费字段）。',
+      'bp_save': '保存参数上链',
+      'bp_save_ok': '战斗参数已更新',
+      'bp_invalid_json': 'JSON 格式错误，请检查后重试',
+      'bp_faction_counter_bp': '阵营克制加成',
+      'bp_faction_countered_bp': '阵营被克减益',
+      'bp_faction_neutral_bp': '阵营中性',
+      'bp_troop_counter_bp': '兵种克制加成',
+      'bp_troop_countered_bp': '兵种被克（默认无惩罚）',
+      'bp_troop_neutral_bp': '兵种中性',
+      'bp_rarity_legend_bp': '传说系数',
+      'bp_rarity_epic_bp': '史诗系数',
+      'bp_rarity_rare_bp': '稀有系数',
+      'bp_rarity_common_bp': '普通系数',
+      'bp_power_flat_cap_bp': '战力 flat 封顶',
+      'bp_eff_lower_bound_bp': '攻防减益下限',
+      'bp_skill_strength_bp': '技能强度（全局）',
+      'bp_bond_strength_bp': '连携强度（全局）',
+      'troop_cavalry': '骑兵',
+      'troop_archer': '弓兵',
+      'troop_strategist': '谋士',
+      'troop_guard': '守卫',
+      'skill_locked': '技能「{name}」（3★ 解锁）',
+      'bond_label': '连携',
+      'bond_active': '{name} +{bp}%（{cnt}/{need} 张）',
+      'help_battle_title': '战斗规则（9v9 三组）',
+      'help_battle_desc': '无随机数：双方出牌后由链上引擎确定性结算。战力 = (攻+防) × (1+flat) × 阵营 × 兵种 × 连携 × 稀有度。',
+      'help_faction_chain': '阵营克制',
+      'help_faction_chain_v': '魏→蜀→吴→群→魏（克 +15% / 被克 −10%）',
+      'help_troop_chain': '兵种克制',
+      'help_troop_chain_v': '骑→弓→谋→守→骑（克 +10% / 被克无惩罚）',
+      'help_skill_rule': '技能',
+      'help_skill_rule_v': '3★ 解锁；触发时机：开战 / 每组开始 / 赢组 / 输组 / 战力低 / 战力高',
+      'help_bond_rule': '连携',
+      'help_bond_rule_v': '按全队成员数激活，只取最高单档（如五虎上将 3 张 +8%、5 张 +18%）',
+      'help_mystats_title': '我的战绩',
+      'help_mystats_desc': '链上按钱包地址累计，换设备不清空；格式：对战 / 胜。',
+      'help_mystats_all': '合计（全部模式）',
+      'help_mystats_ai': 'AI 对战（休闲+天梯）',
+      'help_mystats_pvp': 'PVP 单挑',
+      'help_mystats_royale': '混战',
+      'help_mystats_stage': '关卡（仅通关计数）',
+      'help_coeff': '当前生效系数（链上参数）',
+      'help_coeff_hint': '0 值自动回退默认；管理员可在「战斗参数」页热更',
+      'battle_group': '第 {n} 组',
+      'group_win': '胜',
+      'group_lose': '负',
+      'group_draw': '平',
 
       // ---- 老合约资产迁移 ----
       'migrate_title': '老合约资产迁移',
@@ -330,6 +386,16 @@
       'battle_challenger': '挑战方', 'battle_defender': '应战方',
       'battle_ai_general': 'AI 战将', 'battle_ai_diff': 'AI 难度 {n}',
 
+      // ---- 技能触发回放（V2.1：链上 skill_log 事件）----
+      'skill_log_title': '🎯 技能触发回放',
+      'skill_log_empty': '本场无技能触发',
+      'skill_log_side_a': 'A 方', 'skill_log_side_b': 'B 方',
+      'skill_log_team_wide': '全队',
+      'trg_on_battle_start': '开战', 'trg_on_group_start': '每组开始',
+      'trg_on_win_group': '赢一组', 'trg_on_lose_group': '输一组',
+      'trg_on_low_power': '战力偏低', 'trg_on_high_power': '战力占优',
+      'tgt_self': '己方', 'tgt_opponent': '对手',
+
       // ---- 抽卡余额不足 ----
       'draw_mode_single': '单抽', 'draw_mode_pack3': '三连抽',
       'draw_paxi_lack': '合约内 PAXI 不足：{mode}需要 {need} PAXI，当前只有 {have} PAXI，请先充值至少 {lack} PAXI',
@@ -382,7 +448,7 @@
       'shop_season': '赛季通行证',
       'compliance_disabled': '🛡️ 该对战玩法暂不可用。合规版 AI 对战/PVP/混战均为免费入场 + 赢取碎片。',
       'tab_help': '玩法说明',
-      'help_title': '三国卡牌 · 玩法说明',
+      'help_title': '逐雄三国2.0 · 玩法说明',
       'help_intro': '本游戏为合规版本：全程不使用 TKCC，所有奖励均为不可转让的卡牌碎片（仅游戏内使用）。PAXI 消费均为明码标价、确定获得，无任何随机赔付。',
       'help_kv_compliance': '合规状态',
       'help_kv_compliance_v': '✅ 已开启（不收不付 TKCC）',
@@ -474,7 +540,7 @@
       'dtask_3': '购买 1 包碎片',
     },
     en: {
-      'sg_title': '🀄 Three Kingdoms · Cards',
+      'sg_title': '🀄 Sanguo 2.0',
       'sg_subtitle': 'Spend PAXI + TKCC to draw general cards — yours forever.',
       'tab_draw': '🎴 Draw',
       'tab_mycards': '🃏 My Cards',
@@ -676,6 +742,62 @@
       'claim_in_burn': '✅ Received {amt} TKCC (contract burned {burned} TKCC)',
       'spent_tip': '✅ {what} · spent {amt} TKCC (from in-contract balance)',
       'need_three': 'Select 3 cards first',
+      'need_nine': 'Select 9 cards first',
+      'pick_limit': 'Select {n} cards first',
+      'team_cost_over': 'Team cost over cap: {total} > {cap}, swap some cards and retry',
+      'tab_battleparams': 'Battle Params',
+      'bp_title': 'Battle Coefficient Tuning',
+      'bp_desc': 'Admin only: save applies all values on-chain instantly (0 = fallback to default). Skill/Bond strength are global multipliers: 10000 = 100%, max 30000 (3x). Faction chain wei→shu→wu→qun→wei; troop chain cavalry→archer→strategist→guard→cavalry.',
+      'bp_default': 'default',
+      'bp_json_title': 'Full params JSON (advanced)',
+      'bp_json_hint': 'Form edits sync into JSON automatically; you may also edit directly. Deprecated fee fields are force-zeroed server-side.',
+      'bp_save': 'Save params on-chain',
+      'bp_save_ok': 'Battle params updated',
+      'bp_invalid_json': 'Invalid JSON, please check and retry',
+      'bp_faction_counter_bp': 'Faction counter bonus',
+      'bp_faction_countered_bp': 'Faction countered penalty',
+      'bp_faction_neutral_bp': 'Faction neutral',
+      'bp_troop_counter_bp': 'Troop counter bonus',
+      'bp_troop_countered_bp': 'Troop countered (no penalty by default)',
+      'bp_troop_neutral_bp': 'Troop neutral',
+      'bp_rarity_legend_bp': 'Legend coefficient',
+      'bp_rarity_epic_bp': 'Epic coefficient',
+      'bp_rarity_rare_bp': 'Rare coefficient',
+      'bp_rarity_common_bp': 'Common coefficient',
+      'bp_power_flat_cap_bp': 'Power flat cap',
+      'bp_eff_lower_bound_bp': 'Debuff lower bound',
+      'bp_skill_strength_bp': 'Skill strength (global)',
+      'bp_bond_strength_bp': 'Bond strength (global)',
+      'troop_cavalry': 'Cavalry',
+      'troop_archer': 'Archer',
+      'troop_strategist': 'Strategist',
+      'troop_guard': 'Guard',
+      'skill_locked': 'Skill "{name}" (unlocks at 3★)',
+      'bond_label': 'Bonds',
+      'bond_active': '{name} +{bp}% ({cnt}/{need} cards)',
+      'help_battle_title': 'Battle Rules (9v9, 3 groups)',
+      'help_battle_desc': 'No randomness: the on-chain engine resolves deterministically. Power = (ATK+DEF) × (1+flat) × faction × troop × bond × rarity.',
+      'help_faction_chain': 'Faction counters',
+      'help_faction_chain_v': 'wei→shu→wu→qun→wei (+15% / −10%)',
+      'help_troop_chain': 'Troop counters',
+      'help_troop_chain_v': 'cavalry→archer→strategist→guard→cavalry (+10% / no penalty)',
+      'help_skill_rule': 'Skills',
+      'help_skill_rule_v': 'Unlock at 3★; triggers: battle start / group start / won group / lost group / lower power / higher power',
+      'help_bond_rule': 'Bonds',
+      'help_bond_rule_v': 'Activate by team member count; only the single highest tier applies (e.g. Five Tiger Generals: 3 cards +8%, 5 cards +18%)',
+      'help_mystats_title': 'My Record',
+      'help_mystats_desc': 'Accumulated on-chain per wallet address — survives device changes. Format: battles / wins.',
+      'help_mystats_all': 'Total (all modes)',
+      'help_mystats_ai': 'AI battles (casual + ranked)',
+      'help_mystats_pvp': 'PVP 1v1',
+      'help_mystats_royale': 'Royale',
+      'help_mystats_stage': 'Stages (clears only)',
+      'help_coeff': 'Current coefficients (on-chain params)',
+      'help_coeff_hint': '0 falls back to defaults; admins can tune in "Battle Params"',
+      'battle_group': 'Group {n}',
+      'group_win': 'Win',
+      'group_lose': 'Lose',
+      'group_draw': 'Draw',
 
       // ---- Old contract migration ----
       'migrate_title': 'Old contract migration',
@@ -740,6 +862,16 @@
       'battle_challenger': 'Challenger', 'battle_defender': 'Defender',
       'battle_ai_general': 'AI General', 'battle_ai_diff': 'AI Lv.{n}',
 
+      // ---- skill trigger replay (V2.1: on-chain skill_log event) ----
+      'skill_log_title': '🎯 Skill Trigger Log',
+      'skill_log_empty': 'No skills triggered this battle',
+      'skill_log_side_a': 'Side A', 'skill_log_side_b': 'Side B',
+      'skill_log_team_wide': 'Team-wide',
+      'trg_on_battle_start': 'Battle Start', 'trg_on_group_start': 'Group Start',
+      'trg_on_win_group': 'Won Group', 'trg_on_lose_group': 'Lost Group',
+      'trg_on_low_power': 'Low Power', 'trg_on_high_power': 'High Power',
+      'tgt_self': 'Self', 'tgt_opponent': 'Opponent',
+
       // ---- draw: insufficient PAXI ----
       'draw_mode_single': 'Single draw', 'draw_mode_pack3': 'Triple draw',
       'draw_paxi_lack': 'Insufficient in-contract PAXI: {mode} needs {need} PAXI, you have {have} PAXI. Deposit at least {lack} PAXI first.',
@@ -792,7 +924,7 @@
       'shop_season': 'Season Pass',
       'compliance_disabled': '🛡️ This battle mode is temporarily unavailable. Compliance AI/PVP/Royale are free entry + fragment rewards.',
       'tab_help': 'Guide',
-      'help_title': 'Three Kingdoms Cards · Game Guide',
+      'help_title': 'Sanguo 2.0 · Game Guide',
       'help_intro': 'This game runs in compliance mode: no TKCC is used at any point; all rewards are non-transferable card fragments (in-game only). All PAXI spending is fixed-price and deterministic — no random payouts.',
       'help_kv_compliance': 'Compliance',
       'help_kv_compliance_v': '✅ Active (no TKCC in or out)',
@@ -962,7 +1094,15 @@
             rarity: tp.rarity || 'common',
             attack: Number(tp.attack || 0),
             defense: Number(tp.defense || 0),
-            identity: tp.identity || tp.faction || meta.identity || '',
+            identity: tp.identity || meta.identity || tp.faction || '',
+            // 🟢 O-1：保留编队 cost（CardTemplate.cost，Σcost ≤ params.team_cost_cap），
+            //    供战斗前预检，避免 Σcost 超限的必败交易白烧 gas
+            cost: (tp.cost != null) ? Number(tp.cost) : null,
+            // 🟢 战斗属性补全（2026-10-14）：兵种/技能/连携/阵营，供详情/图鉴/养成/战斗展示
+            troop: tp.troop || '',
+            faction: tp.faction || '',
+            skill_id: tp.skill_id || '',
+            bonds: tp.bonds || [],
           };
         });
         SG_TPL_COUNT = _sgTemplatesCache.length;
@@ -1073,6 +1213,140 @@
       what: t(whatKey),
       amt: fromRawUnits(String(rawFee || 0), 6),
     }), 'success');
+  }
+  // ============================================================
+  // 🟢 技能/连携前端镜像表（2026-10-14，与合约 battle/skills.rs / bonds.rs
+  //    逐条同步，技能名以《三国卡牌V2设计终稿》文档 2 为准）。
+  //    合约未提供查询接口，此表为硬编码快照——合约侧改数值/加技能须同步本表。
+  //    格式：id: [名, 触发, attack_bp, defense_bp, power_flat_bp, 全队(0/1), 叠层, 对手(0/1)]
+  // ============================================================
+  const SG_TRIGGER_ZH = { OnBattleStart: '开战时', OnGroupStart: '每组开始', OnWinGroup: '赢组后', OnLoseGroup: '输组后', OnLowPower: '战力低时', OnHighPower: '战力高时' };
+  const SG_TRIGGER_EN = { OnBattleStart: 'Battle start', OnGroupStart: 'Group start', OnWinGroup: 'After a won group', OnLoseGroup: 'After a lost group', OnLowPower: 'When power is lower', OnHighPower: 'When power is higher' };
+  const SG_SKILLS = {
+    // 传奇（10）
+    jian_xiong: ['奸雄', 'OnWinGroup', 1800, 0, 0, 0, 1, 0],
+    kong_cheng: ['空城', 'OnLowPower', 0, 3500, 0, 0, 1, 0],
+    wu_sheng: ['武圣', 'OnBattleStart', 2800, 0, 0, 0, 1, 0],
+    long_dan: ['龙胆', 'OnLoseGroup', 1800, 0, 0, 0, 2, 0],
+    wu_shuang: ['无双', 'OnHighPower', 2200, 0, 0, 0, 1, 0],
+    zhong_hu: ['冢虎', 'OnLowPower', 0, 3000, 0, 0, 1, 0],
+    ren_de: ['仁德', 'OnBattleStart', 0, 1800, 0, 1, 1, 0],
+    zhi_heng: ['制衡', 'OnWinGroup', 0, 0, 1000, 1, 2, 0],
+    jiang_dong_meng_hu: ['江东猛虎', 'OnBattleStart', 2200, 0, 0, 0, 1, 0],
+    bao_nue: ['暴虐', 'OnWinGroup', 0, -1800, 0, 0, 1, 1],
+    // 史诗（16）
+    pao_xiao: ['咆哮', 'OnBattleStart', 2200, -800, 0, 0, 1, 0],
+    xi_liang_tie_qi: ['西凉铁骑', 'OnBattleStart', 1600, 0, 0, 0, 1, 0],
+    bai_bu_chuan_yang: ['百步穿杨', 'OnHighPower', 2000, 0, 0, 0, 1, 0],
+    qi_lin: ['麒麟', 'OnLoseGroup', 1600, 1600, 0, 0, 1, 0],
+    huo_gong: ['火攻', 'OnWinGroup', 0, -1400, 0, 0, 1, 1],
+    lian_ying: ['连营', 'OnWinGroup', 0, 0, 1100, 0, 1, 0],
+    ba_shi_dan_jing: ['拔矢啖睛', 'OnLoseGroup', 2400, 0, 0, 0, 1, 0],
+    wei_zhen_xiao_yao_jin: ['威震逍遥津', 'OnLowPower', 2200, 0, 0, 0, 1, 0],
+    gui_cai: ['鬼才', 'OnBattleStart', 0, 0, 1200, 1, 1, 0],
+    hu_chi: ['虎痴', 'OnHighPower', 0, 2200, 0, 0, 1, 0],
+    qiao_bian: ['巧变', 'OnGroupStart', 0, 0, 900, 0, 1, 0],
+    ku_rou: ['苦肉', 'OnLoseGroup', 2800, -800, 0, 0, 1, 0],
+    gong_yao_ji: ['弓腰姬', 'OnBattleStart', 1800, 0, 0, 0, 1, 0],
+    lin_wei: ['临危', 'OnLowPower', 0, 0, 1200, 1, 1, 0],
+    shen_yi: ['神医', 'OnWinGroup', 0, 0, 1400, 0, 1, 0],
+    he_bei_ting_zhu: ['河北庭柱', 'OnBattleStart', 2500, 0, 0, 0, 1, 0],
+    // 稀有（18）
+    qi_mou: ['奇谋', 'OnLowPower', 1800, 0, 0, 0, 1, 0],
+    lian_huan: ['连环', 'OnBattleStart', 0, 0, 900, 1, 1, 0],
+    qi_hua: ['奇画', 'OnWinGroup', 1400, 0, 0, 0, 1, 0],
+    jin_fan: ['锦帆', 'OnBattleStart', 1400, 0, 0, 0, 1, 0],
+    shen_she: ['神射', 'OnHighPower', 1600, 0, 0, 0, 1, 0],
+    xiao_ba_wang: ['小霸王', 'OnBattleStart', 1600, 0, 0, 0, 1, 0],
+    bai_yi_du_jiang: ['白衣渡江', 'OnLowPower', 0, 0, 1300, 0, 1, 0],
+    tou_du_yin_ping: ['偷渡阴平', 'OnLowPower', 0, 0, 1100, 1, 1, 0],
+    wang_zuo: ['王佐', 'OnBattleStart', 0, 1400, 0, 1, 1, 0],
+    luo_shen: ['洛神', 'OnBattleStart', 0, 1200, 0, 1, 1, 0],
+    guo_se: ['国色', 'OnWinGroup', 0, 0, 900, 1, 1, 0],
+    tian_xiang: ['天香', 'OnWinGroup', 0, 1200, 0, 1, 1, 0],
+    bu_qu: ['不屈', 'OnLoseGroup', 0, 2400, 0, 0, 1, 0],
+    ji_guan: ['机关', 'OnBattleStart', 0, 1200, 0, 1, 1, 0],
+    an_guo: ['安国', 'OnWinGroup', 1500, 0, 0, 0, 1, 0],
+    hu_si: ['虎嗣', 'OnBattleStart', 1400, 0, 0, 0, 1, 0],
+    gong_tai: ['公台', 'OnLowPower', 1600, 0, 0, 0, 1, 0],
+    bi_yue: ['闭月', 'OnWinGroup', -1200, 0, 0, 0, 1, 1],
+    // 普通（16）
+    xian_feng: ['先锋', 'OnBattleStart', 1000, 0, 0, 0, 1, 0],
+    bian_shi: ['辩士', 'OnBattleStart', 0, 0, 600, 1, 1, 0],
+    shi_ming: ['使命', 'OnWinGroup', 0, 0, 700, 1, 1, 0],
+    fu_shang: ['富商', 'OnBattleStart', 0, 900, 0, 1, 1, 0],
+    dun_hou: ['敦厚', 'OnBattleStart', 0, 800, 0, 1, 1, 0],
+    lian_meng: ['联盟', 'OnWinGroup', 0, 900, 0, 1, 1, 0],
+    mou_zhu: ['谋主', 'OnLowPower', 0, 1200, 0, 0, 1, 0],
+    du_shi: ['毒士', 'OnWinGroup', 0, -1000, 0, 0, 1, 1],
+    piao_qi: ['骠骑', 'OnBattleStart', 1200, 0, 0, 0, 1, 0],
+    mou_luan: ['谋乱', 'OnLowPower', 1200, 0, 0, 0, 1, 0],
+    wen_hou: ['文侯', 'OnBattleStart', 0, 900, 0, 1, 1, 0],
+    an_guo_2: ['安国', 'OnBattleStart', 1000, 0, 0, 0, 1, 0],
+    tan_zhi: ['坦之', 'OnBattleStart', 1100, 0, 0, 0, 1, 0],
+    zhong_yong: ['忠勇', 'OnBattleStart', 0, 1400, 0, 0, 1, 0],
+    gang_zhi: ['刚直', 'OnLowPower', 0, 0, 900, 1, 1, 0],
+    zheng_nan: ['正南', 'OnBattleStart', 0, 800, 0, 1, 1, 0],
+  };
+  const SG_BONDS = [
+    { id: 'wuhu_shangjiang', name: '五虎上将', faction: 'shu', members: ['关羽', '张飞', '赵云', '马超', '黄忠'], base: 3, baseBp: 800, full: 5, fullBp: 1800 },
+    { id: 'taoyuan_jieyi', name: '桃园结义', faction: 'shu', members: ['刘备', '关羽', '张飞'], base: 2, baseBp: 600, full: 3, fullBp: 1500 },
+    { id: 'wolong_fengchu', name: '卧龙凤雏', faction: 'shu', members: ['诸葛亮', '庞统'], base: 2, baseBp: 1000, full: 0, fullBp: 0 },
+    { id: 'shuhan_sanjie', name: '蜀汉三杰', faction: 'shu', members: ['诸葛亮', '关羽', '张飞'], base: 2, baseBp: 600, full: 3, fullBp: 1400 },
+    { id: 'guanyu_fuzi', name: '关羽父子', faction: 'shu', members: ['关羽', '关平', '关兴'], base: 2, baseBp: 600, full: 3, fullBp: 1200 },
+    { id: 'zhangfei_fuzi', name: '张飞父子', faction: 'shu', members: ['张飞', '张苞'], base: 2, baseBp: 800, full: 0, fullBp: 0 },
+    { id: 'shuhan_mingjiang', name: '蜀汉名将', faction: 'shu', members: ['姜维', '魏延', '马岱', '廖化'], base: 2, baseBp: 600, full: 4, fullBp: 1200 },
+    { id: 'wuzi_liangjiang', name: '五子良将', faction: 'wei', members: ['张辽', '张郃'], base: 2, baseBp: 800, full: 0, fullBp: 0 },
+    { id: 'caowei_shuangbi', name: '曹魏双璧', faction: 'wei', members: ['曹操', '司马懿'], base: 2, baseBp: 1200, full: 0, fullBp: 0 },
+    { id: 'xunyu_guojia', name: '荀彧郭嘉', faction: 'wei', members: ['荀彧', '郭嘉'], base: 2, baseBp: 1000, full: 0, fullBp: 0 },
+    { id: 'xuchu_huwei', name: '许褚虎卫', faction: 'wei', members: ['许褚', '曹操'], base: 2, baseBp: 800, full: 0, fullBp: 0 },
+    { id: 'weiwu_sanjiang', name: '魏武三将', faction: 'wei', members: ['夏侯惇', '张辽', '许褚'], base: 2, baseBp: 600, full: 3, fullBp: 1400 },
+    { id: 'dongwu_dudu', name: '东吴都督', faction: 'wu', members: ['周瑜', '鲁肃', '吕蒙', '陆逊'], base: 2, baseBp: 600, full: 4, fullBp: 1600 },
+    { id: 'jiangdong_shuangbi', name: '江东双璧', faction: 'wu', members: ['孙策', '周瑜'], base: 2, baseBp: 1200, full: 0, fullBp: 0 },
+    { id: 'sunshi_sanxiong', name: '孙氏三雄', faction: 'wu', members: ['孙坚', '孙策', '孙权'], base: 2, baseBp: 800, full: 3, fullBp: 1600 },
+    { id: 'erqiao', name: '二乔', faction: 'wu', members: ['大乔', '小乔'], base: 2, baseBp: 1000, full: 0, fullBp: 0 },
+    { id: 'sunshangxiang_gongyaoji', name: '弓腰姬', faction: 'wu', members: ['孙尚香', '刘备'], base: 2, baseBp: 800, full: 0, fullBp: 0 },
+    { id: 'ganning_taishici', name: '甘宁太史慈', faction: 'wu', members: ['甘宁', '太史慈'], base: 2, baseBp: 800, full: 0, fullBp: 0 },
+    { id: 'huanggai_kurou', name: '黄盖苦肉', faction: 'wu', members: ['黄盖', '周瑜'], base: 2, baseBp: 1000, full: 0, fullBp: 0 },
+    { id: 'lvbu_diaochan', name: '吕布貂蝉', faction: 'qun', members: ['吕布', '貂蝉'], base: 2, baseBp: 1200, full: 0, fullBp: 0 },
+    { id: 'dongzhuo_lvbu', name: '董卓吕布', faction: 'qun', members: ['董卓', '吕布'], base: 2, baseBp: 1000, full: 0, fullBp: 0 },
+    { id: 'qunxiong_zhulu', name: '群雄逐鹿', faction: 'qun', members: ['吕布', '董卓', '颜良', '华佗'], base: 2, baseBp: 600, full: 4, fullBp: 1400 },
+    { id: 'hebei_tingzhu', name: '河北庭柱', faction: 'qun', members: ['颜良', '审配', '田丰'], base: 2, baseBp: 600, full: 3, fullBp: 1200 },
+  ];
+  const SG_BOND_BY_ID = Object.fromEntries(SG_BONDS.map((b) => [b.id, b]));
+  function sgFindSkill(id) { return id ? (SG_SKILLS[id] || null) : null; }
+  /** 技能可读描述：如「奸雄 · 赢组后 攻+18%」「暴虐 · 赢组后 使对手 防−18%」 */
+  function sgSkillDesc(id) {
+    const s = sgFindSkill(id);
+    if (!s) return id || '';
+    const en = window.HUB_LANG === 'en';
+    const trLab = (en ? SG_TRIGGER_EN : SG_TRIGGER_ZH)[s[1]] || s[1];
+    const pc = (v) => (v > 0 ? '+' : '−') + (Math.abs(v) / 100) + '%';
+    let eff = '';
+    if (s[2]) eff += (en ? 'ATK' : '攻') + pc(s[2]) + ' ';
+    if (s[3]) eff += (en ? 'DEF' : '防') + pc(s[3]) + ' ';
+    if (s[4]) eff += (en ? 'PWR' : '战力') + pc(s[4]) + ' ';
+    if (s[7]) eff = (en ? 'debuff foe ' : '使对手 ') + eff.trim();
+    if (s[5]) eff += en ? ' (team)' : '（全队）';
+    if (s[6] > 1) eff += ' ×' + s[6];
+    return `${s[0]} · ${trLab} ${eff.trim()}`;
+  }
+  /** bond id 列表 → 中文名列表 */
+  function sgBondNames(bondIds) {
+    return (bondIds || []).map((bid) => (SG_BOND_BY_ID[bid] ? SG_BOND_BY_ID[bid].name : bid)).join('、');
+  }
+  /** S3 单档封顶：按 9 张卡名算全队激活的最高连携档（null = 未激活）。
+      ⚠️ 与合约 bond_multiplier_bp 同步（不含 bond_strength_bp 缩放，展示用） */
+  function sgBondActive(names) {
+    let best = null;
+    for (const b of SG_BONDS) {
+      const cnt = b.members.filter((m) => names.includes(m)).length;
+      let bp = 0, tier = '';
+      if (b.full && cnt >= b.full) { bp = b.fullBp; tier = 'full'; }
+      else if (cnt >= b.base) { bp = b.baseBp; tier = 'base'; }
+      if (bp > 0 && (!best || bp > best.bp)) best = { id: b.id, name: b.name, bp, tier, cnt, need: tier === 'full' ? b.full : b.base };
+    }
+    return best;
   }
   const RARITY_ORDER = { legend: 0, epic: 1, rare: 2, common: 3 };
   void RARITY_ORDER; // 保留备用（排序用）
@@ -1240,6 +1514,8 @@
     { id: 'dailytask', key: 'tab_dailytask' },
     { id: 'help',      key: 'tab_help' },
     { id: 'gift',      key: 'tab_gift' },
+    // 🟢 参数收敛（2026-10-14）：战斗系数管理员热更面板（克制/稀有度/技能/连携强度）
+    { id: 'battleparams', key: 'tab_battleparams', admin: true },
     // 🟢 2026-10-12：收入对账 tab 移除——对账数据是老合约的抽水事件，新合约无意义（用户拍板取消）
     // { id: 'ledger',    key: 'tab_ledger', admin: true },
   ];
@@ -1377,6 +1653,11 @@
   function renderHelp(body) {
     const p = paramsCache;
     const cp = sgCompliance;
+    // 🟢 战斗规则动态系数行（0 = 回退默认，展示生效值）
+    const sgHelpBpRow = (pp, k, d) => {
+      const v = (pp && pp[k] != null && Number(pp[k]) !== 0) ? Number(pp[k]) : d;
+      return `<div class="kv"><span class="k" style="font-size:10px;color:#9fb3d1">${k}</span><span class="v">${(v / 100).toFixed(0)}%</span></div>`;
+    };
     // 体力包价格：链上可调（sanguo_params.stamina_pack_price，0 = 默认 2 PAXI）
     const staminaPrice = fromRawUnits(String(staminaPackPriceUpaxi()));
     const drawLimit = cp && cp.daily_draw_limit ? cp.daily_draw_limit : '—';
@@ -1391,6 +1672,26 @@
         <div class="kv"><span class="k">${t('help_kv_drawlimit')}</span><span class="v">${drawLimit}</span></div>
         <div class="kv"><span class="k">${t('help_kv_fragcap')}</span><span class="v">${fragCap}</span></div>
       </div>
+
+      <div class="card">
+        <div class="card-title">⚔️ ${t('help_battle_title')}</div>
+        <div class="desc">${t('help_battle_desc')}</div>
+        <div class="kv"><span class="k">${t('help_faction_chain')}</span><span class="v">${t('help_faction_chain_v')}</span></div>
+        <div class="kv"><span class="k">${t('help_troop_chain')}</span><span class="v">${t('help_troop_chain_v')}</span></div>
+        <div class="kv"><span class="k">${t('help_skill_rule')}</span><span class="v">${t('help_skill_rule_v')}</span></div>
+        <div class="kv"><span class="k">${t('help_bond_rule')}</span><span class="v">${t('help_bond_rule_v')}</span></div>
+        <div class="kv"><span class="k">${t('help_coeff')}</span><span class="v" style="font-size:10px">${t('help_coeff_hint')}</span></div>
+        ${sgHelpBpRow(p, 'faction_counter_bp', 11500)}${sgHelpBpRow(p, 'faction_countered_bp', 9000)}${sgHelpBpRow(p, 'troop_counter_bp', 11000)}${sgHelpBpRow(p, 'rarity_legend_bp', 11500)}${sgHelpBpRow(p, 'skill_strength_bp', 10000)}${sgHelpBpRow(p, 'bond_strength_bp', 10000)}
+      </div>
+      ${sgAiStats ? `<div class="card">
+        <div class="card-title">📊 ${t('help_mystats_title')}</div>
+        <div class="desc">${t('help_mystats_desc')}</div>
+        <div class="kv"><span class="k">${t('help_mystats_all')}</span><span class="v">${sgAiStats.all_total != null ? sgAiStats.all_total : sgAiStats.total} / ${sgAiStats.all_wins != null ? sgAiStats.all_wins : sgAiStats.wins}</span></div>
+        <div class="kv"><span class="k">${t('help_mystats_ai')}</span><span class="v">${sgAiStats.total} / ${sgAiStats.wins}</span></div>
+        <div class="kv"><span class="k">${t('help_mystats_pvp')}</span><span class="v">${sgAiStats.pvp_total || 0} / ${sgAiStats.pvp_wins || 0}</span></div>
+        <div class="kv"><span class="k">${t('help_mystats_royale')}</span><span class="v">${sgAiStats.royale_total || 0} / ${sgAiStats.royale_wins || 0}</span></div>
+        <div class="kv"><span class="k">${t('help_mystats_stage')}</span><span class="v">${sgAiStats.stage_total || 0} / ${sgAiStats.stage_wins || 0}</span></div>
+      </div>` : ''}
 
       <div class="card">
         <div class="card-title">🎴 ${t('help_draw_title')}</div>
@@ -1476,7 +1777,10 @@
       ranked: renderRanked,
       dailytask: renderDailyTask,
       help: renderHelp,
-      proposal: renderProposal,
+      battleparams: renderBattleParams,
+      // 🟢 合规化（T24 投票全禁）：提案 tab 已隐藏——源码已删 SanguoProposals 查询与提案入口，
+      //    前端同步下线 renderProposal 分发，保证「前端无提案调用 ≡ 合约无提案入口」。
+      // proposal: renderProposal,
       pvp: renderPvp,
       royale: renderRoyale,
       ledger: renderLedger,
@@ -1763,7 +2067,9 @@
   // ============================================================
   async function renderDraw(body) {
     const cp = await loadCompliance();
-    const isFree = !!(cp && cp.compliance_mode);
+    // 🟢 对应审计：SanguoComplianceResponse 已删 compliance_mode 字段（C1 总闸恒真），
+    //    查询成功即代表合规版合约 → 免费抽卡入口直接可用
+    const isFree = !!cp;
     const limit = isFree ? Number(cp.daily_draw_limit || 0) : 3; // 预览模式默认显示每日 3 次
     body.innerHTML = `
       <div class="card">
@@ -1816,7 +2122,7 @@
 
     // 🟢 合规分支：免费抽卡 —— 不查 tap / TKCC / 内部 PAXI，直接发交易（合约 billed=0）
     const cp = await loadCompliance();
-    if (cp && cp.compliance_mode) {
+    if (cp) {
       showBusy(t('draw_doing'));
       try {
         await sanguoExec('SanguoDraw', { tap_index: 0, pack3 }, {
@@ -1841,74 +2147,23 @@
       return;
     }
 
-    // 审计 P2-1：tap 数量未就绪（sanguo_config 未配置 / 查询失败）→ 拒绝，不用假数据发交易
-    if (tapCountCache <= 0) {
-      showToast(t('params_err'), 'error');
-      return;
-    }
-
-    // 审计 #15：费用必须来自合约 sanguo_params，读取失败直接报错
-    let tkccNeed, paxiRaw;
-    try {
-      tkccNeed = prcTotalRaw(pack3);
-      paxiRaw = paxiFeeRaw(pack3);
-    } catch (e) { showToast(e.message, 'error'); return; }
-
-    try {
-      const b = await queryContract({ balance: { address: state.wallet.address, token: CONTRACTS.tkcc } });
-      if (BigInt(b.amount || '0') < tkccNeed) {
-        showToast(t('insufficient'), 'error');
-        return;
-      }
-    } catch (e) { showToast(t('insufficient'), 'error'); return; }
-
-    // 🟢 预检「合约内 PAXI 存款」：
-    //    draw_pack 的 PAXI 费用是从合约内部账本扣的（不是钱包余额），
-    //    不查这一项的话，三连抽（30 PAXI）在只有 10 PAXI 存款时照样会把交易发出去，
-    //    被合约拒绝后报错还容易被误读成「gas 费不足」。
-    //    这里本地拦下来，直接告诉用户差多少、要充多少。
-    try {
-      const pb = await queryContract({ balance: { address: state.wallet.address, token: null } });
-      const havePaxi = BigInt(pb.amount || '0');
-      if (havePaxi < paxiRaw) {
-        const need = (Number(paxiRaw) / 1e6).toFixed(2);
-        const have = (Number(havePaxi) / 1e6).toFixed(2);
-        const lack = ((Number(paxiRaw) - Number(havePaxi)) / 1e6).toFixed(2);
-        showToast(
-          tf('draw_paxi_lack', { mode: t(pack3 ? 'draw_mode_pack3' : 'draw_mode_single'), need, have, lack }),
-          'error',
-        );
-        const log = $('sgDrawLog');
-        if (log) {
-          log.innerHTML = `<div class="hint err">❌ ${tf('draw_paxi_lack', { mode: t(pack3 ? 'draw_mode_pack3' : 'draw_mode_single'), need, have, lack })}</div>`;
-        }
-        return;
-      }
-    } catch (e) {
-      // 查不到时不阻断（避免误伤），只留痕
-      console.warn('[doDraw] 合约内 PAXI 余额预检失败，跳过:', e && e.message);
-    }
-
+    // 🟢 外部审计 #12 修复：删除 TKCC/PAXI 计费 fallback 分支——
+    //    合规版抽卡恒免费（合约 deprecated 计费字段不读取、spend=0），
+    //    即使 sanguo_compliance 查询失败也不允许走任何计费路径。
     showBusy(t('draw_doing'));
     try {
-      // 审计 #14：tap_index 上界以合约 sanguo_config 的 tap_addresses 数量为准
-      const tapIndex = Math.floor(Math.random() * tapCountCache);
-      const action = pack3 ? 'draw_pack3' : 'draw_pack';
-      await sanguoExec('SanguoDraw', { tap_index: tapIndex, pack3 }, {
-        action,
+      await sanguoExec('SanguoDraw', { tap_index: 0, pack3 }, {
+        action: pack3 ? 'draw_pack3' : 'draw_pack',
         spend: 0,
-        // 🟢 审计修复（致命）：draw_pack 的 PAXI 费用走内部 BALANCES[(player, empty_addr)] 扣，
-        //    不再通过 info.funds 接收。传 funds 会被永久锁死在合约银行，用户被扣两次。
       });
       await loadSanguoCards();
-      await refreshBalances();
-      const tk = $('sgTkcc'); if (tk) tk.textContent = state.tkccBalance;
-      $('sgDrawLog').innerHTML = `<div class="hint ok draw-burst">✅ ${pack3 ? t('draw_pack3') : t('draw_single')} ${t('draw_ok')}<span class="gold-burst"></span></div>`;
+      sgJustDrew = true;
       showToast(t('draw_ok_short'), 'success');
-      sgJustDrew = true;   // 让「我的卡牌」里的卡走翻牌入场（即便现在在抽卡页，切过去也会翻一次）
-      if (sanguoTab === 'mycards') renderSanguoTab();
+      if (sanguoTab === 'draw') renderSanguoTab();
+      else if (sanguoTab === 'mycards') renderSanguoTab();
     } catch (e) {
-      $('sgDrawLog').innerHTML = `<div class="hint err">❌ ${esc(e.message || e)}</div>`;
+      const log = $('sgDrawLog');
+      if (log) log.innerHTML = `<div class="hint err">❌ ${esc(e.message || e)}</div>`;
       showToast(t('draw_fail') + (e.message || e), 'error');
     } finally { hideBusy(); }
   }
@@ -1927,7 +2182,7 @@
         <div class="card-title">${t('shop_title')}</div>
         <div class="desc">${t('shop_desc')}</div>
       </div>
-      <div id="sgShopBody"><div class="hint">${t('loading')}</div></div>`;
+      <div id="sgShopBody">${sgSkeletonProducts(6)}</div>`;
 
     // 🟢 7A：拉取链上支付币种 / 养成常量，供支付提示与手续费展示
     try { await loadParams(); } catch (e) {}
@@ -1962,50 +2217,30 @@
 
     const priceMap = {};
     (sgCardPrices && sgCardPrices.prices || []).forEach(([name, price]) => { priceMap[name] = price; });
-    const fragMap = {};
-    (sgFragPrices && sgFragPrices.prices || []).forEach(([rarity, count, price]) => { fragMap[rarity] = { count, price }; });
+    // 🟢 合规化：V2 碎片只产不购，已移除购买入口（SanguoBuyFragments 已从合约删除）
 
     // 卡牌商店：按模板列表渲染（有价的才可买）
     const tplList = await loadSanguoTemplates();
     const cardRows = tplList.map((tp) => {
       const price = priceMap[tp.name];
       const col = rarityColor(tp.rarity);
-      const img = getCardImage(tp.name);
-      return `<div class="sg-pick" style="border:2px solid ${col};border-radius:8px;padding:6px;background:#0d1322;text-align:center">
-        <div style="font-size:11px;font-weight:700;color:#fff">${esc(tp.name)}</div>
-        <div style="font-size:9px;color:${col}">${rarityLabel(tp.rarity)}</div>
-        <div style="font-size:11px;color:#ffd700;margin:4px 0">${price ? fromRawUnits(price) + ' PAXI' : t('shop_price_na')}</div>
+      return `<div class="shop-card" style="border-color:${col}">
+        ${price ? `<span class="cur-tag">PAXI</span>` : ''}
+        <div class="sc-nm">${esc(tp.name)}</div>
+        <div class="sc-rr" style="color:${col}">${rarityLabel(tp.rarity)}</div>
+        <div class="sc-price">${price ? fromRawUnits(price) + ' PAXI' : t('shop_price_na')}</div>
         ${price ? `<button class="btn btn-sm btn-gold" data-buy="${esc(tp.name)}" data-price="${price}">${t('shop_buy')}</button>` : ''}
       </div>`;
     }).join('');
 
-    // 碎片商店：四档稀有度 + 包数选择
-    const fragRows = ['common', 'rare', 'epic', 'legend'].map((r) => {
-      const p = fragMap[r];
-      const col = rarityColor(r);
-      if (!p) return '';
-      return `<div class="kv" style="align-items:center">
-        <span class="k" style="color:${col}">${rarityLabel(r)}</span>
-        <span class="v">
-          <select data-frag-packs="${r}" class="input" style="width:auto;display:inline-block;padding:2px 6px;margin-right:8px">
-            ${[1,2,5,10,20].map((n) => `<option value="${n}">${n} ${t('shop_packs')}</option>`).join('')}
-          </select>
-          <button class="btn btn-sm btn-gold" data-frag-buy="${r}" data-count="${p.count}" data-price="${p.price}">${t('shop_buy')} · <span data-frag-total="${r}">${fromRawUnits(p.price)}</span> PAXI</button>
-        </span>
-      </div>`;
-    }).join('');
+    // 🟢 合规化：V2 碎片只产不购，已移除购买入口（SanguoBuyFragments 已从合约删除）
 
     const payHint = `<div class="hint" style="margin-bottom:8px">💳 当前支付币种：<b>${esc(currentPayLabel())}</b>${(paramsCache && paramsCache.pay_token) ? '（PRC-20 内部余额，请先充值该代币）' : ''}</div>`;
     $('sgShopBody').innerHTML = `
       ${payHint}
       <div class="card">
         <div class="card-title">${t('shop_cards')}</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:8px">${cardRows}</div>
-      </div>
-      <div class="card">
-        <div class="card-title">${tf('shop_frags', { n: 10 })}</div>
-        <div style="margin-top:8px">${fragRows}</div>
-        <div class="hint" style="margin-top:8px">💡 ${t('stage_desc')}</div>
+        <div class="shop-grid">${cardRows}</div>
       </div>
 
       <!-- 🆕 体力（PAXI 明码标价，确定获得） -->
@@ -2077,23 +2312,6 @@
     $('sgShopBody').querySelectorAll('button[data-buy]').forEach((b) => {
       b.onclick = () => doBuyCard(b.dataset.buy, b.dataset.price);
     });
-    // 买碎片：包数联动总价
-    $('sgShopBody').querySelectorAll('select[data-frag-packs]').forEach((sel) => {
-      sel.onchange = () => {
-        const r = sel.dataset.fragPacks;
-        const btn = $('sgShopBody').querySelector(`button[data-frag-buy="${r}"]`);
-        if (!btn) return;
-        const unit = BigInt(btn.dataset.price);
-        const total = unit * BigInt(sel.value);
-        const totEl = $('sgShopBody').querySelector(`[data-frag-total="${r}"]`);
-        if (totEl) totEl.textContent = fromRawUnits(total.toString());
-        btn.dataset.packs = sel.value;
-      };
-      sel.onchange();
-    });
-    $('sgShopBody').querySelectorAll('button[data-frag-buy]').forEach((b) => {
-      b.onclick = () => doBuyFragments(b.dataset.fragBuy, Number(b.dataset.packs || 1), b.dataset.count, b.dataset.price);
-    });
 
     // 🆕 体力包数联动总价
     const stSel = $('sgStaminaPacks');
@@ -2141,27 +2359,8 @@
     } finally { hideBusy(); }
   }
 
-  async function doBuyFragments(rarity, packs, perPack, unitPriceStr) {
-    try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
-    const total = BigInt(unitPriceStr) * BigInt(packs || 1);
-    const fragCount = Number(perPack) * (packs || 1);
-    showBusy(t('shop_buying'));
-    try {
-      await sanguoExec('SanguoBuyFragments', { rarity, pack_count: packs || 1 }, {
-        action: 'buy_fragments',
-        spend: total.toString(),   // 🟢 全盘审计：字符串签名防精度丢失
-        funds: paymentFunds(total.toString()),
-      });
-      await refreshBalances();
-      showToast(tf('shop_frag_ok', { n: fragCount, r: rarityLabel(rarity) }), 'success');
-      const log = $('sgShopLog');
-      if (log) log.innerHTML = `<div class="hint ok">✅ ${tf('shop_frag_ok', { n: fragCount, r: rarityLabel(rarity) })}</div>`;
-    } catch (e) {
-      const log = $('sgShopLog');
-      if (log) log.innerHTML = `<div class="hint err">❌ ${esc(e.message || e)}</div>`;
-      showToast(t('shop_fail') + (e.message || e), 'error');
-    } finally { hideBusy(); }
-  }
+  // 🟢 合规化：doBuyFragments 已移除——V2 碎片只产不购（SanguoBuyFragments 入口已从合约删除），
+  //    碎片唯一来源：AI/PVP/混战/关卡/每日任务/赛季奖励。
 
   // ============================================================
   // 🆕 商店动作：体力 / 皮肤 / 赛季通行证（均走 sanguo_auth 无感验签）
@@ -2274,7 +2473,7 @@
       const pts = rank ? rank.points : 0;
       const st = stamina ? (stamina.current + ' / ' + stamina.max) : '—';
       infoEl.innerHTML = `
-        <div class="card">
+        <div class="card rank-tier-card">
           <div class="kv"><span class="k">${t('ranked_tier')}</span><span class="v" style="color:#ffd700">T${tier + 1}</span></div>
           <div class="kv"><span class="k">${t('ranked_points')}</span><span class="v">${pts}</span></div>
           <div class="kv"><span class="k">${t('ranked_cost')}</span><span class="v">10</span></div>
@@ -2298,13 +2497,15 @@
 
   async function doRankedBattle(tier) {
     if (sanguoPicked.length !== 9) { showToast(t('ranked_need9'), 'error'); return; }
+    if (!sgTeamCostOk(sanguoPicked.slice())) return;
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      const r = await sanguoExec('SanguoRankedBattle', {
-        tier: tier,
+      const r = await sanguoExec('SanguoBattleAi', {
+        mode: 'ranked',
+        level: tier,
         card_ids: sanguoPicked.slice(),
-      }, { action: 'ranked_battle', spend: 0, funds: [] });
+      }, { action: 'battle_ai', spend: 0, extra: 'ranked:battle:' + tier });
       const ev = parseTxEvents(r.tx, ['won', 'reward_total']);
       const won = ev.won && ev.won[0] === 'true';
       const total = (ev.reward_total && ev.reward_total[0]) ? Number(ev.reward_total[0]) : 0;
@@ -2452,14 +2653,19 @@
     showBusy(t('stage_submitting'));
     try {
       const batchId = 'stage_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
-      await sanguoExec('SanguoSubmitStageBatch', {
+      const res = await sanguoExec('SanguoSubmitStageBatch', {
         stage_id: stageId,
         batch_id: batchId,
         card_ids: sanguoPicked.slice(),
       }, { action: 'submit_stage', spend: 0 });
       showToast(t('stage_ok'), 'success');
       const log = $('sgStageLog');
-      if (log) log.innerHTML = `<div class="hint ok">✅ ${t('stage_ok')}</div>`;
+      // V2.1：技能触发回放（A=我方，B=关卡敌军）
+      const sl = (res && res.tx) ? (parseTxEvents(res.tx, ['skill_log']).skill_log || [])[0] : null;
+      if (log) {
+        log.innerHTML = `<div class="hint ok">✅ ${t('stage_ok')}</div>`;
+        if (sl) log.insertAdjacentHTML('beforeend', skillLogTimelineHtml(sl, t('battle_you'), t('battle_opp')));
+      }
     } catch (e) {
       const log = $('sgStageLog');
       if (log) log.innerHTML = `<div class="hint err">❌ ${esc(e.message || e)}</div>`;
@@ -2497,13 +2703,15 @@
         <button class="btn btn-sm btn-ghost" id="sgBatchCancel">${t('cancel')}</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px" id="sgCardGrid"></div>`;
-    if (state.wallet) await loadSanguoCards();
     const grid = $('sgCardGrid');
+    if (grid && state.wallet) grid.innerHTML = sgSkeletonCards(6);   // 加载骨架屏
+    if (state.wallet) await loadSanguoCards();
     $('sgCardCount').textContent = userCards.length;
     if (!userCards.length) {
-      grid.innerHTML = `<div class="hint" style="grid-column:1/-1">${t('empty_cards')}</div>`;
+      grid.innerHTML = `<div class="hub-empty" style="grid-column:1/-1"><span class="ic">🃏</span>${t('empty_cards')}</div>`;
     } else {
       grid.innerHTML = userCards.map((c) => cardHtml(c)).join('');
+      sgObserveLazyImages(grid);   // 卡图懒加载
       sgJustDrew = false;   // 翻牌类已写进 HTML，立刻清位，避免下次无关重渲染再翻
     }
     // 批量分解模式绑定（P1-9）
@@ -2746,6 +2954,50 @@
     } finally { hideBusy(); }
   }
 
+  // ============================================================
+  // 卡图懒加载 + 加载骨架屏（20261013-2，纯渲染层，无业务逻辑）
+  //   懒加载：IntersectionObserver + rootMargin 200px；不支持时直接加载。
+  //   骨架屏：仅「我的卡 / 商店」等异步加载前占位，落地 index.html 的 .skeleton。
+  // ============================================================
+  let _sgImgObserver = null;
+  function sgObserveLazyImages(root) {
+    const scope = root || document;
+    const imgs = scope.querySelectorAll('img[data-src]');
+    if (!imgs.length) return;
+    if (!('IntersectionObserver' in window)) {
+      imgs.forEach((im) => { if (im.dataset.src) { im.src = im.dataset.src; im.removeAttribute('data-src'); } });
+      return;
+    }
+    if (!_sgImgObserver) {
+      _sgImgObserver = new IntersectionObserver((entries) => {
+        entries.forEach((en) => {
+          if (!en.isIntersecting) return;
+          const im = en.target;
+          if (im.dataset.src) { im.src = im.dataset.src; im.removeAttribute('data-src'); }
+          _sgImgObserver.unobserve(im);
+        });
+      }, { rootMargin: '200px 0px', threshold: 0.01 });
+    }
+    imgs.forEach((im) => _sgImgObserver.observe(im));
+  }
+  // 卡片骨架（卡列表用）
+  function sgSkeletonCards(n) {
+    let h = '';
+    for (let i = 0; i < n; i++) {
+      h += `<div class="sg-card skeleton-card">`
+        + `<div class="sg-card-img skeleton"></div>`
+        + `<div class="sg-card-foot"><div class="nm skeleton">　</div><div class="rr skeleton">　</div></div>`
+        + `</div>`;
+    }
+    return h;
+  }
+  // 商品骨架（商店用）
+  function sgSkeletonProducts(n) {
+    let h = '';
+    for (let i = 0; i < n; i++) h += `<div class="shop-card skeleton"></div>`;
+    return `<div class="shop-grid">${h}</div>`;
+  }
+
   function cardHtml(c) {
     const img = getCardImage(c.name);
     const col = rarityColor(c.rarity);
@@ -2755,22 +3007,26 @@
     // 🟢 阵营行（2026-09-29）：链上卡不带阵营，按名字查模板补齐（图鉴与我的卡一致）
     const idt = sgCardIdentity(c);
     const ffHtml = idt ? `<div class="ff" style="color:${sgFactionColor(idt)}">${esc(idt)}</div>` : '';
+    // 🟢 卡面文字层级（20261013-2）：姓名 + 称号 + 阵营/官职
+    const tplc = sgTplByName(c.name) || {};
+    const ttHtml = tplc.title ? `<div class="tt">${esc(tplc.title)}</div>` : '';
     // 🟢 批量分解模式：点击只切换勾选，不进详情
     if (sgBatchMode) {
       const sel = sgBatchSel.has(c.card_id);
       return `<div class="sg-card ${cls}${sel ? ' sg-sel' : ''}" data-bcid="${c.card_id}" onclick="sgToggleBatch('${cid}')">
         ${lvTxt}
         ${sel ? '<div class="sg-pick-ord">✓</div>' : ''}
-        <div class="sg-card-img"><img src="${img}" onerror="this.style.display='none'"></div>
-        <div class="sg-card-foot"><div class="nm">${esc(c.name)}</div>${ffHtml}<div class="rr">${rarityLabel(c.rarity)}</div></div>
+        <div class="sg-card-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
+        <div class="sg-card-foot"><div class="nm">${esc(c.name)}</div>${ttHtml}${ffHtml}<div class="rr">${rarityLabel(c.rarity)}</div></div>
       </div>`;
     }
     // 🟢「我的卡牌」只展示卡牌参数，不放养成按钮（升级/升星/分解统一到「养成」页）。
     return `<div class="sg-card ${cls}${sgJustDrew ? ' new-card' : ''}" onclick="openCardDetailFromId('${cid}')">
       ${lvTxt}
-      <div class="sg-card-img"><img src="${img}" onerror="this.style.display='none'"></div>
+      <div class="sg-card-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
       <div class="sg-card-foot">
         <div class="nm">${esc(c.name)}</div>
+        ${ttHtml}
         ${ffHtml}
         <div class="rr">${rarityLabel(c.rarity)} · ${t('power_label')} ${power(c)}</div>
       </div>
@@ -2847,7 +3103,7 @@
         const idx = sanguoPicked.indexOf(cid);
         if (idx >= 0) sanguoPicked.splice(idx, 1);
         else {
-          if (sanguoPicked.length >= max) { showToast(t('need_three'), 'error'); return; }
+          if (sanguoPicked.length >= max) { showToast(tf('pick_limit',{n:max}), 'error'); return; }
           sanguoPicked.push(cid);
         }
         sanguoRenderPicker(containerId, max);
@@ -2864,11 +3120,11 @@
   // ============================================================
   async function renderAiBattle(body) {
     await loadParams();
-    // 🟢 修复：必须加载卡牌才能判断是否满足合约 ai_battle 要求的 ≥3 张门槛，
-    //    否则无卡也能发起交易（并弹钱包），与合约 SanguoNeed3Cards 报错对不齐。
+    // 🟢 9v9 合并 API：合约 battle_ai 要求 9 张真卡（load_battle_team_checked ==9），
+    //    前端门槛与合约对齐：不足 9 张不允许发起（避免必败交易弹窗）。
     if (state.wallet) await loadSanguoCards();
     const cardCount = userCards.length;
-    const enoughCards = cardCount >= 3;
+    const enoughCards = cardCount >= 9;
     body.innerHTML = `
       <div class="card" id="sgAiPendingCard" style="display:none">
         <div class="card-title">🎁 ${t('pending_reward')}（<span id="sgAiPendingTotal">0</span> 碎片）</div>
@@ -2883,7 +3139,7 @@
         <div class="kv"><span class="k">${t('ai_today')}</span><span class="v" id="sgAiToday">—</span></div>
         <div class="kv"><span class="k">${t('ai_limit')}</span><span class="v" id="sgAiLimit">—</span></div>
         <div class="kv"><span class="k">${t('win_rate')}</span><span class="v" id="sgAiRate">—</span></div>
-        <div class="kv"><span class="k">${t('ai_my_cards')}</span><span class="v" id="sgAiCards">${cardCount} / 3</span></div>
+        <div class="kv"><span class="k">${t('ai_my_cards')}</span><span class="v" id="sgAiCards">${cardCount} / 9</span></div>
       </div>
       <div class="card">
         <div class="card-title">${t('ai_pick_title')}</div>
@@ -2895,7 +3151,11 @@
         <select id="sgAiDiff" class="input">
           ${[1,2,3,4,5].map((d) => {
             const idx = d - 1;
-            const frag = (paramsCache && paramsCache.ai_frag_reward) ? (paramsCache.ai_frag_reward[idx] || '—') : '?';
+            // 🟢 合并 API：ai_frag_reward 现为 Fragments 对象（msg.rs:776），展示为四档碎片总数
+            const fr = (paramsCache && paramsCache.ai_frag_reward) ? paramsCache.ai_frag_reward[idx] : null;
+            const frag = fr && typeof fr === 'object'
+              ? (Number(fr.common || 0) + Number(fr.rare || 0) + Number(fr.epic || 0) + Number(fr.legend || 0))
+              : (fr || '—');
             return `<option value="${d}">${t('ai_diff')} ${d} · 🧩 ${t('win_frag')} ${frag}</option>`;
           }).join('')}
         </select>
@@ -2915,16 +3175,16 @@
       }
       } catch (e) { /* 忽略 */ }
     }
-    // 🟢 AI 也能像 PVP 那样选派：进入页面时用链上出战顺序预填选卡面板（最多 3 张）
+    // 🟢 9v9：进入页面时用链上出战顺序预填选卡面板（最多 9 张）
     if (state.wallet && userCards.length) {
       try {
         const bo = await queryContract({ sanguo_battle_order: { player: state.wallet.address } });
         if (bo && bo.order && bo.order.length) {
-          const ids = bo.order.filter((id) => userCards.some((c) => c.card_id === id)).slice(0, 3);
+          const ids = bo.order.filter((id) => userCards.some((c) => c.card_id === id)).slice(0, 9);
           if (ids.length) sanguoPicked = ids;
         }
       } catch (e) {}
-      sanguoRenderPicker('sgAiPick', 3);
+      sanguoRenderPicker('sgAiPick', 9);
     }
     $('sgAiGo').onclick = () => doAiBattle();
 
@@ -2944,30 +3204,80 @@
     }
   }
 
+  // 🟢 安全审计 O-1：编队 Σcost 预检（合约 load_battle_team_checked：Σcost ≤ params.team_cost_cap）。
+  //    模板 cost 或 cap 数据缺失时不阻断（交由合约兜底拒绝）；超限就地报错，避免必败交易白烧 gas。
+  function sgCardCost(c) {
+    const tpl = sgTplByName(c.name) || {};
+    return (tpl.cost != null) ? Number(tpl.cost || 0) : -1; // -1 = 未知
+  }
+  function sgTeamCostOk(ids) {
+    let total = 0, unknown = false;
+    (ids || []).forEach((id) => {
+      const c = userCards.find((x) => x.card_id === id);
+      if (!c) { unknown = true; return; }
+      const cc = sgCardCost(c);
+      if (cc < 0) unknown = true; else total += cc;
+    });
+    const cap = paramsCache ? Number(paramsCache.team_cost_cap || 0) : 0;
+    if (unknown || !(cap > 0)) return true;
+    if (total <= cap) return true;
+    showToast(tf('team_cost_over', { total, cap }), 'error');
+    return false;
+  }
+
   async function doAiBattle() {
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     try { await loadParams(); } catch (e) { showToast(t('params_err'), 'error'); return; }
-    // 🟢 门槛校验：合约 ai_battle 要求 ≥3 张卡，避免无卡也能发交易并弹钱包
-    if (!userCards || userCards.length < 3) {
+    // 🟢 合并 API：合约 battle_ai 要求 9 张真卡（9v9 真卡对战）；不足 9 张无法组队
+    if (!userCards || userCards.length < 9) {
       try { await loadSanguoCards(); } catch (e) {}
-      if (!userCards || userCards.length < 3) {
-        const msg = t('ai_need_three_msg');
+      if (!userCards || userCards.length < 9) {
+        const msg = t('need_nine');
         const logEl = $('sgAiLog');
         if (logEl) logEl.innerHTML = `<div class="hint err">❌ ${esc(msg)}</div>`;
         showToast(msg, 'error');
         return;
       }
     }
-    const p = requireParams();
-    const diff = Number(($('sgAiDiff') || {}).value || 1);
-    const diffIdx = diff - 1;
-    // 🟢 AI 也能像 PVP 那样选派：开战前把当前选中的卡设为出战顺序（合约 ai_battle 读取此顺序）
-    if (sanguoPicked.length >= 3) {
-      try { await ensureBattleOrder(); } catch (e) { /* 设置失败不阻断，合约会用已有顺序或高战力兜底 */ }
+    // 🟢 合并 API：玩家必须显式提交 9 张真卡（合约 load_battle_team_checked），不再读链上 battle order
+    let team = sanguoPicked.slice(0, 9);
+    if (team.length < 9) {
+      try {
+        const bo = await queryContract({ sanguo_battle_order: { player: state.wallet.address } });
+        if (bo && bo.order) team = bo.order.filter((id) => userCards.some((c) => c.card_id === id)).slice(0, 9);
+      } catch (e) { /* 链上无出战顺序则兜底取高战力 */ }
     }
+    if (team.length < 9) {
+      const cap = paramsCache ? Number(paramsCache.team_cost_cap || 0) : 0;
+      if (cap > 0 && userCards.every((c) => sgCardCost(c) >= 0)) {
+        // 🟢 O-1：按性价比（战力/cost）贪心组队，Σcost ≤ team_cost_cap
+        const byEff = [...userCards].filter((c) => sgCardCost(c) > 0)
+          .sort((a, b) => (power(b) / sgCardCost(b)) - (power(a) / sgCardCost(a)));
+        const picked = [];
+        let total = 0;
+        for (const c of byEff) {
+          if (picked.length >= 9) break;
+          const cc = sgCardCost(c);
+          if (total + cc <= cap) { picked.push(c.card_id); total += cc; }
+        }
+        // cost=0 的卡不计成本，任意补位
+        for (const c of [...userCards].sort((a, b) => power(b) - power(a))) {
+          if (picked.length >= 9) break;
+          if (!picked.includes(c.card_id) && sgCardCost(c) === 0) picked.push(c.card_id);
+        }
+        if (picked.length >= 9) team = picked;
+      }
+      if (team.length < 9) {
+        team = [...userCards].sort((a, b) => power(b) - power(a)).slice(0, 9).map((c) => c.card_id);
+      }
+    }
+    if (team.length < 9) { showToast(t('need_nine'), 'error'); return; }
+    // 🟢 O-1：所有组队路径统一做 Σcost 预检（数据可用时），超限就地拦截
+    if (!sgTeamCostOk(team)) return;
+    const diff = Number(($('sgAiDiff') || {}).value || 1);
     showBusy(t('doing'));
     try {
-      const res = await sanguoExec('SanguoAiBattle', { difficulty: diff }, { action: 'ai_battle', spend: 0 });
+      const res = await sanguoExec('SanguoBattleAi', { mode: 'casual', level: diff, card_ids: team }, { action: 'battle_ai', spend: 0, extra: 'casual:battle:' + diff });
       showToast(t('free_entry_ok'), 'success');
       // 🟢 前端新增：对战竞技场（双方出牌 + 胜负 + 奖励）
       try { await showAiBattleFromTx(res.tx, diff); } catch (_) { /* 展示失败不影响主流程 */ }
@@ -3075,32 +3385,45 @@
     });
     const grid = $('sgCultGrid');
     if (!userCards.length) {
-      grid.innerHTML = `<div class="hint" style="grid-column:1/-1">${t('empty_cards')}</div>`;
+      grid.innerHTML = `<div class="hub-empty" style="grid-column:1/-1"><span class="ic">🌱</span>${t('empty_cards')}</div>`;
     } else {
       grid.innerHTML = userCards.map((c) => {
         const col = rarityColor(c.rarity);
         const img = getCardImage(c.name);
+        const tplc = sgTplByName(c.name) || {};
+        const ttHtml = tplc.title ? `<div class="tt">${esc(tplc.title)}</div>` : '';
+        // 🟢 养成页战斗属性（2026-10-14）：兵种 / 技能（3★ 解锁态）/ 连携
+        const stC = c.star || 1;
+        const skC = tplc.skill_id ? sgFindSkill(tplc.skill_id) : null;
+        const skillLine = skC
+          ? `<div style="font-size:10px;color:${stC >= 3 ? '#ffd700' : '#9fb3d1'}">✦ ${stC >= 3 ? sgSkillDesc(tplc.skill_id) : tf('skill_locked', { name: skC[0] })}</div>`
+          : '';
+        const troopLine = tplc.troop ? `<div style="font-size:10px;color:#9fb3d1">⚔️ ${t('troop_' + tplc.troop)}</div>` : '';
+        const bondLine = (tplc.bonds && tplc.bonds.length) ? `<div style="font-size:9px;color:#9fb3d1">🔗 ${esc(sgBondNames(tplc.bonds))}</div>` : '';
         // 🟢 养成页：卡牌图（小尺寸）+ 下方「升星 / 升星·F / 升级 / 分解」按钮。
         //    渲染结构变化，按钮动作仍走原 doStarUp / doUpgrade / doDecompose，逻辑零改动。
         return `<div class="sg-cult-card" style="border-color:${col}">
-          <div class="sg-cult-img"><img src="${img}" onerror="this.style.display='none'"></div>
+          <div class="sg-cult-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
           <div class="sg-cult-info">
             <div class="nm">${esc(c.name)}</div>
+            ${ttHtml}
             <div class="rr" style="color:${col}">${rarityLabel(c.rarity)} ★${c.star||1} Lv${c.level||0} · ${power(c)}</div>
+            ${troopLine}${skillLine}${bondLine}
           </div>
           <div class="sg-cult-acts">
-            <button class="btn btn-sm btn-ghost" data-act="star_tk" data-cid="${c.card_id}">${t('starup_btn')}</button>
+            <!-- 🟢 合规化：TKCC 升星路径已移除（合约 upgrade_fees 已 deprecated、恒按碎片扣），
+                 仅保留碎片升星，杜绝 TKCC 触点 -->
             <button class="btn btn-sm btn-ghost" data-act="star_frag" data-cid="${c.card_id}">${t('starup_btn')}·F</button>
             <button class="btn btn-sm btn-ghost" data-act="upgrade" data-cid="${c.card_id}">${t('upgrade_btn')}</button>
             <button class="btn btn-sm btn-ghost" data-act="decompose" data-cid="${c.card_id}">${t('decompose_btn')}</button>
           </div>
         </div>`;
       }).join('');
+      sgObserveLazyImages(grid);   // 养成卡图懒加载
       grid.querySelectorAll('button[data-act]').forEach((b) => {
         b.onclick = () => {
           const act = b.dataset.act, cid = b.dataset.cid;
-          if (act === 'star_tk') doStarUp(cid, false);
-          else if (act === 'star_frag') doStarUp(cid, true);
+          if (act === 'star_frag') doStarUp(cid, true);
           else if (act === 'upgrade') doUpgrade(cid);
           else if (act === 'decompose') doDecompose(cid);
         };
@@ -3157,14 +3480,14 @@
   function sgDecomposeBack(rarity) {
     const ri = _RI[rarity]; if (ri == null) return 0;
     const p = paramsCache;
-    if (p && Array.isArray(p.decompose_frag_back) && p.decompose_frag_back[ri] != null) return Number(p.decompose_frag_back[ri]);
+    if (p && Array.isArray(p.fragment_from_duplicate) && p.fragment_from_duplicate[ri] != null) return Number(p.fragment_from_duplicate[ri]);
     return SG_CONST_FALLBACK.decompose_frag_back[ri] || 0;
   }
   /** 升星/升级 消耗碎片数 */
   function sgStarUpFragCost(rarity) {
     const ri = _RI[rarity]; if (ri == null) return 0;
     const p = paramsCache;
-    if (p && Array.isArray(p.star_up_frag_cost) && p.star_up_frag_cost[ri] != null) return Number(p.star_up_frag_cost[ri]);
+    if (p && Array.isArray(p.star_up_fragment_cost) && p.star_up_fragment_cost[ri] != null) return Number(p.star_up_fragment_cost[ri]);
     return SG_CONST_FALLBACK.star_up_frag_cost[ri] || 0;
   }
   // 🟢 7A：当前支付币种展示标签
@@ -3195,30 +3518,21 @@
   }
 
   async function doStarUp(cardId, useFragments) {
+    // 🟢 合规化：合约 star_up 恒按碎片扣费（upgrade_fees 已 deprecated），TKCC 路径已删，
+    //    此处强制走碎片分支（即便误传 useFragments=false 也不会触发任何 TKCC 预检）
+    useFragments = true;
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     const card = userCards.find((c) => c.card_id === cardId);
     if (!card) { showToast(t('err_card_notfound'), 'error'); return; }
     const star = card.star || 1;
     if (star >= 5) { showToast(t('err_max_star'), 'error'); return; }
-    const fee = sgUpgradeFeesRaw()[star - 1];
-    if (!useFragments) {
-      const bal = await sgInContractTkcc();
-      if (bal === null) { showToast(t('err_bal_query'), 'error'); return; }
-      if (bal < BigInt(fee) * 1000000n) {
-        showToast(tf('err_tkcc_star', { from: star, to: star + 1, need: fee.toLocaleString(), have: Math.floor(Number(bal) / 1e6).toLocaleString() }), 'error');
-        return;
-      }
-      const half = fee / 2;
-      if (!confirm(tf('confirm_star_up', { from: star, to: star + 1, fee: fee.toLocaleString(), half: half.toLocaleString() }))) return;
-    } else {
-      const fragNeed = sgStarUpFragCost(card.rarity); // 合约按稀有度固定 50/100/200/500，与星级无关
-      const have = await sgFragOf(card.rarity);
-      if (have < fragNeed) {
-        showToast(tf('err_frag_star', { need: fragNeed, rarity: rarityLabel(card.rarity), have }), 'error');
-        return;
-      }
-      if (!confirm(tf('confirm_star_frag', { from: star, to: star + 1, need: fragNeed, rarity: rarityLabel(card.rarity), have }))) return;
+    const fragNeed = sgStarUpFragCost(card.rarity); // 合约按稀有度固定 50/100/200/500，与星级无关
+    const have = await sgFragOf(card.rarity);
+    if (have < fragNeed) {
+      showToast(tf('err_frag_star', { need: fragNeed, rarity: rarityLabel(card.rarity), have }), 'error');
+      return;
     }
+    if (!confirm(tf('confirm_star_frag', { from: star, to: star + 1, need: fragNeed, rarity: rarityLabel(card.rarity), have }))) return;
     showBusy(t('doing'));
     try {
       await sanguoExec('SanguoStarUp', { card_id: cardId, use_fragments: useFragments }, { action: 'star_up', spend: 0 });
@@ -3307,126 +3621,95 @@
   }
 
   // ============================================================
-  // 提案系统
+  // 🟢 合规化（T24 投票全禁）：提案系统已整体下线。
+  //    合约源码已删除 SanguoProposeCard/VoteCard/ExecuteProposal/CancelProposal
+  //    执行入口与 SanguoProposals 查询；前端同步移除 renderProposal 及全部
+  //    提案调用，保证「前端有 ≡ 合约有」双向对应，零提案残留。
   // ============================================================
-  async function renderProposal(body) {
-    await loadParams();
+
+  // ============================================================
+  // 🟢 管理员：战斗参数热更面板（克制/稀有度/技能/连携强度）
+  //    走 SanguoSetParams 全量提交：表单只改战斗系数，其余字段 =
+  //    链上查询结果 + 废弃计费字段补 0（服务端 set_params 亦强制归零）。
+  //    ⚠️ SanguoParams 带 deny_unknown_fields，响应里的 pay_token 必须
+  //    剔除（它不属于 SanguoParams，是存储 PAYMENT_TOKEN 的镜像）。
+  // ============================================================
+  const SG_BP_DEFAULTS = {
+    faction_counter_bp: 11500, faction_countered_bp: 9000, faction_neutral_bp: 10000,
+    troop_counter_bp: 11000, troop_countered_bp: 10000, troop_neutral_bp: 10000,
+    rarity_legend_bp: 11500, rarity_epic_bp: 10000, rarity_rare_bp: 10000, rarity_common_bp: 10000,
+    power_flat_cap_bp: 3000, eff_lower_bound_bp: 5000,
+    skill_strength_bp: 10000, bond_strength_bp: 10000,
+  };
+  const SG_BP_DEPRECATED_ZEROS = {
+    single_paxi_fee: 0, pack3_paxi_fee: 0,
+    single_prc_total: 0, single_prc_eco: 0, single_prc_burn: 0,
+    pack3_prc_total: 0, pack3_prc_eco: 0, pack3_prc_burn: 0,
+    ai_fee: [0, 0, 0, 0, 0], ai_reward: [0, 0, 0, 0, 0], ai_burn_pct_bp: 0,
+    upgrade_fees: [0, 0, 0, 0],
+    pvp_fee: 0, royale_entry_fee: 0, royale_reward_pct_bp: 0, royale_burn_pct_bp: 0,
+    proposal_deposit: 0, voting_period: 0,
+  };
+  async function renderBattleParams(body) {
+    if (!isSgAdmin()) { sanguoTab = 'draw'; renderSanguoTab(); return; }
+    try { await loadParams(); } catch (e) {}
+    const p = paramsCache || {};
+    const eff = (k) => (p[k] != null && Number(p[k]) !== 0) ? Number(p[k]) : SG_BP_DEFAULTS[k];
+    const rows = Object.keys(SG_BP_DEFAULTS).map((k) => `
+      <div class="kv" style="align-items:center">
+        <span class="k">${t('bp_' + k)}<br><span style="font-size:9px;color:#9fb3d1">${k} · ${t('bp_default')} ${SG_BP_DEFAULTS[k]}</span></span>
+        <span class="v"><input class="input" id="bp_${k}" type="number" value="${eff(k)}" style="width:110px;text-align:right"></span>
+      </div>`).join('');
     body.innerHTML = `
       <div class="card">
-        <div class="card-title">📜 ${t('prop_title')}</div>
-        <div class="desc">${t('prop_desc')}</div>
-        <div class="kv"><span class="k">${t('deposit_label')}</span><span class="v">${paramsCache ? fromRawUnits(paramsCache.proposal_deposit) + ' PAXI' : '—'}</span></div>
+        <div class="card-title">⚙️ ${t('bp_title')}</div>
+        <div class="desc">${t('bp_desc')}</div>
       </div>
+      <div class="card">${rows}</div>
       <div class="card">
-        <div class="card-title">${t('prop_propose')}</div>
-        <input id="sgPropName" class="input" placeholder="${t('prop_name')}">
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <select id="sgPropRarity" class="input">
-            <option value="common">${t('rarity_common')}</option>
-            <option value="rare">${t('rarity_rare')}</option>
-            <option value="epic">${t('rarity_epic')}</option>
-            <option value="legend">${t('rarity_legend')}</option>
-          </select>
-          <input id="sgPropAtk" class="input" type="number" placeholder="${t('prop_attack')}" style="width:80px">
-          <input id="sgPropDef" class="input" type="number" placeholder="${t('prop_defense')}" style="width:80px">
-          <input id="sgPropW" class="input" type="number" placeholder="${t('prop_weight')}" style="width:70px">
-        </div>
-        <button class="btn btn-primary" id="sgPropSubmit" style="margin-top:8px;width:100%">${t('prop_submit')}</button>
-      </div>
-      <div class="card">
-        <div class="card-title">${t('prop_list')}</div>
-        <div id="sgPropList"></div>
+        <div class="card-title">${t('bp_json_title')}</div>
+        <div class="desc">${t('bp_json_hint')}</div>
+        <textarea id="bpJson" class="input" style="width:100%;min-height:180px;font-family:monospace;font-size:11px"></textarea>
+        <button class="btn btn-primary" id="bpSave" style="margin-top:10px;width:100%">${t('bp_save')}</button>
+        <div id="bpLog" style="margin-top:8px"></div>
       </div>`;
-    $('sgPropSubmit').onclick = () => doPropose();
-    const list = $('sgPropList');
-    try {
-      const r = await queryContract({ sanguo_proposals: { start_after: null, limit: 50 } });
-      const props = (r && r.proposals) || [];
-      if (!props.length) { list.innerHTML = `<div class="hint">${t('none_label')}</div>`; }
-      else {
-        list.innerHTML = props.map((p) => {
-          const st = p.executed ? (p.approved ? t('prop_approved') : t('prop_rejected')) : t('prop_open');
-          const isProposer = state.wallet && p.proposer === state.wallet.address;
-          const buttons = [];
-          if (!p.executed) {
-            buttons.push(`<button class="btn btn-sm btn-ghost" data-v="yes" data-pid="${p.id}">${t('prop_vote_yes')}</button>`);
-            buttons.push(`<button class="btn btn-sm btn-ghost" data-v="no" data-pid="${p.id}">${t('prop_vote_no')}</button>`);
-            buttons.push(`<button class="btn btn-sm btn-primary" data-exec="${p.id}">${t('prop_execute')}</button>`);
-            if (isProposer) buttons.push(`<button class="btn btn-sm btn-ghost" data-cancel="${p.id}">${t('prop_cancel')}</button>`);
-          }
-          return `<div style="border-bottom:1px solid #1c2740;padding:6px 0">
-            <div style="font-size:12px;font-weight:700;color:#fff">#${p.id} ${esc(p.template.name)} <span style="color:${rarityColor(p.template.rarity)}">${rarityLabel(p.template.rarity)}</span></div>
-            <div style="font-size:11px;color:#9fb3d1">${t('prop_status')}: ${st} · ${t('prop_yes')}: ${p.yes_votes} · ${t('prop_no')}: ${p.no_votes}</div>
-            <div style="display:flex;gap:4px;margin-top:4px">${buttons.join('')}</div>
-          </div>`;
-        }).join('');
-        list.querySelectorAll('button[data-v]').forEach((b) => { b.onclick = () => doVote(b.dataset.pid, b.dataset.v === 'yes'); });
-        list.querySelectorAll('button[data-exec]').forEach((b) => { b.onclick = () => doExecuteProposal(b.dataset.exec); });
-        list.querySelectorAll('button[data-cancel]').forEach((b) => { b.onclick = () => doCancelProposal(b.dataset.cancel); });
-      }
-    } catch (e) { list.innerHTML = `<div class="hint err">${esc(e.message || e)}</div>`; }
-  }
-
-  async function doPropose() {
-    const name = ($('sgPropName') || {}).value ? $('sgPropName').value.trim() : '';
-    const rarity = ($('sgPropRarity') || {}).value || 'common';
-    const attack = Number(($('sgPropAtk') || {}).value || 0);
-    const defense = Number(($('sgPropDef') || {}).value || 0);
-    const weight = Number(($('sgPropW') || {}).value || 1);
-    if (!name) { showToast(t('prop_name'), 'error'); return; }
-    const id = 'prop_' + Date.now().toString(36) + '_' + Math.floor(Math.random() * 1e4).toString(36);
-    try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
-    try { await loadParams(); } catch (e) { showToast(t('params_err'), 'error'); return; }
-    const p = requireParams();
-    // 🟢 押金已改 50 PAXI（合约从内部 PAXI 余额扣）：预检内部 PAXI 余额 + 按押金签 spend
-    const depositRaw = BigInt(p.proposal_deposit);
-    try {
-      const pb = await queryContract({ balance: { address: state.wallet.address, token: null } });
-      if (BigInt(pb.amount || '0') < depositRaw) {
-        showToast(t('insufficient'), 'error');
-        return;
-      }
-    } catch (e) { /* 查不到不阻断，留痕 */ console.warn('[doPropose] PAXI 余额预检失败:', e && e.message); }
-    showBusy(t('doing'));
-    try {
-      const template = { id, name, rarity, attack, defense, weight };
-      // 🟢 全盘审计修复：合约 propose_card 的验签 spend=0（押金仅作 billed 计入日限额），
-      //    前端必须同样签 0，否则签名原文 amount 段不一致 → 必然 InvalidSignature
-      await sanguoExec('SanguoProposeCard', { template }, { action: 'propose', spend: 0 });
-      showToast(t('propose_ok'), 'success');
-      renderSanguoTab();
-    } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
-    finally { hideBusy(); }
-  }
-  async function doVote(proposalId, approve) {
-    try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
-    showBusy(t('doing'));
-    try {
-      await sanguoExec('SanguoVoteCard', { proposal_id: Number(proposalId), approve }, { action: 'vote', spend: 0 });
-      showToast(t('vote_ok'), 'success');
-      renderSanguoTab();
-    } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
-    finally { hideBusy(); }
-  }
-  async function doExecuteProposal(proposalId) {
-    try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
-    showBusy(t('doing'));
-    try {
-      await sanguoExec('SanguoExecuteProposal', { proposal_id: Number(proposalId) }, { action: 'execute_proposal', spend: 0 });
-      showToast(t('execute_ok'), 'success');
-      renderSanguoTab();
-    } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
-    finally { hideBusy(); }
-  }
-  async function doCancelProposal(proposalId) {
-    try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
-    showBusy(t('doing'));
-    try {
-      await sanguoExec('SanguoCancelProposal', { proposal_id: Number(proposalId) }, { action: 'cancel_proposal', spend: 0 });
-      showToast(t('cancel_ok'), 'success');
-      renderSanguoTab();
-    } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
-    finally { hideBusy(); }
+    // 剔除响应中不属于 SanguoParams 的键（deny_unknown_fields 会拒绝）
+    const buildParams = () => {
+      const obj = { ...SG_BP_DEPRECATED_ZEROS, ...p };
+      delete obj.pay_token;
+      // 🟢 交叉审计：响应里 stamina_pack_price 是字符串（query 层 s() 转换），
+      //    链上 u128 只收 JSON 数字——不转换整条 SanguoSetParams 会被拒
+      obj.stamina_pack_price = Number(obj.stamina_pack_price || 0);
+      Object.keys(SG_BP_DEFAULTS).forEach((k) => {
+        const el = document.getElementById('bp_' + k);
+        if (el) obj[k] = Number(el.value || 0);
+      });
+      return obj;
+    };
+    const fillJson = () => { $('bpJson').value = JSON.stringify(buildParams(), null, 2); };
+    fillJson();
+    Object.keys(SG_BP_DEFAULTS).forEach((k) => {
+      const el = document.getElementById('bp_' + k);
+      if (el) el.onchange = fillJson;
+    });
+    $('bpSave').onclick = async () => {
+      let obj;
+      try { obj = JSON.parse($('bpJson').value); } catch (e) { showToast(t('bp_invalid_json'), 'error'); return; }
+      if (!state.wallet) { showToast(t('connect_first'), 'error'); return; }
+      showBusy(t('doing'));
+      try {
+        // 管理员消息不走会话验签（set_params 仅校验 is_admin），直接主钱包签名
+        const hash = await execContract({ sanguo_set_params: { params: obj } }, [], '');
+        await waitForTx(hash);
+        paramsCache = null;   // 强制下次重拉，避免展示旧值
+        showToast(t('bp_save_ok'), 'success');
+        $('bpLog').innerHTML = `<div class="hint ok">✅ ${t('bp_save_ok')}</div>`;
+        renderSanguoTab();
+      } catch (e) {
+        $('bpLog').innerHTML = `<div class="hint err">❌ ${esc(e.message || e)}</div>`;
+        showToast(t('fail_prefix') + (e.message || e), 'error');
+      } finally { hideBusy(); }
+    };
   }
 
   // ============================================================
@@ -3437,7 +3720,7 @@
     if (state.wallet) await loadSanguoCards();
     sanguoPicked = [];
     body.innerHTML = `
-      <div class="card">
+      <div class="card lobby-hero">
         <div class="card-title">🆚 ${t('pvp_title')}</div>
         <div class="desc">${t('pvp_desc')}</div>
       </div>
@@ -3447,12 +3730,12 @@
         <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;color:#9fb3d1">
           <input type="checkbox" id="sgPvpPublic"> ${t('pvp_public')}
         </label>
-        <div style="font-size:12px;color:#9fb3d1;margin-top:8px">${t('pick_title')}（${t('need_three')}）</div>
+        <div style="font-size:12px;color:#9fb3d1;margin-top:8px">${t('pick_title')}（${t('need_nine')}）</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0" id="sgPvpPick"></div>
         <button class="btn btn-primary" id="sgPvpCreate" style="width:100%">${t('pvp_create')}</button>
       </div>
       <div class="card" id="sgActCard" style="display:none">
-        <div class="card-title">${t('pick_title')}（${t('need_three')}）</div>
+        <div class="card-title">${t('pick_title')}（${t('need_nine')}）</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0" id="sgActPick"></div>
         <button class="btn btn-primary" id="sgActGo" style="width:100%">${t('ok_short')}</button>
       </div>
@@ -3460,7 +3743,7 @@
         <div class="card-title">${t('pvp_list')}</div>
         <div id="sgPvpList"></div>
       </div>`;
-    sanguoRenderPicker('sgPvpPick', 3);
+    sanguoRenderPicker('sgPvpPick', 9);
     $('sgPvpCreate').onclick = () => doCreatePvp();
     const list = $('sgPvpList');
     try {
@@ -3493,16 +3776,23 @@
   }
 
   async function doCreatePvp() {
-    if (sanguoPicked.length !== 3) { showToast(t('need_three'), 'error'); return; }
+    if (sanguoPicked.length !== 9) { showToast(t('need_nine'), 'error'); return; }
+    if (!sgTeamCostOk(sanguoPicked.slice())) return;
     const opponent = ($('sgPvpOpp') || {}).value ? $('sgPvpOpp').value.trim() : '';
     const isPublic = ($('sgPvpPublic') || {}).checked;
     if (!isPublic && !opponent) { showToast(t('pvp_opponent'), 'error'); return; }
+    // 🟢 安全审计 Y-2：前置校验对手地址（bech32 格式 + 禁自挑战），
+    //    避免非法地址到链上 addr_validate 才拒 → DeliverTx 失败白烧 gas
+    if (!isPublic) {
+      if (!ADDR_RE.test(opponent)) { showToast(t('pvp_opponent'), 'error'); return; }
+      if (state.wallet && opponent === state.wallet.address) { showToast(t('pvp_opponent'), 'error'); return; }
+    }
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     try { await loadParams(); } catch (e) { showToast(t('params_err'), 'error'); return; }
     const p = requireParams();
     showBusy(t('doing'));
     try {
-      await sanguoExec('SanguoCreatePvp', { opponent: isPublic ? '' : opponent, card_ids: sanguoPicked.slice(), public: isPublic }, { action: 'create_pvp', spend: 0 });
+      await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'create', opponent: isPublic ? '' : opponent, card_ids: sanguoPicked.slice(), public: isPublic }, { action: 'battle_pvp', spend: 0, extra: 'single:create:' });
       showToast(t('free_entry_ok'), 'success');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
@@ -3511,24 +3801,26 @@
   async function doAcceptPvp(matchId) {
     sgPendingAction = 'accept_pvp'; sgPendingId = matchId; sanguoPicked = [];
     const card = document.getElementById('sgActCard');
-    if (card) { card.style.display = ''; sanguoRenderPicker('sgActPick', 3); }
+    if (card) { card.style.display = ''; sanguoRenderPicker('sgActPick', 9); }
     const go = document.getElementById('sgActGo');
     if (go) go.onclick = () => doPendingConfirm();
   }
   async function doPendingConfirm() {
-    if (sanguoPicked.length !== 3) { showToast(t('need_three'), 'error'); return; }
+    if (sanguoPicked.length !== 9) { showToast(t('need_nine'), 'error'); return; }
+    if (!sgTeamCostOk(sanguoPicked.slice())) return;
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     try { await loadParams(); } catch (e) { showToast(t('params_err'), 'error'); return; }
     const p = requireParams();
     showBusy(t('doing'));
     try {
       if (sgPendingAction === 'accept_pvp') {
-        await sanguoExec('SanguoAcceptPvp', { match_id: sgPendingId, card_ids: sanguoPicked.slice() }, { action: 'accept_pvp', spend: 0 });
+        const res = await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'accept', match_id: sgPendingId, card_ids: sanguoPicked.slice() }, { action: 'battle_pvp', spend: 0, extra: 'single:accept:' + sgPendingId });
+        captureSkillLogFromTx('pvp:' + sgPendingId, res); // V2.1：缓存技能触发回放
         showToast(t('free_entry_ok'), 'success');
         // 🟢 前端新增：对战竞技场（双方出牌 + 胜负）
         try { await showPvpBattle(sgPendingId); } catch (_) { /* 展示失败不影响主流程 */ }
       } else if (sgPendingAction === 'join_royale') {
-        await sanguoExec('SanguoJoinRoyale', { royale_id: sgPendingId, card_ids: sanguoPicked.slice() }, { action: 'join_royale', spend: 0 });
+        await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'join', royale_id: sgPendingId, card_ids: sanguoPicked.slice() }, { action: 'battle_pvp', spend: 0, extra: 'royale:join:' + sgPendingId });
         showToast(t('free_entry_ok'), 'success');
       }
       renderSanguoTab();
@@ -3539,7 +3831,7 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      await sanguoExec('SanguoCancelPvp', { match_id: matchId }, { action: 'cancel_pvp', spend: 0 });
+      await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'cancel', match_id: matchId }, { action: 'battle_pvp', spend: 0, extra: 'single:cancel:' + matchId });
       showToast(t('cancel_ok'), 'success');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
@@ -3549,7 +3841,7 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      const res = await sanguoExec('SanguoClaimPvpReward', { match_id: matchId }, { action: 'claim_pvp', spend: 0 });
+      const res = await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'claim', match_id: matchId }, { action: 'battle_pvp', spend: 0, extra: 'single:claim:' + matchId });
       sgClaimToast(res.tx, 'claim_ok');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
@@ -3564,7 +3856,7 @@
     if (state.wallet) await loadSanguoCards();
     sanguoPicked = [];
     body.innerHTML = `
-      <div class="card">
+      <div class="card lobby-hero">
         <div class="card-title">🔥 ${t('royale_title')}</div>
         <div class="desc">${t('royale_desc')}</div>
       </div>
@@ -3573,12 +3865,12 @@
         <select id="sgRoyaleSize" class="input">
           <option value="4">4</option><option value="5">5</option><option value="6">6</option>
         </select>
-        <div style="font-size:12px;color:#9fb3d1;margin-top:8px">${t('pick_title')}（${t('need_three')}）</div>
+        <div style="font-size:12px;color:#9fb3d1;margin-top:8px">${t('pick_title')}（${t('need_nine')}）</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0" id="sgRoyalePick"></div>
         <button class="btn btn-primary" id="sgRoyaleCreate" style="width:100%">${t('royale_create')}</button>
       </div>
       <div class="card" id="sgActCard" style="display:none">
-        <div class="card-title">${t('pick_title')}（${t('need_three')}）</div>
+        <div class="card-title">${t('pick_title')}（${t('need_nine')}）</div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:6px 0" id="sgActPick"></div>
         <button class="btn btn-primary" id="sgActGo" style="width:100%">${t('ok_short')}</button>
       </div>
@@ -3586,7 +3878,7 @@
         <div class="card-title">${t('royale_list')}</div>
         <div id="sgRoyaleList"></div>
       </div>`;
-    sanguoRenderPicker('sgRoyalePick', 3);
+    sanguoRenderPicker('sgRoyalePick', 9);
     $('sgRoyaleCreate').onclick = () => doCreateRoyale();
     const list = $('sgRoyaleList');
     try {
@@ -3617,13 +3909,14 @@
 
   async function doCreateRoyale() {
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
-    if (sanguoPicked.length !== 3) { showToast(t('need_three'), 'error'); return; }
+    if (sanguoPicked.length !== 9) { showToast(t('need_nine'), 'error'); return; }
+    if (!sgTeamCostOk(sanguoPicked.slice())) return;
     const size = Number(($('sgRoyaleSize') || {}).value || 4);
     try { await loadParams(); } catch (e) { showToast(t('params_err'), 'error'); return; }
     const p = requireParams();
     showBusy(t('doing'));
     try {
-      await sanguoExec('SanguoCreateRoyale', { size, card_ids: sanguoPicked.slice() }, { action: 'create_royale', spend: 0 });
+      await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'create', size, card_ids: sanguoPicked.slice() }, { action: 'battle_pvp', spend: 0, extra: 'royale:create:' });
       showToast(t('free_entry_ok'), 'success');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
@@ -3632,7 +3925,7 @@
   async function doJoinRoyale(royaleId) {
     sgPendingAction = 'join_royale'; sgPendingId = royaleId; sanguoPicked = [];
     const card = document.getElementById('sgActCard');
-    if (card) { card.style.display = ''; sanguoRenderPicker('sgActPick', 3); }
+    if (card) { card.style.display = ''; sanguoRenderPicker('sgActPick', 9); }
     const go = document.getElementById('sgActGo');
     if (go) go.onclick = () => doPendingConfirm();
   }
@@ -3640,7 +3933,8 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      await sanguoExec('SanguoSettleRoyale', { royale_id: royaleId }, { action: 'settle_royale', spend: 0 });
+      const res = await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'settle', royale_id: royaleId }, { action: 'battle_pvp', spend: 0, extra: 'royale:settle:' + royaleId });
+      captureSkillLogFromTx('royale:' + royaleId, res); // V2.1：缓存技能触发回放（多场聚合）
       showToast(t('settle_ok'), 'success');
       // 🟢 前端新增：混战竞技场（多方出牌 + 胜者）
       try { await showRoyaleBattle(royaleId); } catch (_) { /* 展示失败不影响主流程 */ }
@@ -3652,7 +3946,7 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      const res = await sanguoExec('SanguoClaimRoyaleReward', { royale_id: royaleId }, { action: 'claim_royale', spend: 0 });
+      const res = await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'claim', royale_id: royaleId }, { action: 'battle_pvp', spend: 0, extra: 'royale:claim:' + royaleId });
       sgClaimToast(res.tx, 'claim_ok');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
@@ -3722,6 +4016,27 @@
       def: card.defense != null ? card.defense : '?',
       pow: power(card),
     });
+    // 🟢 战斗属性补全（2026-10-14）：兵种 / 技能（3★ 解锁态）/ 连携
+    const tplB = sgTplByName(card.name) || {};
+    let extra = '';
+    if (tplB.troop) extra += `<div style="font-size:11px;color:#9fb3d1;margin-top:4px">⚔️ ${t('troop_' + tplB.troop)}</div>`;
+    const skD = tplB.skill_id ? sgFindSkill(tplB.skill_id) : null;
+    if (skD) {
+      const st = card.star || 1;
+      extra += `<div style="font-size:11px;color:${st >= 3 ? '#ffd700' : '#9fb3d1'};margin-top:2px">✦ ${st >= 3 ? sgSkillDesc(tplB.skill_id) : tf('skill_locked', { name: skD[0] })}</div>`;
+    }
+    if (tplB.bonds && tplB.bonds.length) extra += `<div style="font-size:10px;color:#9fb3d1;margin-top:2px">🔗 ${t('bond_label')}：${esc(sgBondNames(tplB.bonds))}</div>`;
+    let hostB = document.getElementById('detailBattle');
+    if (extra) {
+      if (!hostB && dDesc && dDesc.parentNode) {
+        hostB = document.createElement('div');
+        hostB.id = 'detailBattle';
+        dDesc.parentNode.insertBefore(hostB, dDesc.nextSibling);
+      }
+      if (hostB) hostB.innerHTML = extra;
+    } else if (hostB) {
+      hostB.innerHTML = '';
+    }
     // 🟢「我的卡牌」弹窗只展示参数：养成按钮统一放到「养成」页，这里始终隐藏。
     const actions = document.querySelector('#cardDetailModal .star-actions');
     if (actions) actions.style.display = 'none';
@@ -3844,12 +4159,18 @@
       // 🟢 阵营行与「我的卡」保持一致（2026-09-29）
       const idt = (tpl.identity || tpl.faction) || '';
       const ffHtml = idt ? `<div class="ff" style="color:${sgFactionColor(idt)}">${esc(idt)}</div>` : '';
-      return `<div class="codex-card ${cls} sg-fade-in" style="animation-delay:${Math.min(i * 18, 420)}ms" onclick="openCodexCard('${esc(tpl.name)}')">
-        ${have ? '' : `<div class="sg-card-lv" style="background:rgba(0,0,0,.65);color:#888">${t('codex_not_owned')}</div>`}
-        <div class="cc-img"><img src="${img}" onerror="this.style.display='none'"></div>
-        <div class="cc-foot"><div class="nm">${esc(tpl.name)}</div>${ffHtml}<div class="rr">${rarityLabel(tpl.rarity)} · ${t('power_label')} ${power(tpl)}</div></div>
+      const ttHtml = tpl.title ? `<div class="tt">${esc(tpl.title)}</div>` : '';
+      // 🟢 图鉴战斗属性（2026-10-14）：兵种 + 技能名
+      const btTag = tpl.troop
+        ? `<div style="font-size:9px;color:#9fb3d1">⚔️ ${t('troop_' + tpl.troop)}${tpl.skill_id && SG_SKILLS[tpl.skill_id] ? ' · ✦' + esc(SG_SKILLS[tpl.skill_id][0]) : ''}</div>`
+        : '';
+      return `<div class="codex-card ${cls} ${have ? 'owned' : 'locked'} sg-fade-in" style="animation-delay:${Math.min(i * 18, 420)}ms" onclick="openCodexCard('${esc(tpl.name)}')">
+        ${have ? '' : `<div class="sg-card-lv">${t('codex_not_owned')}</div>`}
+        <div class="cc-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
+        <div class="cc-foot"><div class="nm">${esc(tpl.name)}</div>${ttHtml}${ffHtml}${btTag}<div class="rr">${rarityLabel(tpl.rarity)} · ${t('power_label')} ${power(tpl)}</div></div>
       </div>`;
     }).join('');
+    sgObserveLazyImages(grid);   // 图鉴卡图懒加载
   }
 
   async function openCodex() {
@@ -3862,10 +4183,13 @@
     const prog = $('codexProgress');
     if (prog) {
       const pct = total ? Math.round((ownedCount / total) * 100) : 0;
-      prog.textContent = tf('codex_progress', { own: ownedCount, total }) + ` · ${t('codex_collect')} ${pct}%`;
+      // 🟢 收集度进度条（20261013-2）：文本 → 进度条 + 文本
+      prog.innerHTML = `<div class="codex-bar"><span style="width:${pct}%"></span></div>`
+        + `<div class="codex-bar-txt">${tf('codex_progress', { own: ownedCount, total })} · ${t('codex_collect')} ${pct}%</div>`;
     }
     const modal = $('codexModal');
     if (modal) modal.classList.add('active');
+    sgObserveLazyImages($('codexContent'));   // 弹窗显示后再触发可见区域懒加载
   }
   window.openCodex = openCodex;
 
@@ -3904,14 +4228,23 @@
   function miniCardHtml(c) {
     const img = c.img || getCardImage(c.name) || '';
     const col = rarityColor(c.rarity);
+    // 🟢 兵种角标（2026-10-14）：战斗展示按模板补兵种
+    const tplM = sgTplByName(c.name) || {};
+    const troopTag = tplM.troop ? `<div style="position:absolute;bottom:0;left:0;background:rgba(13,10,12,0.78);color:#9fb3d1;font-size:7px;padding:0 2px;border-top-right-radius:3px">${t('troop_' + tplM.troop)}</div>` : '';
     const tag = c.ai ? '<div style="position:absolute;top:0;left:0;background:#8b2f1a;color:#fff;font-size:8px;padding:0 3px;border-bottom-right-radius:4px">AI</div>'
                      : (c.win ? '<div style="position:absolute;top:0;right:0;background:#b8860b;color:#0d0a0c;font-size:8px;padding:0 3px;border-bottom-left-radius:4px">👑</div>' : '');
     return `<div class="mini-card" style="position:relative;border-color:${col}">
       ${tag}
-      <img src="${img}" onerror="this.style.display='none'">
+      <img src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'">
       <div class="mc-nm">${esc(c.name || '?')}</div>
       ${c.power != null ? `<div style="font-size:8px;text-align:center;color:${col};padding-bottom:1px">⚔ ${c.power}</div>` : ''}
+      ${troopTag}
     </div>`;
+  }
+  // 🟢 连携横幅（S3 单档封顶，纯前端展示，不含 bond_strength 缩放）
+  function sgBondBanner(names, label) {
+    const b = sgBondActive(names || []);
+    return b ? `<div class="side-label" style="font-size:10px;color:#ffd700">🔗 ${esc(label || '')}${tf('bond_active', { name: b.name, bp: (b.bp / 100).toFixed(0), cnt: b.cnt, need: b.need })}</div>` : '';
   }
   // 通用竞技场渲染：opts.sides 或 opts.you/opts.opp；result ∈ win|lose|draw
   function showBattle(opts) {
@@ -3921,35 +4254,89 @@
     if (opts.sides && opts.sides.length) {
       sidesHtml = opts.sides.map((s) => `
         <div class="side-label">${esc(s.label || '—')}${t('battle_deployed')}</div>
-        <div class="side-cards">${(s.cards || []).map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>`).join('');
+        <div class="side-cards">${(s.cards || []).map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
+        ${sgBondBanner((s.cards || []).map((c) => c.name), s.label)}`).join('');
     } else {
       const you = (opts.you || []).map((c) => (Object.assign({}, c, { win: opts.result === 'win' })));
       const opp = (opts.opp || []).map((c) => (Object.assign({}, c, { win: opts.result === 'lose' })));
       sidesHtml = `
         <div class="side-label">${esc(opts.youLabel || t('battle_you'))}${t('battle_deployed')}</div>
         <div class="side-cards">${you.map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
+        ${sgBondBanner(you.map((c) => c.name), opts.youLabel || t('battle_you'))}
         <div class="side-label">${esc(opts.oppLabel || t('battle_opp'))}${t('battle_deployed')}</div>
-        <div class="side-cards">${opp.map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>`;
+        <div class="side-cards">${opp.map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
+        ${sgBondBanner(opp.map((c) => c.name), opts.oppLabel || t('battle_opp'))}`;
     }
     const resultClass = opts.result === 'win' ? 'win' : opts.result === 'lose' ? 'lose' : 'draw';
     const resultText = opts.result === 'win' ? t('battle_win') : opts.result === 'lose' ? t('battle_lose') : t('battle_draw');
     const rewardHtml = (opts.fragReward && opts.fragReward.trim() && opts.fragReward !== 'common:0,rare:0,epic:0,legend:0')
-      ? `<div class="side-label">🧩 ${tf('battle_frag_reward', { frag: opts.fragReward })}</div>`
-      : ((opts.reward != null && Number(opts.reward) > 0) ? `<div class="side-label">${tf('battle_reward', { amt: opts.reward })}</div>` : '');
+      ? `<div class="side-label battle-reward">🧩 ${tf('battle_frag_reward', { frag: opts.fragReward })}</div>`
+      : ((opts.reward != null && Number(opts.reward) > 0) ? `<div class="side-label battle-reward">${tf('battle_reward', { amt: opts.reward })}</div>` : '');
     const rwHtml = (opts.roundWins !== null && opts.roundWins !== undefined && opts.roundWins !== '') ? `<div class="side-label">${tf('battle_rounds', { n: opts.roundWins })}</div>` : '';
     arena.innerHTML = `
       <div class="vs-banner">${t('battle_result_title')}</div>
       ${sidesHtml}
       ${rwHtml}${rewardHtml}
-      <div class="final-result ${resultClass}">${resultText}</div>`;
+      <div class="final-result ${resultClass} sg-fade-in">${resultText}</div>`;
     arena.classList.add('show');
     try { arena.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
   }
   window.showBattle = showBattle;
 
   // AI 对战：从交易事件还原双方出牌 + 胜负 + 奖励
+  // ---- Q3：9v9 三组分组亮牌 ----
+  function chunk3(arr) { arr = arr || []; return [[0, 1, 2], [3, 4, 5], [6, 7, 8]].map((idx) => idx.map((i) => arr[i]).filter(Boolean)); }
+  // 解析链上 group_scores 事件（"2-1-0" → [2,1,0]），格式不符返回 null
+  function parseGroupScores(s) {
+    if (!s || typeof s !== 'string') return null;
+    const parts = s.split('-').map((x) => Number(x));
+    if (parts.length !== 3 || parts.some((n) => !Number.isFinite(n))) return null;
+    return parts;
+  }
+  function groupedBattleHtml(opts) {
+    const youGroups = chunk3(opts.you.cards);
+    const oppGroups = chunk3(opts.opp.cards);
+    const ga = opts.ga || [0, 0, 0];
+    const gb = opts.gb || [0, 0, 0];
+    let rows = '';
+    for (let g = 0; g < 3; g++) {
+      const ay = ga[g] || 0, by = gb[g] || 0;
+      const cls = ay > by ? 'win' : by > ay ? 'lose' : 'draw';
+      const txt = ay > by ? t('group_win') : by > ay ? t('group_lose') : t('group_draw');
+      rows += `
+        <div class="grp-row">
+          <div class="grp-side"><div class="grp-tag">${tf('battle_group', { n: g + 1 })}</div>${youGroups[g].map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
+          <div class="grp-vs">${ay}<span class="grp-colon">:</span>${by}</div>
+          <div class="grp-side">${oppGroups[g].map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
+          <div class="grp-res"><span class="grp-badge ${cls}">${txt}</span></div>
+        </div>`;
+    }
+    const totalA = ga[0] + ga[1] + ga[2], totalB = gb[0] + gb[1] + gb[2];
+    const resultClass = opts.result === 'win' ? 'win' : opts.result === 'lose' ? 'lose' : 'draw';
+    const resultText = opts.result === 'win' ? t('battle_win') : opts.result === 'lose' ? t('battle_lose') : t('battle_draw');
+    const rewardHtml = (opts.fragReward && opts.fragReward.trim() && opts.fragReward !== 'common:0,rare:0,epic:0,legend:0')
+      ? `<div class="side-label battle-reward">🧩 ${tf('battle_frag_reward', { frag: opts.fragReward })}</div>`
+      : ((opts.reward != null && Number(opts.reward) > 0) ? `<div class="side-label battle-reward">${tf('battle_reward', { amt: opts.reward })}</div>` : '');
+    const rwHtml = (opts.roundWins !== null && opts.roundWins !== undefined && opts.roundWins !== '') ? `<div class="side-label">${tf('battle_rounds', { n: opts.roundWins })}</div>` : '';
+    return `
+      <div class="vs-banner">${t('battle_result_title')}</div>
+      <div class="grp-head"><span>${esc(opts.you.label)}</span><span class="grp-score">${totalA} : ${totalB}</span><span>${esc(opts.opp.label)}</span></div>
+      ${sgBondBanner(opts.you.cards.map((c) => c.name), opts.you.label)}
+      ${sgBondBanner(opts.opp.cards.map((c) => c.name), opts.opp.label)}
+      ${rows}
+      ${rwHtml}${rewardHtml}
+      <div class="final-result ${resultClass} sg-fade-in">${resultText}</div>`;
+  }
+  function showGroupedBattle(opts) {
+    const arena = $('battleArena'); if (!arena) return;
+    arena.innerHTML = groupedBattleHtml(opts);
+    arena.classList.add('show');
+    try { arena.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+  }
+  window.showGroupedBattle = showGroupedBattle;
+
   async function showAiBattleFromTx(tx, diff) {
-    const ev = parseTxEvents(tx, ['result', 'player_powers', 'ai_powers', 'round_wins', 'reward']);
+    const ev = parseTxEvents(tx, ['result', 'player_powers', 'ai_powers', 'round_wins', 'reward', 'group_scores_a', 'group_scores_b', 'skill_log']);
     const result = (ev.result && ev.result[0]) || 'lose';
     const playerPowers = parsePowers(ev.player_powers && ev.player_powers[0]);
     const aiPowers = parsePowers(ev.ai_powers && ev.ai_powers[0]);
@@ -3957,22 +4344,98 @@
     const rewardRaw = (ev.reward && ev.reward[0]) || '';
     // 🟢 合规化：链上 reward 现在是碎片字符串（如 "common:20,rare:0,..."），原样展示，不再按 TKCC 精度换算
     const fragReward = result === 'win' ? rewardRaw : '';
-    // 我方出牌：优先链上出战顺序，回退前 3 张
+    // 我方出牌：优先链上出战顺序（9 张），回退前 9 张
     let orderIds = [];
     try { const bo = await queryContract({ sanguo_battle_order: { player: state.wallet.address } }); orderIds = (bo && bo.order) || []; } catch (e) {}
     let you = orderIds.map((id) => userCards.find((c) => c.card_id === id)).filter(Boolean);
-    if (you.length < 3) you = userCards.slice(0, 3);
-    you = you.slice(0, 3).map((c) => ({ name: c.name, rarity: c.rarity, power: power(c) }));
-    // 对手（AI）：用战力还原最接近模板作展示（带 AI 标记）
+    if (you.length < 9) you = userCards.slice(0, 9);
+    you = you.slice(0, 9).map((c, i) => ({ name: c.name, rarity: c.rarity, power: (playerPowers.length === 9 && playerPowers[i] != null) ? playerPowers[i] : power(c) }));
+    // 对手（AI）：用战力还原最接近模板作展示（9 张，带 AI 标记）
     const opp = aiPowers.map((p) => {
       const tpl = bestMatchTemplate(p);
       return { name: tpl ? tpl.name : t('battle_ai_general'), rarity: tpl ? tpl.rarity : 'common', power: p, ai: true };
     });
-    showBattle({ you, opp, result, youLabel: t('battle_you'), oppLabel: tf('battle_ai_diff', { n: diff }), roundWins, fragReward });
+    // 🟢 9v9 三组：链上有 group_scores_a/b 则分组亮牌（与 PVP/混战一致），否则回退平铺
+    const ga = parseGroupScores(ev.group_scores_a && ev.group_scores_a[0]);
+    const gb = parseGroupScores(ev.group_scores_b && ev.group_scores_b[0]);
+    if (ga && gb) {
+      showGroupedBattle({ you: { label: t('battle_you'), cards: you }, opp: { label: tf('battle_ai_diff', { n: diff }), cards: opp }, ga, gb, result, roundWins, fragReward });
+    } else {
+      showBattle({ you, opp, result, youLabel: t('battle_you'), oppLabel: tf('battle_ai_diff', { n: diff }), roundWins, fragReward });
+    }
+    // V2.1：技能触发回放（A=你，B=AI）
+    appendSkillLog($('battleArena'), ev.skill_log && ev.skill_log[0], t('battle_you'), tf('battle_ai_diff', { n: diff }));
   }
   window.showAiBattleFromTx = showAiBattleFromTx;
 
-  // PVP：双方真实出牌（按 card_id 取卡）+ 胜负
+  // V2.1：技能触发回放——解析链上 skill_log 事件（JSON 数组），按 A/B 分边渲染时间线。
+  // 链上字段：side(0/1)、card_name、skill_id、trigger(snake_case)、target(self_/opponent)、
+  // team_wide、attack_bp、defense_bp、power_flat_bp。技能中文名取 SG_SKILLS 镜像表。
+  function skillLogTimelineHtml(rawJson, labelA, labelB) {
+    let logs = [];
+    try {
+      let s = rawJson || '[]';
+      // ⚠️ 链上事件属性经 RPC 多以 base64 返回；且 parseTxEvents 仅在解码结果为纯 ASCII 时才采用，
+      //    而 skill_log 的 JSON 含中文卡名 → 不会被自动解码。这里统一尝试 base64→UTF-8；
+      //    若原串本就是明文 JSON（atob 抛错），则保留原串，两种来源都能正常解析。
+      if (typeof s === 'string') {
+        try {
+          const bin = atob(s);
+          const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+          s = new TextDecoder('utf-8').decode(bytes);
+        } catch (e) { /* 明文 JSON，保留原串 */ }
+      }
+      logs = JSON.parse(s);
+    } catch (e) { logs = []; }
+    const title = `<div class="side-label">${esc(t('skill_log_title'))}</div>`;
+    if (!Array.isArray(logs) || logs.length === 0) {
+      return `<div class="skill-log-wrap">${title}<div class="skill-log-empty">${esc(t('skill_log_empty'))}</div></div>`;
+    }
+    const tgtKey = (s) => (s === 'self_' ? 'tgt_self' : 'tgt_opponent');
+    let rows = '';
+    for (const l of logs) {
+      const side = (l.side === 1) ? 1 : 0;
+      const sideLabel = side === 0 ? (labelA || t('skill_log_side_a')) : (labelB || t('skill_log_side_b'));
+      const sk = SG_SKILLS[l.skill_id];
+      const skName = (sk && sk[0]) ? sk[0] : (l.card_name || l.skill_id || '—');
+      const trg = l.trigger ? t('trg_' + l.trigger) : t('trg_on_battle_start');
+      const tgt = t(tgtKey(l.target));
+      const tw = l.team_wide ? ` · ${esc(t('skill_log_team_wide'))}` : '';
+      const bp = [];
+      if (l.attack_bp) bp.push(`攻 ${(l.attack_bp > 0 ? '+' : '')}${(l.attack_bp / 100).toFixed(0)}%`);
+      if (l.defense_bp) bp.push(`防 ${(l.defense_bp > 0 ? '+' : '')}${(l.defense_bp / 100).toFixed(0)}%`);
+      if (l.power_flat_bp) bp.push(`战力 ${(l.power_flat_bp > 0 ? '+' : '')}${(l.power_flat_bp / 100).toFixed(0)}%`);
+      const bpTxt = bp.length ? `（${bp.join('，')}）` : '';
+      rows += `
+        <div class="skill-log-row side-${side}">
+          <span class="sk-side ${side === 0 ? 'sk-a' : 'sk-b'}">${esc(sideLabel)}</span>
+          <span class="sk-card">${esc(l.card_name || skName)}</span>
+          <span class="sk-name">${esc(skName)}</span>
+          <span class="sk-trg">${esc(trg)}</span>
+          <span class="sk-tgt">→${esc(tgt)}${tw}</span>
+          <span class="sk-bp">${esc(bpTxt)}</span>
+        </div>`;
+    }
+    return `<div class="skill-log-wrap">${title}<div class="skill-log-list">${rows}</div></div>`;
+  }
+  /** 把技能触发回放追加进对战竞技场（不覆盖已有结果） */
+  function appendSkillLog(arena, rawJson, labelA, labelB) {
+    if (!arena) return;
+    try { arena.insertAdjacentHTML('beforeend', skillLogTimelineHtml(rawJson, labelA, labelB)); } catch (e) {}
+  }
+  // V2.1：技能触发回放缓存（结算 tx 一次性携带，不落链上状态；本地缓存以便重看同一场）
+  const sgSkillLogCache = {};
+  function setSkillLogCache(key, raw) { if (key && raw) sgSkillLogCache[key] = raw; }
+  function getSkillLogCache(key) { return sgSkillLogCache[key] || null; }
+  /** 从结算 tx 抽取 skill_log 事件值并写入缓存（失败静默） */
+  function captureSkillLogFromTx(key, res) {
+    try {
+      const sl = (res && res.tx) ? (parseTxEvents(res.tx, ['skill_log']).skill_log || [])[0] : null;
+      if (sl) setSkillLogCache(key, sl);
+    } catch (e) {}
+  }
+
+  // PVP：双方真实出牌（按 card_id 取卡）+ 胜负 + Q3 三组分组亮牌
   async function showPvpBattle(matchId) {
     const m = await queryContract({ sanguo_pvp: { match_id: matchId } });
     if (!m) return;
@@ -3984,11 +4447,20 @@
       if (state.wallet && winner === state.wallet.address) result = 'win';
       else if (state.wallet && (m.challenger === state.wallet.address || m.opponent === state.wallet.address)) result = 'lose';
     }
-    showBattle({ you: ch, opp: op, youLabel: t('battle_challenger'), oppLabel: t('battle_defender'), result });
+    // 🟢 Q3：链上返回 group_scores_a/b 则分组展示每组胜负，否则回退平铺
+    const ga = m.group_scores_a || null;
+    const gb = m.group_scores_b || null;
+    if (ga && gb && ga.length === 3 && gb.length === 3) {
+      showGroupedBattle({ you: { label: t('battle_challenger'), cards: ch }, opp: { label: t('battle_defender'), cards: op }, ga, gb, result });
+    } else {
+      showBattle({ you: ch, opp: op, youLabel: t('battle_challenger'), oppLabel: t('battle_defender'), result });
+    }
+    // V2.1：技能触发回放（A=挑战方，B=应战方；结算 tx 携带，缓存重看）
+    appendSkillLog($('battleArena'), getSkillLogCache('pvp:' + matchId), t('battle_challenger'), t('battle_defender'));
   }
   window.showPvpBattle = showPvpBattle;
 
-  // 混战：多方真实出牌 + 胜者
+  // 混战：多方真实出牌 + 胜者 + Q3 每人 9 张分 3 组展示
   async function showRoyaleBattle(royaleId) {
     const r = await queryContract({ sanguo_royale: { royale_id: royaleId } });
     if (!r) return;
@@ -4000,15 +4472,28 @@
       if (state.wallet && winner === state.wallet.address) result = 'win';
       else if (state.wallet && players.includes(state.wallet.address)) result = 'lose';
     }
-    const sides = [];
+    const arena = $('battleArena'); if (!arena) return;
+    let html = `<div class="vs-banner">${t('battle_result_title')}</div>`;
     for (let i = 0; i < players.length; i++) {
       const cards = await cardsFromIds(orders[i] || []);
+      const groups = chunk3(cards);
       const isMe = state.wallet && players[i] === state.wallet.address;
       const isWin = winner && players[i] === winner;
-      const short = sgShortAddr(players[i]);
-      sides.push({ label: (isMe ? t('battle_you') : short) + (isWin ? ' 👑' : ''), cards });
+      const label = (isMe ? t('battle_you') : sgShortAddr(players[i])) + (isWin ? ' 👑' : '');
+      html += `<div class="royale-side"><div class="side-label">${esc(label)}</div>`;
+      for (let g = 0; g < 3; g++) {
+        html += `<div class="grp-mini"><span class="grp-tag">${tf('battle_group', { n: g + 1 })}</span><div class="grp-side">${(groups[g] || []).map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div></div>`;
+      }
+      html += `</div>`;
     }
-    showBattle({ sides, result });
+    const resultClass = result === 'win' ? 'win' : result === 'lose' ? 'lose' : 'draw';
+    const resultText = result === 'win' ? t('battle_win') : result === 'lose' ? t('battle_lose') : t('battle_draw');
+    html += `<div class="final-result ${resultClass} sg-fade-in">${resultText}</div>`;
+    arena.innerHTML = html;
+    arena.classList.add('show');
+    try { arena.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+    // V2.1：混战为多场 1v1 聚合，A/B 为逐场对位标记（非"你/对手"），用中性标签
+    appendSkillLog(arena, getSkillLogCache('royale:' + royaleId), t('skill_log_side_a'), t('skill_log_side_b'));
   }
   window.showRoyaleBattle = showRoyaleBattle;
 
@@ -4017,8 +4502,11 @@
     const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
     if (userCards) set('sgStatCards', userCards.length);
     if (sgAiStats) {
-      set('sgWin', sgAiStats.wins != null ? sgAiStats.wins : '—');
-      set('sgBattle', sgAiStats.total != null ? sgAiStats.total : '—');
+      // V2.1：总对战/胜场 = AI + PVP + 混战 + 关卡 四模式合计（链上 all_total/all_wins）
+      const allT = sgAiStats.all_total != null ? sgAiStats.all_total : sgAiStats.total;
+      const allW = sgAiStats.all_wins != null ? sgAiStats.all_wins : sgAiStats.wins;
+      set('sgWin', allW != null ? allW : '—');
+      set('sgBattle', allT != null ? allT : '—');
     }
     if (sgFragCache != null) set('sgFrag', sgFragCache);
   }
@@ -4030,9 +4518,9 @@
   const SanguoGame = {
     meta: {
       id: 'sanguo',
-      name: { zh: '三国卡牌', en: 'Three Kingdoms' },
+      name: { zh: '逐雄三国2.0', en: 'Sanguo 2.0' },
       icon: '🀄',
-      desc: { zh: '免费抽卡·买卡买碎片·关卡对战（合规版）', en: 'Free draw · buy cards · stages (compliance)' },
+      desc: { zh: '免费抽卡·买卡买碎片·9v9 三组对战', en: 'Free draw · buy cards · 9v9 group battles' },
       type: 'sanguo',
     },
   };
