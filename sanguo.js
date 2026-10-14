@@ -55,7 +55,7 @@
     { name: '贾诩', title: '毒士乱武', rarity: 'common', attack: 46, defense: 44, identity: '魏·太尉' },
   ];
 
-  // 卡牌图片统一托管在 GitHub Pages：assets/cards/<名字>.png
+  // 卡牌图片统一托管在 GitHub Pages：assets/cards/<名字>.webp（20261014-7 由 PNG 转制，体积 1/10）
   // 原始 30 张与新增 30 张均已自托管，不再依赖第三方图床（消除图床删图/防盗链导致裂图隐患）
   const CARD_IMAGE_BASE = 'https://moxiaomo856.github.io/paxi-card-game/assets/cards/';
 
@@ -1029,8 +1029,8 @@
   // 工具
   // ============================================================
   function getCardImage(name) {
-    // 全部卡牌统一按名字取本地托管图（assets/cards/<名字>.png）
-    return (CARD_IMAGE_BASE + name + '.png');
+    // 全部卡牌统一按名字取本地托管图（assets/cards/<名字>.webp）
+    return (CARD_IMAGE_BASE + name + '.webp');
   }
   // 皮肤图片（按 skin_id 命名，部署到仓库 assets/skins/）
   const SKIN_IMAGE_BASE = 'https://moxiaomo856.github.io/paxi-card-game/assets/skins/';
