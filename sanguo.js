@@ -1067,33 +1067,12 @@
     const src = (_sgTemplatesCache && _sgTemplatesCache.length) ? _sgTemplatesCache : CARD_TEMPLATES;
     return src.find((t) => t && t.name === name) || CARD_TEMPLATES.find((t) => t.name === name) || null;
   }
-  function sgCardIdentity(c) {
-    if (!c) return '';
-    const tpl = sgTplByName(c.name);
-    return (tpl && (tpl.identity || SG_FACTION_ZH[tpl.faction] || tpl.faction)) || c.identity || '';
-  }
-  // 阵营配色：取 identity「·」前首字（魏/蜀/吴/汉/群），其余用中性色
-  const SG_FACTION_COLORS = { '魏': '#5aa7ff', '蜀': '#ff6b5e', '吴': '#3ecf8e', '汉': '#e8b04b', '群': '#b48cff' };
-  function sgFactionColor(idt) {
-    const f = String(idt || '').split('·')[0].trim();
-    return SG_FACTION_COLORS[f] || '#a89a8a';
-  }
   // 🟢 身份串拆分（20261014-11）：「吴·武烈皇帝」→ { faction:'吴', title:'武烈皇帝' }
   //    卡面「称号」行与「阵营·称号」行原本重复，合并为一行后只留最终值
   function sgFactionTitle(idt) {
     const s = String(idt || '');
     const i = s.indexOf('·');
     return i > -1 ? { faction: s.slice(0, i).trim(), title: s.slice(i + 1).trim() } : { faction: s.trim(), title: '' };
-  }
-  // 🟢 卡面「阵营 · 称号」合并行（20261014-11）：我的卡 / 养成 共用，去除称号重复
-  function sgCardMetaHtml(c, tplc) {
-    if (!c) return '';
-    const idt = sgCardIdentity(c);
-    const parts = sgFactionTitle(idt);
-    const facZh = SG_FACTION_ZH[(tplc || {}).faction] || parts.faction;
-    const titleTxt = (tplc || {}).title || parts.title;
-    const line = [esc(facZh), esc(titleTxt)].filter(Boolean).join(' · ');
-    return line ? `<div class="tt" style="color:${sgFactionColor(idt)}">${line}</div>` : '';
   }
 
   // 对战里展示玩家地址：只保留前 15 个字符，其余用省略号代替（避免长地址撑破排版）
@@ -2783,9 +2762,7 @@
     const cls = rarityClass(c.rarity);
     const cid = esc(c.card_id);
     const lvTxt = (c.star > 1 || c.level > 0) ? `<div class="sg-card-lv">★${c.star || 1}${c.level ? ' Lv' + c.level : ''}</div>` : '';
-    // 🟢 卡面文字合并（20261014-11）：阵营 + 称号合成一行，去掉重复的称号
-    const tplc = sgTplByName(c.name) || {};
-    const metaHtml = sgCardMetaHtml(c, tplc);
+    // 🟢 卡面图已印「姓名+称号+阵营」（20261014-14）：卡面下方不再重复文字，只留数值行
     // 🟢 批量分解模式：点击只切换勾选，不进详情
     if (sgBatchMode) {
       const sel = sgBatchSel.has(c.card_id);
@@ -2793,7 +2770,7 @@
         ${lvTxt}
         ${sel ? '<div class="sg-pick-ord">✓</div>' : ''}
         <div class="sg-card-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
-        <div class="sg-card-foot"><div class="nm">${esc(c.name)}</div>${metaHtml}<div class="rr">${rarityLabel(c.rarity)}</div></div>
+        <div class="sg-card-foot"><div class="rr">${rarityLabel(c.rarity)} · ${t('power_label')} ${power(c)}</div></div>
       </div>`;
     }
     // 🟢「我的卡牌」只展示卡牌参数，不放养成按钮（升级/升星/分解统一到「养成」页）。
@@ -2801,8 +2778,6 @@
       ${lvTxt}
       <div class="sg-card-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
       <div class="sg-card-foot">
-        <div class="nm">${esc(c.name)}</div>
-        ${metaHtml}
         <div class="rr">${rarityLabel(c.rarity)} · ${t('power_label')} ${power(c)}</div>
       </div>
     </div>`;
@@ -3167,7 +3142,6 @@
         const col = rarityColor(c.rarity);
         const img = getCardImage(c.name);
         const tplc = sgTplByName(c.name) || {};
-        const ttHtml = sgCardMetaHtml(c, tplc);
         // 🟢 养成页战斗属性（2026-10-14）：兵种 / 技能（3★ 解锁态）/ 连携
         const stC = c.star || 1;
         const skC = tplc.skill_id ? sgFindSkill(tplc.skill_id) : null;
@@ -3181,8 +3155,6 @@
         return `<div class="sg-cult-card" style="border-color:${col}">
           <div class="sg-cult-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
           <div class="sg-cult-info">
-            <div class="nm">${esc(c.name)}</div>
-            ${ttHtml}
             <div class="rr" style="color:${col}">${rarityLabel(c.rarity)} ★${c.star||1} Lv${c.level||0} · ${power(c)}</div>
             ${troopLine}${skillLine}${bondLine}
           </div>
@@ -3751,13 +3723,13 @@
     const img = getCardImage(card.name);
     const col = rarityColor(card.rarity);
     const dImg = $('detailImg'); if (dImg) { dImg.src = img || ''; dImg.style.display = img ? '' : 'none'; }
-    const dName = $('detailName'); if (dName) { dName.textContent = card.name || '—'; dName.style.color = col; }
-    // 🟢 详情文字去重（20261014-11）：副标题只留称号、阵营单独一行，避免同一串重复三遍
+    // 🟢 卡面图已印「姓名+称号」（20261014-14）：弹窗大名字/称号行默认隐藏，图挂掉时回退显示保证可识别
+    const dName = $('detailName'); if (dName) { dName.textContent = card.name || '—'; dName.style.color = col; dName.style.display = img ? 'none' : ''; }
     const _pIdt = sgFactionTitle(card.identity || '');
     const _tplM = sgTplByName(card.name) || {};
     const _dFac = SG_FACTION_ZH[_tplM.faction] || _pIdt.faction;
     const _dTitle = card.title || _tplM.title || _pIdt.title;
-    const dSub = $('detailSub'); if (dSub) dSub.textContent = _dTitle || _dFac || '';
+    const dSub = $('detailSub'); if (dSub) { dSub.textContent = _dTitle || _dFac || ''; dSub.style.display = img ? 'none' : ''; }
     const dRar = $('detailRarity'); if (dRar) { dRar.textContent = rarityLabel(card.rarity); dRar.style.color = col; }
     const dId = $('detailIdentity'); if (dId) dId.textContent = _dFac || '—';
     const dAtk = $('detailAtk'); if (dAtk) dAtk.textContent = (card.attack != null) ? card.attack : '—';
@@ -3910,19 +3882,14 @@
       const img = getCardImage(tpl.name);
       const cls = rarityClass(tpl.rarity);
       const have = ownedNames.has(tpl.name);
-      // 🟢 卡面文字合并（20261014-11）：称号行与「阵营·称号」行重复 → 合并为「阵营 · 称号」
-      const idt = (tpl.identity || SG_FACTION_ZH[tpl.faction] || tpl.faction) || '';
-      const parts = sgFactionTitle(idt);
-      const facZh = SG_FACTION_ZH[tpl.faction] || parts.faction;
-      const titleTxt = tpl.title || parts.title;
-      const lineIdt = [esc(facZh), esc(titleTxt)].filter(Boolean).join(' · ');
+      // 🟢 卡面图已印「姓名+称号+阵营」（20261014-14）：卡面下方只留「兵种 · 稀有度 · 战力」，不再重复
       // 🟢 图鉴战斗属性合并（20261014-11）：兵种 + 稀有度 + 战力 一行
       const troopZh = tpl.troop ? t('troop_' + tpl.troop) : '';
       const lineStat = [esc(troopZh), rarityLabel(tpl.rarity), esc(t('power_label') + ' ' + power(tpl))].filter(Boolean).join(' · ');
       return `<div class="codex-card ${cls} ${have ? 'owned' : 'locked'} sg-fade-in" style="animation-delay:${Math.min(i * 18, 420)}ms" onclick="openCodexCard('${esc(tpl.name)}')">
         ${have ? '' : `<div class="sg-card-lv">${t('codex_not_owned')}</div>`}
         <div class="cc-img"><img data-src="${img}" loading="lazy" decoding="async" onerror="this.style.display='none'"></div>
-        <div class="cc-foot"><div class="nm">${esc(tpl.name)}</div>${lineIdt ? `<div class="tt" style="color:${sgFactionColor(idt)}">${lineIdt}</div>` : ''}<div class="rr">${lineStat}</div></div>
+        <div class="cc-foot"><div class="rr">${lineStat}</div></div>
       </div>`;
     }).join('');
     sgObserveLazyImages(grid);   // 图鉴卡图懒加载
