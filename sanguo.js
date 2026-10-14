@@ -57,7 +57,8 @@
 
   // 卡牌图片统一托管在 GitHub Pages：assets/cards/<名字>.webp（20261014-7 由 PNG 转制，体积 1/10）
   // 原始 30 张与新增 30 张均已自托管，不再依赖第三方图床（消除图床删图/防盗链导致裂图隐患）
-  const CARD_IMAGE_BASE = 'https://moxiaomo856.github.io/paxi-card-game/assets/cards/';
+  // 🟢 20261014-18：卡图改走 jsDelivr（github.io 在大陆常限速）；同源仓库 @main，自动跟随最新提交
+  const CARD_IMAGE_BASE = 'https://cdn.jsdelivr.net/gh/moxiaomo856/paxi-card-game@main/assets/cards/';
 
   // ============================================================
   // 多语言（沿用原始三国词库；同时响应大厅全局语言切换）
@@ -931,7 +932,7 @@
     return (CARD_IMAGE_BASE + name + '.webp');
   }
   // 皮肤图片（按 skin_id 命名，部署到仓库 assets/skins/）
-  const SKIN_IMAGE_BASE = 'https://moxiaomo856.github.io/paxi-card-game/assets/skins/';
+  const SKIN_IMAGE_BASE = 'https://cdn.jsdelivr.net/gh/moxiaomo856/paxi-card-game@main/assets/skins/';
   function getSkinImage(id) {
     return (SKIN_IMAGE_BASE + id + '.png');
   }
