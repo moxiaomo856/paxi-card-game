@@ -23,36 +23,36 @@
   // 卡牌数据（与原始三国源码逐字一致，不改动地址 / 属性）
   // ============================================================
   const CARD_TEMPLATES = [
-    { name: '曹操', title: '魏武挥鞭', rarity: 'legend', attack: 105, defense: 95, identity: '魏·武帝' },
-    { name: '诸葛亮', title: '卧龙出山', rarity: 'legend', attack: 110, defense: 90, identity: '蜀·丞相' },
-    { name: '关羽', title: '武圣降世', rarity: 'legend', attack: 115, defense: 85, identity: '蜀·五虎将' },
-    { name: '赵云', title: '常山龙胆', rarity: 'legend', attack: 100, defense: 100, identity: '蜀·五虎将' },
-    { name: '吕布', title: '飞将无双', rarity: 'legend', attack: 120, defense: 80, identity: '汉·温侯' },
-    { name: '司马懿', title: '冢虎沉谋', rarity: 'legend', attack: 95, defense: 110, identity: '魏·太傅' },
-    { name: '张飞', title: '当阳怒吼', rarity: 'epic', attack: 95, defense: 75, identity: '蜀·五虎将' },
-    { name: '马超', title: '锦马超', rarity: 'epic', attack: 90, defense: 80, identity: '蜀·五虎将' },
-    { name: '黄忠', title: '百步穿杨', rarity: 'epic', attack: 85, defense: 85, identity: '蜀·五虎将' },
-    { name: '姜维', title: '麒麟之志', rarity: 'epic', attack: 88, defense: 82, identity: '蜀·大将军' },
-    { name: '周瑜', title: '赤壁东风', rarity: 'epic', attack: 80, defense: 90, identity: '吴·大都督' },
-    { name: '陆逊', title: '火烧连营', rarity: 'epic', attack: 82, defense: 88, identity: '吴·大都督' },
-    { name: '夏侯惇', title: '拔矢啖睛', rarity: 'epic', attack: 92, defense: 78, identity: '魏·大将军' },
-    { name: '张辽', title: '威震逍遥', rarity: 'epic', attack: 88, defense: 82, identity: '魏·五子良将' },
-    { name: '魏延', title: '汉中镇守', rarity: 'rare', attack: 75, defense: 70, identity: '蜀·镇北将军' },
-    { name: '庞统', title: '凤雏落凤', rarity: 'rare', attack: 70, defense: 75, identity: '蜀·军师中郎将' },
-    { name: '法正', title: '睚眦必报', rarity: 'rare', attack: 68, defense: 72, identity: '蜀·尚书令' },
-    { name: '甘宁', title: '锦帆贼', rarity: 'rare', attack: 80, defense: 60, identity: '吴·折冲将军' },
-    { name: '太史慈', title: '北海救孔', rarity: 'rare', attack: 72, defense: 68, identity: '吴·建昌都尉' },
-    { name: '孙策', title: '小霸王', rarity: 'rare', attack: 78, defense: 62, identity: '吴·讨逆将军' },
-    { name: '吕蒙', title: '吴下阿蒙', rarity: 'rare', attack: 65, defense: 75, identity: '吴·大都督' },
-    { name: '邓艾', title: '阴平奇兵', rarity: 'rare', attack: 70, defense: 70, identity: '魏·征西将军' },
-    { name: '廖化', title: '蜀中先锋', rarity: 'common', attack: 50, defense: 45, identity: '蜀·车骑将军' },
-    { name: '简雍', title: '雍容辩士', rarity: 'common', attack: 40, defense: 50, identity: '蜀·昭德将军' },
-    { name: '孙乾', title: '雍容辩士', rarity: 'common', attack: 38, defense: 48, identity: '蜀·秉忠将军' },
-    { name: '糜竺', title: '富商军师', rarity: 'common', attack: 42, defense: 42, identity: '蜀·安汉将军' },
-    { name: '诸葛瑾', title: '敦厚长者', rarity: 'common', attack: 45, defense: 55, identity: '吴·大将军' },
-    { name: '鲁肃', title: '单刀赴会', rarity: 'common', attack: 48, defense: 52, identity: '吴·横江将军' },
-    { name: '程昱', title: '兖州谋主', rarity: 'common', attack: 44, defense: 46, identity: '魏·卫尉' },
-    { name: '贾诩', title: '毒士乱武', rarity: 'common', attack: 46, defense: 44, identity: '魏·太尉' },
+    { name: '曹操', title: '魏武', rarity: 'legend', attack: 105, defense: 95, identity: '魏·魏武' },
+    { name: '诸葛亮', title: '卧龙', rarity: 'legend', attack: 110, defense: 90, identity: '蜀·卧龙' },
+    { name: '关羽', title: '武圣', rarity: 'legend', attack: 115, defense: 85, identity: '蜀·武圣' },
+    { name: '赵云', title: '虎威', rarity: 'legend', attack: 100, defense: 100, identity: '蜀·虎威' },
+    { name: '吕布', title: '飞将', rarity: 'legend', attack: 120, defense: 80, identity: '群·飞将' },
+    { name: '司马懿', title: '冢虎', rarity: 'legend', attack: 95, defense: 110, identity: '魏·冢虎' },
+    { name: '张飞', title: '桓侯', rarity: 'epic', attack: 95, defense: 75, identity: '蜀·桓侯' },
+    { name: '马超', title: '锦马超', rarity: 'epic', attack: 90, defense: 80, identity: '蜀·锦马超' },
+    { name: '黄忠', title: '烈弓', rarity: 'epic', attack: 85, defense: 85, identity: '蜀·烈弓' },
+    { name: '姜维', title: '幼麟', rarity: 'epic', attack: 88, defense: 82, identity: '蜀·幼麟' },
+    { name: '周瑜', title: '美周郎', rarity: 'epic', attack: 80, defense: 90, identity: '吴·美周郎' },
+    { name: '陆逊', title: '儒将', rarity: 'epic', attack: 82, defense: 88, identity: '吴·儒将' },
+    { name: '夏侯惇', title: '元让', rarity: 'epic', attack: 92, defense: 78, identity: '魏·元让' },
+    { name: '张辽', title: '止啼', rarity: 'epic', attack: 88, defense: 82, identity: '魏·止啼' },
+    { name: '魏延', title: '文长', rarity: 'rare', attack: 75, defense: 70, identity: '蜀·文长' },
+    { name: '庞统', title: '凤雏', rarity: 'rare', attack: 70, defense: 75, identity: '蜀·凤雏' },
+    { name: '法正', title: '孝直', rarity: 'rare', attack: 68, defense: 72, identity: '蜀·孝直' },
+    { name: '甘宁', title: '锦帆', rarity: 'rare', attack: 80, defense: 60, identity: '吴·锦帆' },
+    { name: '太史慈', title: '子义', rarity: 'rare', attack: 72, defense: 68, identity: '吴·子义' },
+    { name: '孙策', title: '小霸王', rarity: 'rare', attack: 78, defense: 62, identity: '吴·小霸王' },
+    { name: '吕蒙', title: '子明', rarity: 'rare', attack: 65, defense: 75, identity: '吴·子明' },
+    { name: '邓艾', title: '士载', rarity: 'rare', attack: 70, defense: 70, identity: '魏·士载' },
+    { name: '廖化', title: '元俭', rarity: 'common', attack: 50, defense: 45, identity: '蜀·元俭' },
+    { name: '简雍', title: '宪和', rarity: 'common', attack: 40, defense: 50, identity: '蜀·宪和' },
+    { name: '孙乾', title: '公祐', rarity: 'common', attack: 38, defense: 48, identity: '蜀·公祐' },
+    { name: '糜竺', title: '子仲', rarity: 'common', attack: 42, defense: 42, identity: '蜀·子仲' },
+    { name: '诸葛瑾', title: '子瑜', rarity: 'common', attack: 45, defense: 55, identity: '吴·子瑜' },
+    { name: '鲁肃', title: '子敬', rarity: 'common', attack: 48, defense: 52, identity: '吴·子敬' },
+    { name: '程昱', title: '仲德', rarity: 'common', attack: 44, defense: 46, identity: '魏·仲德' },
+    { name: '贾诩', title: '毒士', rarity: 'common', attack: 46, defense: 44, identity: '魏·毒士' },
   ];
 
   // 卡牌图片统一托管在 GitHub Pages：assets/cards/<名字>.webp（20261014-7 由 PNG 转制，体积 1/10）
@@ -65,7 +65,7 @@
   const i18n = {
     zh: {
       'sg_title': '🀄 逐雄三国2.0',
-      'sg_subtitle': '合规休闲卡牌：免费抽卡、买卡买碎片、9v9 三组对战，不涉及代币博弈。',
+      'sg_subtitle': '合规休闲卡牌：免费抽卡、买卡养成、9v9 三组对战，不涉及代币博弈。',
       'tab_draw': '🎴 抽卡',
       'tab_mycards': '🃏 我的卡',
       'draw_single': '🗡️ 单抽',
@@ -74,13 +74,11 @@
       'draw_pack3_title': '🎴 三连抽（3 张）',
       'cost_label': '消耗',
       'bal_title': '💰 余额',
-      'bal_tkcc': '合约内 TKCC',
       'loading': '加载中…',
       'my_cards': '我的卡牌',
       'my_cards_desc': '所有已拥有的武将卡牌，永久保存。',
       'empty_cards': '点击「抽卡」获取卡牌',
       'power_label': '战力',
-      'insufficient': '余额不足，请先充值 TKCC',
       'connect_first': '请先连接钱包',
       'params_err': '无法读取三国合约参数，请检查合约地址与网络连接后重试',
       'draw_doing': '抽卡中…',
@@ -93,7 +91,6 @@
       // ---- 第七轮恢复：完整玩法页签 ----
       'tab_ai': 'AI 对战',
       'tab_cultivate': '养成',
-      'tab_proposal': '提案',
       'tab_pvp': 'PVP',
       'tab_royale': '混战',
       'tab_ledger': '📊 收入对账',
@@ -143,6 +140,7 @@
       'shop_desc': '明码标价、付钱即得（确定性购买，无随机、无赔付）。',
       'shop_cards': '直接买卡（1★ Lv0 成品卡）',
       'shop_frags': '碎片包（每包 {n} 个）',
+      'draw_pack3_desc': '一次抽取 3 张卡牌（合规版免费）。',
       'shop_buy': '购买',
       'shop_packs': '购买包数',
       'shop_buying': '购买中…',
@@ -167,11 +165,11 @@
       'ai_title': 'AI 对战',
       'ai_desc': '选择难度挑战 AI，免费参与，胜则赢取碎片奖励',
       'ai_diff': '难度',
-      'ai_fee': '挑战费',
       'ai_reward': '胜率奖励',
       'win_frag': '赢取碎片',
       'free_entry_ok': '免费完成，赢取碎片奖励',
       'claim_frag': '领取成功，获得碎片：{frag}',
+      'unit_frag': '碎片',
       'ai_pending_hint': '你已赢 {n} 场，奖励需点击下方按钮领取后才会到钱包。',
       'ai_stats': '今日已战',
       'cult_title': '养成',
@@ -196,23 +194,6 @@
       'craft_legend': '🟡 合成传说（{cost} 碎片）',
       'craft_insufficient': '碎片不足：需要 {need}，当前 {have}',
       'select_card_first': '请先选择卡牌',
-      'prop_title': '卡牌提案',
-      'prop_desc': '提交新武将卡，社区投票通过后上链',
-      'prop_propose': '提交新卡提案',
-      'prop_name': '卡牌名',
-      'prop_attack': '攻击',
-      'prop_defense': '防御',
-      'prop_weight': '权重',
-      'prop_submit': '提交提案',
-      'prop_list': '提案列表',
-      'prop_votes': '票数',
-      'prop_approved': '已通过',
-      'prop_rejected': '已否决',
-      'prop_open': '投票中',
-      'prop_vote_yes': '赞成',
-      'prop_vote_no': '反对',
-      'prop_execute': '执行',
-      'prop_cancel': '撤销',
       'pvp_title': 'PVP 1v1',
       'pvp_desc': '与好友 1v1 对战，免费参与，胜则赢取碎片',
       'pvp_create': '创建对战',
@@ -242,12 +223,6 @@
       'win_rate': '胜率',
       'order_max': '出战顺序最多 9 张（3 组 × 3 张）',
       'selected_label': '已选',
-      'prop_id': '卡牌 ID',
-      'prop_status': '状态',
-      'prop_yes': '赞成票',
-      'prop_no': '反对票',
-      'prop_deadline': '截止',
-      'deposit_label': '提案押金',
       'none_label': '暂无',
       'match_id_label': '对局',
       'status_label': '状态',
@@ -261,13 +236,9 @@
       'settle_ok': '已结算',
       'execute_ok': '已执行',
       'cancel_ok': '已撤销',
-      'propose_ok': '提案已提交',
-      'vote_ok': '投票成功',
       'claim_ok': '已领取',
       // ---- 到账/消耗金额提示（前端自解析交易事件，绕开钱包把 burn 当到账显示的问题） ----
-      'claim_in': '✅ 已到账 {amt} TKCC',
-      'claim_in_burn': '✅ 已到账 {amt} TKCC（合约另销毁 {burned} TKCC）',
-      'spent_tip': '✅ {what} · 本次消耗 {amt} TKCC（合约内余额扣除）',
+      'spent_tip': '✅ {what} · 本次消耗 {amt} PAXI',
       'need_three': '请先选择 3 张卡牌',
       'need_nine': '请先选择 9 张卡牌',
       'pick_limit': '请先选择 {n} 张卡牌',
@@ -383,7 +354,6 @@
       'battle_win': '🏆 胜利！', 'battle_lose': '💀 失败', 'battle_draw': '🤝 平局',
       'battle_you': '你', 'battle_opp': '对手',
       'battle_deployed': '（出战）',
-      'battle_reward': '奖励：{amt} TKCC',
       'battle_frag_reward': '赢取碎片：{frag}',
       'battle_rounds': '三局 {n} 胜',
       'battle_challenger': '挑战方', 'battle_defender': '应战方',
@@ -407,8 +377,6 @@
       'err_card_notfound': '找不到该卡牌，请刷新「我的卡」后重试',
       'err_max_star': '⭐ 该卡已满星（5★），无法继续升星',
       'err_bal_query': '查询合约内余额失败，请稍后重试',
-      'err_tkcc_star': '合约内 TKCC 不足：{from}★→{to}★ 需要 {need} TKCC，当前 {have} TKCC，请先在「钱包」充值',
-      'confirm_star_up': '升星 {from}★ → {to}★\n\n费用：{fee} TKCC（从合约内余额扣）\n其中销毁 {half} + 资金池 {half}\n\n确定 = 升星，取消 = 中止',
       'err_frag_star': '碎片不足：碎片升星需要 {need} 个{rarity}碎片，当前 {have} 个（碎片升星不花 TKCC）',
       'confirm_star_frag': '碎片升星 {from}★ → {to}★\n\n消耗 {need} 个{rarity}碎片（不花 TKCC、不销毁）\n当前拥有 {have} 个\n\n确定 = 升星，取消 = 中止',
       'err_max_level': '💠 该卡已满级（Lv10），无法继续升级',
@@ -483,7 +451,6 @@
       'help_shop_title': '商店（PAXI 消费）',
       'help_shop_desc': '所有商品明码标价、付款即得。价格为链上配置，以下为默认价：',
       'help_shop_card': '武将卡（普/稀/史/传）',
-      'help_shop_frag': '碎片包 ×10（普/稀/史/传）',
       'help_shop_stamina': '体力包（+30 体力）',
       'help_shop_stamina_v': '/ 包',
       'help_shop_skin': '皮肤',
@@ -499,11 +466,6 @@
       'help_cult_star': '升星（1★→5★）',
       'help_cult_craft': '碎片合成新卡',
       'help_cult_decompose': '分解回收（得碎片）',
-      'help_prop_title': '提案治理（新卡投票）',
-      'help_prop_desc': '任何人可提交新卡牌模板提案，全社区投票。投票期结束后执行：通过 → 新卡入池并退还押金；未通过 → 押金没收归入庄家。',
-      'help_prop_deposit': '提案押金',
-      'help_prop_vote': '投票权',
-      'help_prop_vote_v': '按合约内 TKCC 余额计算（1 TKCC = 1 票），只读不扣，不投票不消耗',
       'help_safety_title': '安全须知',
       'help_safety_desc': '游戏使用「无感签名」：会话密钥只授权游戏操作、有每日限额、随时可在设置中撤销，主钱包私钥绝不离开你的设备。',
       'help_safety_frag': '碎片属性',
@@ -544,7 +506,7 @@
     },
     en: {
       'sg_title': '🀄 Sanguo 2.0',
-      'sg_subtitle': 'Spend PAXI + TKCC to draw general cards — yours forever.',
+      'sg_subtitle': 'Compliance casual card game: free draws, buy & level up generals, 9v9 battles — no token wagering.',
       'tab_draw': '🎴 Draw',
       'tab_mycards': '🃏 My Cards',
       'draw_single': '🗡️ Single',
@@ -553,13 +515,11 @@
       'draw_pack3_title': '🎴 Triple Draw (3 cards)',
       'cost_label': 'Cost',
       'bal_title': '💰 Balance',
-      'bal_tkcc': 'In-contract TKCC',
       'loading': 'Loading…',
       'my_cards': 'My Cards',
       'my_cards_desc': 'All your general cards, stored permanently.',
       'empty_cards': 'Tap "Draw" to get cards',
       'power_label': 'Power',
-      'insufficient': 'Insufficient balance, deposit TKCC first',
       'connect_first': 'Please connect your wallet first',
       'params_err': 'Failed to read Sanguo contract params. Check the contract address and network, then retry.',
       'draw_doing': 'Drawing…',
@@ -572,7 +532,6 @@
       // ---- 第七轮恢复：完整玩法页签 ----
       'tab_ai': 'AI Battle',
       'tab_cultivate': 'Cultivate',
-      'tab_proposal': 'Proposal',
       'tab_pvp': 'PVP',
       'tab_royale': 'Royale',
       'tab_ledger': '📊 Ledger',
@@ -622,6 +581,7 @@
       'shop_desc': 'Fixed prices, pay and get (deterministic purchase — no randomness, no payouts).',
       'shop_cards': 'Buy cards directly (1★ Lv0)',
       'shop_frags': 'Fragment packs ({n} per pack)',
+      'draw_pack3_desc': 'Draw 3 cards in one go (free in compliance mode).',
       'shop_buy': 'Buy',
       'shop_packs': 'Packs to buy',
       'shop_buying': 'Purchasing…',
@@ -646,11 +606,11 @@
       'ai_title': 'AI Battle',
       'ai_desc': 'Pick a difficulty and battle the AI; free entry, win fragments',
       'ai_diff': 'Difficulty',
-      'ai_fee': 'Entry fee',
       'ai_reward': 'Win reward',
       'win_frag': 'Win fragments',
       'free_entry_ok': 'Free entry — fragments rewarded',
       'claim_frag': 'Claimed fragments: {frag}',
+      'unit_frag': 'fragments',
       'ai_pending_hint': 'You won {n} battles — tap below to claim to your wallet.',
       'ai_stats': 'Battles today',
       'cult_title': 'Cultivate',
@@ -675,23 +635,6 @@
       'craft_legend': '🟡 Craft Legend ({cost} frags)',
       'craft_insufficient': 'Not enough fragments: need {need}, you have {have}',
       'select_card_first': 'Select a card first',
-      'prop_title': 'Card Proposals',
-      'prop_desc': 'Submit a new general card; on-chain after community vote',
-      'prop_propose': 'Propose new card',
-      'prop_name': 'Card name',
-      'prop_attack': 'Attack',
-      'prop_defense': 'Defense',
-      'prop_weight': 'Weight',
-      'prop_submit': 'Submit proposal',
-      'prop_list': 'Proposal list',
-      'prop_votes': 'Votes',
-      'prop_approved': 'Approved',
-      'prop_rejected': 'Rejected',
-      'prop_open': 'Voting',
-      'prop_vote_yes': 'Yes',
-      'prop_vote_no': 'No',
-      'prop_execute': 'Execute',
-      'prop_cancel': 'Cancel',
       'pvp_title': 'PVP 1v1',
       'pvp_desc': '1v1 battle with a friend — free entry, win fragments',
       'pvp_create': 'Create match',
@@ -721,12 +664,6 @@
       'win_rate': 'Win rate',
       'order_max': 'Up to 9 cards in battle order (3 groups × 3)',
       'selected_label': 'Selected',
-      'prop_id': 'Card ID',
-      'prop_status': 'Status',
-      'prop_yes': 'Yes votes',
-      'prop_no': 'No votes',
-      'prop_deadline': 'Deadline',
-      'deposit_label': 'Deposit',
       'none_label': 'None',
       'match_id_label': 'Match',
       'status_label': 'Status',
@@ -740,13 +677,9 @@
       'settle_ok': 'Settled',
       'execute_ok': 'Executed',
       'cancel_ok': 'Cancelled',
-      'propose_ok': 'Proposal submitted',
-      'vote_ok': 'Voted',
       'claim_ok': 'Claimed',
       // ---- Payout / spend amount tips (parsed from the tx itself) ----
-      'claim_in': '✅ Received {amt} TKCC',
-      'claim_in_burn': '✅ Received {amt} TKCC (contract burned {burned} TKCC)',
-      'spent_tip': '✅ {what} · spent {amt} TKCC (from in-contract balance)',
+      'spent_tip': '✅ {what} · spent {amt} PAXI',
       'need_three': 'Select 3 cards first',
       'need_nine': 'Select 9 cards first',
       'pick_limit': 'Select {n} cards first',
@@ -862,7 +795,6 @@
       'battle_win': '🏆 Victory!', 'battle_lose': '💀 Defeat', 'battle_draw': '🤝 Draw',
       'battle_you': 'You', 'battle_opp': 'Opponent',
       'battle_deployed': ' (deployed)',
-      'battle_reward': 'Reward: {amt} TKCC',
       'battle_frag_reward': 'Fragments won: {frag}',
       'battle_rounds': '{n} round wins',
       'battle_challenger': 'Challenger', 'battle_defender': 'Defender',
@@ -886,8 +818,6 @@
       'err_card_notfound': 'Card not found. Refresh "My Cards" and retry.',
       'err_max_star': '⭐ This card is already at max stars (5★).',
       'err_bal_query': 'Failed to read in-contract balance. Please try again later.',
-      'err_tkcc_star': 'Insufficient in-contract TKCC: {from}★→{to}★ needs {need} TKCC, you have {have} TKCC. Deposit in "Wallet" first.',
-      'confirm_star_up': 'Star-up {from}★ → {to}★\n\nCost: {fee} TKCC (deducted from in-contract balance)\nof which burn {half} + bankroll {half}\n\nOK = star up, Cancel = abort',
       'err_frag_star': 'Not enough fragments: fragment star-up needs {need} {rarity} fragments, you have {have} (no TKCC required).',
       'confirm_star_frag': 'Fragment star-up {from}★ → {to}★\n\nConsumes {need} {rarity} fragments (no TKCC, no burn)\nYou have {have}\n\nOK = star up, Cancel = abort',
       'err_max_level': '💠 This card is already at max level (Lv10).',
@@ -962,7 +892,6 @@
       'help_shop_title': 'Shop (PAXI)',
       'help_shop_desc': 'Everything is fixed-price and granted instantly. Prices are configured on-chain; defaults shown:',
       'help_shop_card': 'Hero cards (C/R/E/L)',
-      'help_shop_frag': 'Fragment packs ×10 (C/R/E/L)',
       'help_shop_stamina': 'Stamina pack (+30)',
       'help_shop_stamina_v': 'per pack',
       'help_shop_skin': 'Skins',
@@ -978,11 +907,6 @@
       'help_cult_star': 'Star-up (1★→5★)',
       'help_cult_craft': 'Craft new card',
       'help_cult_decompose': 'Decompose (refund)',
-      'help_prop_title': 'Governance (card proposals)',
-      'help_prop_desc': 'Anyone may submit a new card template proposal for community voting. After the voting period: approved → card enters the pool and deposit refunded; rejected → deposit forfeited to the house.',
-      'help_prop_deposit': 'Proposal deposit',
-      'help_prop_vote': 'Voting power',
-      'help_prop_vote_v': 'Based on in-contract TKCC balance (1 TKCC = 1 vote), read-only — voting never spends tokens',
       'help_safety_title': 'Safety Notes',
       'help_safety_desc': 'The game uses seamless signing: session keys only authorize game actions, carry daily limits, and can be revoked anytime in settings. Your main wallet private key never leaves your device.',
       'help_safety_frag': 'Fragments',
@@ -1211,38 +1135,12 @@
     return s.slice(0, 15) + '…';
   }
 
-  // ============================================================
-  // 🟢 交易金额自解析（**纯展示层，不改任何业务逻辑**）
-  //    TKCC 是 PRC-20(cw20) 代币，链上精度 6。领奖类交易在合约内部会发两条子事件：
-  //      transfer（把奖励打给玩家）  +  burn（按 5% 抽水销毁）
-  //    第三方钱包常只取"最后一条 PRC-20 事件"→ 把 burn 当作到账额显示
-  //    （实测：真实到账 168,000 TKCC 被钱包显示成 36,000 TKCC）。
-  //    这里由前端直接读本次交易的 transfer 事件，把**真实到账额**提示给玩家，
-  //    玩家无需再回钱包对账。
-  // ============================================================
-  function sgTkccEvents(tx) {
-    const out = { inbound: 0n, burn: 0n };
-    if (!tx) return out;
-    let self = '';
-    try { self = (state.wallet && state.wallet.address) || ''; } catch (_) { self = ''; }
-    const evs = [...(tx.events || [])];
-    for (const log of tx.logs || []) evs.push(...(log.events || []));
-    for (const ev of evs) {
-      if (!ev || ev.type !== 'wasm') continue;
-      const m = {};
-      for (const a of ev.attributes || []) m[a.key] = a.value;   // 本节点 attributes 为明文，勿盲目 base64 解码
-      if (m.action === 'transfer' && m.amount && m.to === self) {
-        try { out.inbound += BigInt(m.amount); } catch (_) { /* 忽略异常值 */ }
-      } else if (m.action === 'burn' && m.amount) {
-        try { out.burn += BigInt(m.amount); } catch (_) { /* 忽略异常值 */ }
-      }
-    }
-    return out;
-  }
+  // 🟢 20261014-12：sgTkccEvents（TKCC transfer/burn 解析）已删除——领奖恒发碎片，
+  //    前端不再需要解析 TKCC 到账额；领奖提示统一走 parseTxEvents('reward') 的碎片串。
 
   /** 领奖成功提示：优先显示本次真实到账额；解析不到则回退原文案（如合约改为内部记账时） */
   function sgClaimToast(tx, fallbackKey) {
-    // 🟢 合规化：领奖现发放碎片（非 TKCC），优先展示链上 reward 碎片字符串
+    // 🟢 合规化：领奖只发碎片（无 TKCC/PAXI 入账），优先展示链上 reward 碎片字符串
     try {
       const ev = parseTxEvents(tx, ['reward']);
       const reward = ev.reward && ev.reward[0];
@@ -1251,19 +1149,10 @@
         return;
       }
     } catch (e) { /* 解析失败回退 */ }
-    const m = sgTkccEvents(tx);
-    if (m.inbound > 0n) {
-      const key = (m.burn > 0n) ? 'claim_in_burn' : 'claim_in';
-      showToast(tf(key, {
-        amt: fromRawUnits(String(m.inbound), 6),
-        burned: fromRawUnits(String(m.burn), 6),
-      }), 'success');
-      return;
-    }
     showToast(t(fallbackKey), 'success');
   }
 
-  /** 消耗类操作（建房/加入/挑战）成功提示：写明本次扣了多少 TKCC（从合约内余额扣，钱包里看不到） */
+  /** 消耗类操作成功提示（合规版：抽卡/战斗恒免费，暂无调用点，保留以防将来接 PAXI 消费） */
   function sgSpentTip(whatKey, rawFee) {
     showToast(tf('spent_tip', {
       what: t(whatKey),
@@ -1796,7 +1685,6 @@
         <div class="card-title">🛒 ${t('help_shop_title')}</div>
         <div class="desc">${t('help_shop_desc')}</div>
         <div class="kv"><span class="k">${t('help_shop_card')}</span><span class="v">💰 ${cardPrice(5000000)} / ${cardPrice(15000000)} / ${cardPrice(40000000)} / ${cardPrice(100000000)} PAXI</span></div>
-        <div class="kv"><span class="k">${t('help_shop_frag')}</span><span class="v">💰 1 / 4 / 12 / 30 PAXI</span></div>
         <div class="kv"><span class="k">${t('help_shop_stamina')}</span><span class="v">💰 ${staminaPrice} PAXI ${t('help_shop_stamina_v')}</span></div>
         <div class="kv"><span class="k">${t('help_shop_skin')}</span><span class="v">💰 ${t('help_shop_skin_v')}</span></div>
         <div class="kv"><span class="k">${t('help_shop_season')}</span><span class="v">💰 ${t('help_shop_season_v')}</span></div>
@@ -1814,13 +1702,6 @@
         <div class="kv"><span class="k">${t('help_cult_star')}</span><span class="v">🧩 50 / 100 / 200 / 500</span></div>
         <div class="kv"><span class="k">${t('help_cult_craft')}</span><span class="v">🧩 30 / 60 / 150 / 400</span></div>
         <div class="kv"><span class="k">${t('help_cult_decompose')}</span><span class="v">🧩 5 / 10 / 20 / 50</span></div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">🗳️ ${t('help_prop_title')}</div>
-        <div class="desc">${t('help_prop_desc')}</div>
-        <div class="kv"><span class="k">${t('help_prop_deposit')}</span><span class="v">💰 50 PAXI</span></div>
-        <div class="kv"><span class="k">${t('help_prop_vote')}</span><span class="v">${t('help_prop_vote_v')}</span></div>
       </div>
 
       <div class="card">
@@ -2158,7 +2039,7 @@
       </div>
       <div class="card">
         <div class="card-title">${t('draw_pack3_title')}</div>
-        <div class="desc" id="sgDesc3">${tf('shop_frags', { n: 3 })}</div>
+        <div class="desc" id="sgDesc3">${t('draw_pack3_desc')}</div>
         <button class="btn btn-gold" id="sgDraw3" style="margin-top:10px" ${isFree ? '' : 'disabled'}>${t('draw_pack3')}</button>
       </div>
       <div id="sgDrawLog"></div>`;
@@ -2175,7 +2056,7 @@
       if ($('sgDraw3')) $('sgDraw3').disabled = disable;
       const d1 = $('sgDesc1'), d3 = $('sgDesc3');
       if (d1) d1.textContent = disable ? t('draw_free_done') : t('draw_free_desc');
-      if (d3) d3.textContent = disable ? t('draw_free_done') : tf('shop_frags', { n: 3 });
+      if (d3) d3.textContent = disable ? t('draw_free_done') : t('draw_pack3_desc');
     }
     // 未迁移（isFree=false）时按钮保持 disabled，仅作界面预览，不会发交易。
 
@@ -2758,7 +2639,7 @@
         <button class="btn btn-primary" id="sgMigrateBtn" style="margin-top:8px">${t('migrate_btn')}</button>
       </div>
       <div class="card" id="sgPendingCard" style="display:none">
-        <div class="card-title">🎁 ${t('pending_reward')}（<span id="sgPendingTotal">0</span> TKCC）</div>
+        <div class="card-title">🎁 ${t('pending_reward')}（<span id="sgPendingTotal">0</span> ${t('unit_frag')}）</div>
         <div id="sgPendingList"></div>
         <button class="btn btn-gold" id="sgClaimAll" style="margin-top:8px">${t('claim_btn')}</button>
       </div>
@@ -2806,7 +2687,8 @@
         const total = (pend && pend.total_rewards) ? pend.total_rewards : '0';
         if (ids.length) {
           $('sgPendingCard').style.display = '';
-          $('sgPendingTotal').textContent = fromRawUnits(total);
+          // 🟢 20261014-12：total_rewards 是统一碎片余额（u128 计数，非 6 位精度），直接展示原值
+          $('sgPendingTotal').textContent = String(total);
           $('sgPendingList').innerHTML = ids.map((id) =>
             `<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid #1c2740">
               <span style="font-size:12px;color:#9fb3d1">${id}</span>
@@ -3008,18 +2890,16 @@
     } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      let inSum = 0n, burnSum = 0n;
+      const frags = [];
       for (const id of ids) {
         const r = await sanguoExec('SanguoClaimReward', { battle_id: id }, { action: 'claim_reward', spend: 0 });
-        const m = sgTkccEvents(r.tx);
-        inSum += m.inbound; burnSum += m.burn;
+        try {
+          const ev = parseTxEvents(r.tx, ['reward']);
+          if (ev.reward && ev.reward[0]) frags.push(ev.reward[0]);
+        } catch (e) { /* 解析失败忽略 */ }
       }
-      if (inSum > 0n) {
-        showToast(tf((burnSum > 0n) ? 'claim_in_burn' : 'claim_in', {
-          amt: fromRawUnits(String(inSum), 6),
-          burned: fromRawUnits(String(burnSum), 6),
-        }), 'success');
-      } else { showToast(t('ok_short'), 'success'); }
+      if (frags.length) showToast(tf('claim_frag', { frag: frags.join(' / ') }), 'success');
+      else showToast(t('ok_short'), 'success');
       renderSanguoTab();
     } catch (e) {
       showToast(t('fail_prefix') + (e.message || e), 'error');
@@ -3195,7 +3075,7 @@
     const enoughCards = cardCount >= 9;
     body.innerHTML = `
       <div class="card" id="sgAiPendingCard" style="display:none">
-        <div class="card-title">🎁 ${t('pending_reward')}（<span id="sgAiPendingTotal">0</span> 碎片）</div>
+        <div class="card-title">🎁 ${t('pending_reward')}（<span id="sgAiPendingTotal">0</span> ${t('unit_frag')}）</div>
         <div class="hint" id="sgAiPendingHint"></div>
         <button class="btn btn-gold" id="sgAiClaimAll" style="margin-top:8px;width:100%">${t('claim_btn')}</button>
       </div>
@@ -3264,7 +3144,8 @@
         const ids = (pend && pend.battle_ids) || [];
         if (ids.length) {
           $('sgAiPendingCard').style.display = '';
-          $('sgAiPendingTotal').textContent = fromRawUnits((pend && pend.total_rewards) || '0');
+          // 🟢 20261014-12：统一碎片余额为计数，不用 6 位精度换算
+          $('sgAiPendingTotal').textContent = String((pend && pend.total_rewards) || '0');
           $('sgAiPendingHint').textContent = tf('ai_pending_hint', { n: ids.length });
           $('sgAiClaimAll').onclick = () => doClaimAll(ids);
         }
@@ -4345,7 +4226,7 @@
     const resultText = opts.result === 'win' ? t('battle_win') : opts.result === 'lose' ? t('battle_lose') : t('battle_draw');
     const rewardHtml = (opts.fragReward && opts.fragReward.trim() && opts.fragReward !== 'common:0,rare:0,epic:0,legend:0')
       ? `<div class="side-label battle-reward">🧩 ${tf('battle_frag_reward', { frag: opts.fragReward })}</div>`
-      : ((opts.reward != null && Number(opts.reward) > 0) ? `<div class="side-label battle-reward">${tf('battle_reward', { amt: opts.reward })}</div>` : '');
+      : '';
     const rwHtml = (opts.roundWins !== null && opts.roundWins !== undefined && opts.roundWins !== '') ? `<div class="side-label">${tf('battle_rounds', { n: opts.roundWins })}</div>` : '';
     arena.innerHTML = `
       <div class="vs-banner">${t('battle_result_title')}</div>
@@ -4390,7 +4271,7 @@
     const resultText = opts.result === 'win' ? t('battle_win') : opts.result === 'lose' ? t('battle_lose') : t('battle_draw');
     const rewardHtml = (opts.fragReward && opts.fragReward.trim() && opts.fragReward !== 'common:0,rare:0,epic:0,legend:0')
       ? `<div class="side-label battle-reward">🧩 ${tf('battle_frag_reward', { frag: opts.fragReward })}</div>`
-      : ((opts.reward != null && Number(opts.reward) > 0) ? `<div class="side-label battle-reward">${tf('battle_reward', { amt: opts.reward })}</div>` : '');
+      : '';
     const rwHtml = (opts.roundWins !== null && opts.roundWins !== undefined && opts.roundWins !== '') ? `<div class="side-label">${tf('battle_rounds', { n: opts.roundWins })}</div>` : '';
     return `
       <div class="vs-banner">${t('battle_result_title')}</div>
