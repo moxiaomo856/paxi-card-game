@@ -358,7 +358,7 @@
       'battle_frag_reward': '赢取碎片：{frag}',
       'battle_rounds': '三局 {n} 胜',
       'battle_challenger': '挑战方', 'battle_defender': '应战方',
-      'battle_ai_general': 'AI 战将', 'battle_ai_diff': 'AI 难度 {n}',
+      'battle_ai_general': 'AI 战将', 'battle_ai_diff': 'AI 难度 {n}', 'battle_rank_ai': '天梯 AI · 段位 {n}',
 
       // ---- 技能触发回放（V2.1：链上 skill_log 事件）----
       'skill_log_title': '🎯 技能触发回放',
@@ -783,7 +783,7 @@
       'battle_frag_reward': 'Fragments won: {frag}',
       'battle_rounds': '{n} round wins',
       'battle_challenger': 'Challenger', 'battle_defender': 'Defender',
-      'battle_ai_general': 'AI General', 'battle_ai_diff': 'AI Lv.{n}',
+      'battle_ai_general': 'AI General', 'battle_ai_diff': 'AI Lv.{n}', 'battle_rank_ai': 'Ranked AI · Tier {n}',
 
       // ---- skill trigger replay (V2.1: on-chain skill_log event) ----
       'skill_log_title': '🎯 Skill Trigger Log',
@@ -2269,6 +2269,8 @@
       const ev = parseTxEvents(r.tx, ['won', 'reward_total']);
       const won = ev.won && ev.won[0] === 'true';
       const total = (ev.reward_total && ev.reward_total[0]) ? Number(ev.reward_total[0]) : 0;
+      // 🟢 天梯：展示双方三组卡牌（依赖新合约 emit 的 group_scores/player_powers/ai_powers；旧合约自动回退 toast）
+      try { await showRankedBattleFromTx(r.tx, tier); } catch (_) { /* 展示失败不影响主流程 */ }
       if (won) showToast(tf('ranked_won', { n: total }), 'success');
       else showToast(t('ranked_lose'), 'error');
       renderSanguoTab();
@@ -4097,6 +4099,35 @@
     appendSkillLog($('battleArena'), ev.skill_log && ev.skill_log[0], t('battle_you'), tf('battle_ai_diff', { n: diff }));
   }
   window.showAiBattleFromTx = showAiBattleFromTx;
+
+  // 天梯对战（SanguoBattleAi ranked）：与休闲 AI 一致，从链上事件还原双方 9 张 + 三组胜负 + 技能回放。
+  // ⚠️ 依赖合约 ranked 分支 emit 的 result/group_scores_a/b/player_powers/ai_powers（2026-10-14 补）。
+  //    旧合约未 emit 这些事件时 → 返回 false，由 doRankedBattle 回退到原 toast 逻辑（不破旧链）。
+  async function showRankedBattleFromTx(tx, tier) {
+    const ev = parseTxEvents(tx, ['result', 'won', 'player_powers', 'ai_powers', 'group_scores_a', 'group_scores_b', 'skill_log', 'reward_total']);
+    let result = (ev.result && ev.result[0]) || '';
+    if (!result) {
+      const w = ev.won && ev.won[0] === 'true';
+      result = w ? 'win' : 'lose';
+    }
+    const playerPowers = parsePowers(ev.player_powers && ev.player_powers[0]);
+    const aiPowers = parsePowers(ev.ai_powers && ev.ai_powers[0]);
+    const ga = parseGroupScores(ev.group_scores_a && ev.group_scores_a[0]);
+    const gb = parseGroupScores(ev.group_scores_b && ev.group_scores_b[0]);
+    // 旧合约未 emit 分组事件 → 无法还原对手阵容，回退上层 toast
+    if (!ga || !gb || aiPowers.length !== 9) return false;
+    // 我方：直接使用本次出战的 sanguoPicked（最精确），缺战力时用模板战力兜底
+    const you = sanguoPicked.slice(0, 9).map((c, i) => ({ name: c.name, rarity: c.rarity, power: (playerPowers.length === 9 && playerPowers[i] != null) ? playerPowers[i] : power(c) }));
+    // 对手（AI）：用战力还原最接近模板作展示（9 张，带 AI 标记）
+    const opp = aiPowers.map((p) => {
+      const tpl = bestMatchTemplate(p);
+      return { name: tpl ? tpl.name : t('battle_ai_general'), rarity: tpl ? tpl.rarity : 'common', power: p, ai: true };
+    });
+    showGroupedBattle({ you: { label: t('battle_you'), cards: you }, opp: { label: tf('battle_rank_ai', { n: tier }), cards: opp }, ga, gb, result });
+    appendSkillLog($('battleArena'), ev.skill_log && ev.skill_log[0], t('battle_you'), tf('battle_rank_ai', { n: tier }));
+    return true;
+  }
+  window.showRankedBattleFromTx = showRankedBattleFromTx;
 
   // V2.1：技能触发回放——解析链上 skill_log 事件（JSON 数组），按 A/B 分边渲染时间线。
   // 链上字段：side(0/1)、card_name、skill_id、trigger(snake_case)、target(self_/opponent)、
