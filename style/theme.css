@@ -335,9 +335,13 @@ body { padding-bottom: calc(72px + var(--safe-bottom)); }
 }
 .shop-card:hover { transform: translateY(-2px); box-shadow: var(--sh-2); }
 .shop-card > img { border-radius: 6px !important; margin-bottom: 3px !important; }
-.shop-card .sc-nm { font-size: 11px; font-weight: 800; color: #fff; line-height: 1.15; }
-.shop-card .sc-rr { font-size: 9px; font-weight: 700; }
-.shop-card .sc-price { font-size: 10px; color: var(--c-gold); font-weight: 800; margin: 1px 0 3px; }
+.shop-card .sc-meta {
+  font-size: 10px; font-weight: 800; line-height: 1.2;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  white-space: nowrap; margin: 1px 0 3px; max-width: 100%; overflow: hidden;
+}
+.shop-card .sc-sep { opacity: .45; }
+.shop-card .sc-price-v { color: var(--c-gold); }
 .shop-card .btn { width: 100%; min-height: 28px; padding: 3px 4px; font-size: 11px; border-radius: 8px; line-height: 1.1; }
 .cur-tag, .limit-badge {
   position: absolute; top: -7px; font-size: 8px; font-weight: 800; line-height: 1;
