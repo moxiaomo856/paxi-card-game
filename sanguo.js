@@ -6,8 +6,8 @@
  *   1. 所有卡牌地址（image_url）与玩法逻辑沿用原始三国源码，不改动。
  *   2. 底层合约调用改为新统一合约的 Sanguo* 消息 + 会话无感签名
  *      （复用 games/mod.rs::validate_and_consume_session）。
- *   3. 完整玩法已恢复：抽卡 / 我的卡 / AI 对战 / 养成 / 提案 / PVP / 混战
- *      七个页签，全部走无感签名（session key），仅会话注册时钱包弹一次。
+ *   3. 完整玩法：抽卡 / 我的卡 / 商店 / 关卡 / 养成 / PVP / 混战
+ *      多个页签，全部走无感签名（session key），仅会话注册时钱包弹一次。
  *      合约侧 msg.rs / exec.rs / query.rs / mod.rs / error.rs / state.rs
  *      已全部恢复并经 cargo check 通过（按用户要求不编译 wasm）。
  *
@@ -132,7 +132,7 @@
       'sg_group_battle': '⚔️ 对战',
       'sg_group_more': '🧰 更多',
       'draw_free_title': '🎴 免费抽卡',
-      'draw_free_desc': '合规版抽卡完全免费，不消耗任何 PAXI / TKCC。',
+      'draw_free_desc': '合规版抽卡完全免费。',
       'draw_remaining': '今日剩余次数',
       'draw_free_done': '今日免费次数已用完，明天再来！',
       'draw_not_migrated': '⚠️ 当前合约尚未迁移到合规版（v0.1.1），免费抽卡暂不可用。下图展示的是合规版界面预览，合约迁移完成后将自动开启、可正常免费抽卡。',
@@ -377,8 +377,8 @@
       'err_card_notfound': '找不到该卡牌，请刷新「我的卡」后重试',
       'err_max_star': '⭐ 该卡已满星（5★），无法继续升星',
       'err_bal_query': '查询合约内余额失败，请稍后重试',
-      'err_frag_star': '碎片不足：碎片升星需要 {need} 个{rarity}碎片，当前 {have} 个（碎片升星不花 TKCC）',
-      'confirm_star_frag': '碎片升星 {from}★ → {to}★\n\n消耗 {need} 个{rarity}碎片（不花 TKCC、不销毁）\n当前拥有 {have} 个\n\n确定 = 升星，取消 = 中止',
+      'err_frag_star': '碎片不足：碎片升星需要 {need} 个{rarity}碎片，当前 {have} 个',
+      'confirm_star_frag': '碎片升星 {from}★ → {to}★\n\n消耗 {need} 个{rarity}碎片\n当前拥有 {have} 个\n\n确定 = 升星，取消 = 中止',
       'err_max_level': '💠 该卡已满级（Lv10），无法继续升级',
       'err_frag_level': '碎片不足：升级 Lv{from}→Lv{to} 需要 {need} 个{rarity}碎片，当前 {have} 个',
       'err_sig_format': '会话签名异常（签名为空）——通常是浏览器缓存了旧版脚本，请强制刷新页面（或清除缓存）后重试',
@@ -386,22 +386,6 @@
       'confirm_decompose': '⚠️ 分解后该卡将永久消失！\n\n「{name}」{star}★ Lv{lv}\n仅返还 {back} 个{rarity}碎片\n（不退还已投入的星级/等级/费用，养成后分解=白烧钱）\n\n确定 = 分解，取消 = 保留',
 
       // ---- 管理员对账页 ----
-      'ledger_loading': '查询中…',
-      'ledger_scanning': '⏳ 正在逐笔解析链上抽卡事件…',
-      'ledger_rpc_limited': '⚠️ 逐笔统计需访问链节点(RPC)，当前环境受限（如在手机钱包内打开）。请在桌面浏览器打开本页以查看逐笔收到。',
-      'ledger_scan_ok': '✅ 已逐笔解析全部抽卡交易（链上为准）。',
-      'ledger_scan_fail': '⚠️ 逐笔解析不可用，下列“收到”列为 — 。',
-      'ledger_th_addr': '抽水地址', 'ledger_th_count': '笔数', 'ledger_th_paxi': '收到 PAXI', 'ledger_th_tkcc': '收到 TKCC',
-      'ledger_total': '合计',
-      'ledger_total_burn': '游戏合约累计销毁 TKCC',
-      'ledger_burn_desc': '销毁为真实 burn（token 永久消失），不进任何钱包；与每笔抽卡 TKCC 的 40% 一致。',
-      'ledger_wallet_note': '说明：钱包/Ping.pub 对 PRC-20 的 wasm 转账事件解析有误（常把 10 PAXI 错标成 10 TKCC、漏显 12 万 TKCC）。本页直接读链上事件，数字与链一致。',
-      'ledger_done': '✅ 完成，共 {n} 个抽水地址',
-      'ledger_admin_only': '⛔ 此页面仅管理员可见。',
-      'ledger_title': '📊 收入对账（管理员）',
-      'ledger_desc': '逐笔解析 {n} 个抽水地址的抽卡 wasm 事件，显示真实收到的 PAXI + TKCC（链上为准，不受钱包显示影响）。含游戏合约累计销毁。',
-      'ledger_refresh': '🔄 刷新对账',
-      'ledger_hint_click': '点击「刷新对账」开始加载…',
 
       // ---- 🆕 新玩法：天梯 / 皮肤 / 通行证 / 体力 / 每日任务 ----
       'tab_ranked': '🏅 天梯',
@@ -420,9 +404,9 @@
       'compliance_disabled': '🛡️ 该对战玩法暂不可用。合规版 AI 对战/PVP/混战均为免费入场 + 赢取碎片。',
       'tab_help': '玩法说明',
       'help_title': '逐雄三国2.0 · 玩法说明',
-      'help_intro': '本游戏为合规版本：全程不使用 TKCC，所有奖励均为不可转让的卡牌碎片（仅游戏内使用）。PAXI 消费均为明码标价、确定获得，无任何随机赔付。',
+      'help_intro': '本游戏为合规版本：所有奖励均为不可转让的卡牌碎片（仅游戏内使用）。PAXI 消费均为明码标价、确定获得，无任何随机赔付。',
       'help_kv_compliance': '合规状态',
-      'help_kv_compliance_v': '✅ 已开启（不收不付 TKCC）',
+      'help_kv_compliance_v': '✅ 已开启',
       'help_kv_drawlimit': '每日免费抽卡次数',
       'help_kv_fragcap': '每日碎片获取上限',
       'help_free': '免费',
@@ -573,7 +557,7 @@
       'sg_group_battle': '⚔️ Battle',
       'sg_group_more': '🧰 More',
       'draw_free_title': '🎴 Free Draw',
-      'draw_free_desc': 'Compliance edition: drawing is completely free — no PAXI / TKCC consumed.',
+      'draw_free_desc': 'Compliance edition: drawing is completely free.',
       'draw_remaining': 'Draws left today',
       'draw_free_done': 'Daily free draws used up — come back tomorrow!',
       'draw_not_migrated': '⚠️ The contract has not been migrated to the compliance edition (v0.1.1) yet, so free draw is unavailable. The UI below is a preview of the compliance edition; it will auto-enable once the contract is migrated.',
@@ -818,8 +802,8 @@
       'err_card_notfound': 'Card not found. Refresh "My Cards" and retry.',
       'err_max_star': '⭐ This card is already at max stars (5★).',
       'err_bal_query': 'Failed to read in-contract balance. Please try again later.',
-      'err_frag_star': 'Not enough fragments: fragment star-up needs {need} {rarity} fragments, you have {have} (no TKCC required).',
-      'confirm_star_frag': 'Fragment star-up {from}★ → {to}★\n\nConsumes {need} {rarity} fragments (no TKCC, no burn)\nYou have {have}\n\nOK = star up, Cancel = abort',
+      'err_frag_star': 'Not enough fragments: fragment star-up needs {need} {rarity} fragments, you have {have}.',
+      'confirm_star_frag': 'Fragment star-up {from}★ → {to}★\n\nConsumes {need} {rarity} fragments\nYou have {have}\n\nOK = star up, Cancel = abort',
       'err_max_level': '💠 This card is already at max level (Lv10).',
       'err_frag_level': 'Not enough fragments: level-up Lv{from}→Lv{to} needs {need} {rarity} fragments, you have {have}.',
       'err_sig_format': 'Session signature error (signature is empty) — usually the browser cached an old script. Hard-refresh the page (or clear cache) and retry.',
@@ -827,22 +811,6 @@
       'confirm_decompose': '⚠️ Decomposing permanently destroys this card!\n\n"{name}" {star}★ Lv{lv}\nOnly {back} {rarity} fragments are returned\n(stars/levels/fees already invested are not refunded — decomposing an upgraded card wastes them)\n\nOK = decompose, Cancel = keep',
 
       // ---- admin ledger page ----
-      'ledger_loading': 'Loading…',
-      'ledger_scanning': '⏳ Parsing on-chain draw events one by one…',
-      'ledger_rpc_limited': '⚠️ Per-tx stats need RPC access, which is restricted here (e.g. inside a mobile wallet). Open this page in a desktop browser to see per-tx receipts.',
-      'ledger_scan_ok': '✅ All draw transactions parsed per-tx (on-chain is authoritative).',
-      'ledger_scan_fail': '⚠️ Per-tx parsing unavailable; the "received" columns show — .',
-      'ledger_th_addr': 'Fee address', 'ledger_th_count': 'Txs', 'ledger_th_paxi': 'PAXI received', 'ledger_th_tkcc': 'TKCC received',
-      'ledger_total': 'Total',
-      'ledger_total_burn': 'Total TKCC burned by game contract',
-      'ledger_burn_desc': 'Burn is a real burn (tokens permanently destroyed), reaching no wallet; matches the 40% TKCC portion of each draw.',
-      'ledger_wallet_note': 'Note: wallets/Ping.pub mis-parse PRC-20 wasm transfer events (often labeling 10 PAXI as 10 TKCC, or hiding the 120,000 TKCC). This page reads on-chain events directly, so the numbers match the chain.',
-      'ledger_done': '✅ Done, {n} fee addresses',
-      'ledger_admin_only': '⛔ This page is admin-only.',
-      'ledger_title': '📊 Revenue reconciliation (admin)',
-      'ledger_desc': 'Parses draw wasm events per-tx across {n} fee addresses, showing the real PAXI + TKCC received (on-chain is authoritative, unaffected by wallet display). Includes cumulative burn of the game contract.',
-      'ledger_refresh': '🔄 Refresh',
-      'ledger_hint_click': 'Tap "Refresh" to start loading…',
 
       // ---- 🆕 New: Ranked / Skins / Season Pass / Stamina / Daily Tasks ----
       'tab_ranked': '🏅 Ranked',
@@ -861,9 +829,9 @@
       'compliance_disabled': '🛡️ This battle mode is temporarily unavailable. Compliance AI/PVP/Royale are free entry + fragment rewards.',
       'tab_help': 'Guide',
       'help_title': 'Sanguo 2.0 · Game Guide',
-      'help_intro': 'This game runs in compliance mode: no TKCC is used at any point; all rewards are non-transferable card fragments (in-game only). All PAXI spending is fixed-price and deterministic — no random payouts.',
+      'help_intro': 'This game runs in compliance mode: all rewards are non-transferable card fragments (in-game only). All PAXI spending is fixed-price and deterministic — no random payouts.',
       'help_kv_compliance': 'Compliance',
-      'help_kv_compliance_v': '✅ Active (no TKCC in or out)',
+      'help_kv_compliance_v': '✅ Active',
       'help_kv_drawlimit': 'Daily free draws',
       'help_kv_fragcap': 'Daily fragment cap',
       'help_free': 'Free',
@@ -1135,12 +1103,9 @@
     return s.slice(0, 15) + '…';
   }
 
-  // 🟢 20261014-12：sgTkccEvents（TKCC transfer/burn 解析）已删除——领奖恒发碎片，
-  //    前端不再需要解析 TKCC 到账额；领奖提示统一走 parseTxEvents('reward') 的碎片串。
-
   /** 领奖成功提示：优先显示本次真实到账额；解析不到则回退原文案（如合约改为内部记账时） */
   function sgClaimToast(tx, fallbackKey) {
-    // 🟢 合规化：领奖只发碎片（无 TKCC/PAXI 入账），优先展示链上 reward 碎片字符串
+    // 🟢 领奖只发碎片，优先展示链上 reward 碎片字符串
     try {
       const ev = parseTxEvents(tx, ['reward']);
       const reward = ev.reward && ev.reward[0];
@@ -1335,8 +1300,8 @@
    * ⚠️ opts.action 必须与合约 sanguo_auth 里的 action 完全一致，否则验签会失败。
    *    取值集合（与合约 sanguo_auth 一一对应）：
    *      draw_pack | draw_pack3 | ai_battle | claim_reward | set_battle_order |
-   *      star_up | decompose | upgrade | craft | propose | vote | execute_proposal |
-   *      cancel_proposal | create_pvp | accept_pvp | cancel_pvp | claim_pvp |
+   *      star_up | decompose | upgrade | craft |
+   *      create_pvp | accept_pvp | cancel_pvp | claim_pvp |
    *      create_royale | join_royale | settle_royale | claim_royale
    *
    *    opts.spend 必须与合约 sanguo_auth 收到的 spend 完全一致（参与签名原文）：
@@ -1446,7 +1411,7 @@
   }
 
   // 合规版页签（2026-10-10）：免费抽卡 → 我的卡 → 商店 → 关卡 → 养成 → 收入对账(管理员)
-  // AI对战 / PVP / 混战 / 提案在合规合约下被禁（涉代币博弈），入口整体下线。
+  // AI对战 / PVP / 混战在合规合约下被禁，入口整体下线。
   // 🟢 美化（20261014-8）：group 分三组渲染（玩法/对战/更多），替代 12 键平铺
   const SANGUO_TABS = [
     { id: 'draw',      key: 'tab_draw',      group: 'play' },
@@ -1463,7 +1428,6 @@
     // 🟢 参数收敛（2026-10-14）：战斗系数管理员热更面板（克制/稀有度/技能/连携强度）
     { id: 'battleparams', key: 'tab_battleparams', group: 'more', admin: true },
     // 🟢 2026-10-12：收入对账 tab 移除——对账数据是老合约的抽水事件，新合约无意义（用户拍板取消）
-    // { id: 'ledger',    key: 'tab_ledger', admin: true },
   ];
 
   // 🟢 合规配置缓存（sanguo_compliance 查询；老合约没有该查询时返回 null → 走旧逻辑）
@@ -1476,7 +1440,7 @@
     return sgCompliance;
   }
 
-  // 🟢 合规闸：TKCC 对战（AI/PVP/混战）入口在合规模式下一律拦截。
+  // 🟢 合规闸：对战入口在合规模式下一律拦截。
   //    合约端同名入口同样拒绝（双保险）；cancel/claim 通道保留（存量对局退出口）。
   async function complianceGate() {
     const cp = await loadCompliance();
@@ -1727,16 +1691,10 @@
       dailytask: renderDailyTask,
       help: renderHelp,
       battleparams: renderBattleParams,
-      // 🟢 合规化（T24 投票全禁）：提案 tab 已隐藏——源码已删 SanguoProposals 查询与提案入口，
-      //    前端同步下线 renderProposal 分发，保证「前端无提案调用 ≡ 合约无提案入口」。
-      // proposal: renderProposal,
       pvp: renderPvp,
       royale: renderRoyale,
-      ledger: renderLedger,
       gift: renderGift,
     };
-    // 收入对账页仅管理员可见：非管理员误入时回退到抽卡页
-    if (sanguoTab === 'ledger' && !isSgAdmin()) { sanguoTab = 'draw'; }
     (fns[sanguoTab] || renderDraw)(body);
   }
 
@@ -1883,135 +1841,6 @@
   window.doGift = doGift;
 
   // ============================================================
-  // 收入对账（仅管理员可见）：逐笔解析 11 个抽水地址的抽卡 wasm 事件，
-  // 显示每个地址真实收到的 PAXI + TKCC（链上为准，不受钱包/Ping.pub 的 PRC-20 解析错误影响）。
-  // 注：RPC(tx_search) 在手机钱包内置浏览器可能受限（CORS/端口），失败则降级显示「—」
-  //     并提示用桌面浏览器查看；当前余额走 LCD 始终可用。
-  // ============================================================
-  async function rpcSearchAll(query) {
-    const base = NETWORK.rpc + '/tx_search';
-    const out = [];
-    for (let page = 1; page <= 30; page++) {
-      const url = `${base}?query=${encodeURIComponent('"' + query + '"')}&order_by="desc"&page=${page}&per_page=50`;
-      const r = await fetch(url);
-      if (!r.ok) throw new Error('RPC ' + r.status);
-      const d = await r.json();
-      const txs = (d && d.result && d.result.txs) || [];
-      out.push(...txs);
-      const total = Number((d && d.result && d.result.total_count) || 0);
-      if (!txs.length || out.length >= total) break;
-    }
-    return out;
-  }
-
-  // 解析一笔抽卡交易事件：仅统计「游戏合约发出」的 TKCC 转账/销毁与 PAXI 原生转账
-  function parseDrawTx(evs, gameAddr, tkccAddr) {
-    let paxi = 0n, tkcc = 0n, burn = 0n, isDraw = false;
-    const byType = {};
-    for (const e of evs || []) { (byType[e.type] = byType[e.type] || []).push(e); }
-    for (const e of (byType.wasm || [])) {
-      const kv = {}; for (const a of e.attributes) kv[a.key] = a.value;
-      if (kv.action === 'draw_pack' || kv.action === 'draw_pack3') isDraw = true;
-    }
-    if (!isDraw) return null;
-    for (const e of (byType.wasm || [])) {
-      const kv = {}; for (const a of e.attributes) kv[a.key] = a.value;
-      if (kv._contract_address === tkccAddr && kv.from === gameAddr) {
-        if (kv.action === 'transfer') { try { tkcc += BigInt(kv.amount || '0'); } catch (_) {} }
-        if (kv.action === 'burn') { try { burn += BigInt(kv.amount || '0'); } catch (_) {} }
-      }
-    }
-    for (const e of (byType.transfer || [])) {
-      const kv = {}; for (const a of e.attributes) kv[a.key] = a.value;
-      if (kv.sender === gameAddr && kv.amount && kv.amount.endsWith('upaxi')) {
-        try { paxi += BigInt(kv.amount.replace('upaxi', '')); } catch (_) {}
-      }
-    }
-    return { paxi, tkcc, burn };
-  }
-
-  async function loadLedger() {
-    const body = $('sgLedgerBody');
-    const hint = $('sgLedgerHint');
-    if (hint) hint.textContent = t('ledger_loading');
-    if (body) body.innerHTML = `<div class="hint">${t('ledger_scanning')}</div>`;
-
-    const gameAddr = CONTRACTS.game;
-    const tkccAddr = CONTRACTS.tkcc;
-    let taps = [];
-    try {
-      const c = await queryContract({ sanguo_config: {} });
-      taps = (c && Array.isArray(c.tap_addresses)) ? c.tap_addresses : [];
-    } catch (e) { taps = []; }
-
-    const agg = taps.map((addr) => ({ addr, paxi: 0n, tkcc: 0n, count: 0 }));
-    let burnTotal = 0n, scanOk = false;
-    try {
-      for (let i = 0; i < taps.length; i++) {
-        const txs = await rpcSearchAll(`wasm.to='${taps[i]}'`);
-        for (const tx of txs) {
-          const evs = (tx.tx_result && tx.tx_result.events) || tx.events || [];
-          const r = parseDrawTx(evs, gameAddr, tkccAddr);
-          if (r) { agg[i].paxi += r.paxi; agg[i].tkcc += r.tkcc; agg[i].count += 1; burnTotal += r.burn; }
-        }
-      }
-      scanOk = true;
-    } catch (e) {
-      if (hint) hint.textContent = t('ledger_rpc_limited');
-    }
-
-    if (!body) return;
-    let rows = '', sumP = 0n, sumT = 0n;
-    for (const a of agg) { sumP += a.paxi; sumT += a.tkcc;
-      rows += `<tr>
-        <td style="font-size:10px;word-break:break-all;max-width:140px">${a.addr}</td>
-        <td style="text-align:center">${a.count}</td>
-        <td>${scanOk ? fromRawUnits(a.paxi.toString()) : '—'}</td>
-        <td>${scanOk ? fromRawUnits(a.tkcc.toString()) : '—'}</td>
-      </tr>`;
-    }
-    body.innerHTML = `
-      <div class="card">
-        <div class="desc">${scanOk ? t('ledger_scan_ok') : t('ledger_scan_fail')}</div>
-        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:8px">
-          <thead><tr style="text-align:left;color:#ffd700">
-            <th>${t('ledger_th_addr')}</th><th style="text-align:center">${t('ledger_th_count')}</th><th>${t('ledger_th_paxi')}</th><th>${t('ledger_th_tkcc')}</th>
-          </tr></thead>
-          <tbody>${rows}</tbody>
-          ${scanOk ? `<tfoot><tr style="font-weight:bold;border-top:1px solid #b8860b">
-            <td>${t('ledger_total')}</td><td></td>
-            <td>${fromRawUnits(sumP.toString())}</td>
-            <td>${fromRawUnits(sumT.toString())}</td>
-          </tr></tfoot>` : ''}
-        </table>
-      </div>
-      ${scanOk ? `<div class="card"><div class="kv"><span class="k">${t('ledger_total_burn')}</span><span class="v" style="color:#ff8c69">${fromRawUnits(burnTotal.toString())}</span></div>
-        <div class="desc">${t('ledger_burn_desc')}</div></div>` : ''}
-      <div class="hint" style="margin-top:8px">${t('ledger_wallet_note')}</div>`;
-    if (hint && scanOk) hint.textContent = tf('ledger_done', { n: taps.length });
-  }
-
-  async function renderLedger(body) {
-    if (!isSgAdmin()) {
-      body.innerHTML = `<div class="hint err">${t('ledger_admin_only')}</div>`;
-      return;
-    }
-    body.innerHTML = `
-      <div class="card">
-        <div class="card-title">${t('ledger_title')}</div>
-        <div class="desc">${tf('ledger_desc', { n: 11 })}</div>
-      </div>
-      <div class="card">
-        <button class="btn btn-primary" id="sgLedgerRefresh">${t('ledger_refresh')}</button>
-        <span id="sgLedgerHint" class="hint"></span>
-      </div>
-      <div id="sgLedgerBody">${t('ledger_hint_click')}</div>`;
-    const btn = $('sgLedgerRefresh');
-    if (btn) btn.onclick = () => loadLedger();
-    loadLedger();
-  }
-
-  // ============================================================
   // 抽卡
   // ============================================================
   async function renderDraw(body) {
@@ -2069,7 +1898,7 @@
       await requireSanguo();
     } catch (e) { showToast(e.message, 'error'); return; }
 
-    // 🟢 合规分支：免费抽卡 —— 不查 tap / TKCC / 内部 PAXI，直接发交易（合约 billed=0）
+    // 🟢 合规分支：免费抽卡 —— 直接发交易（合约 billed=0）
     const cp = await loadCompliance();
     if (cp) {
       showBusy(t('draw_doing'));
@@ -2096,9 +1925,7 @@
       return;
     }
 
-    // 🟢 外部审计 #12 修复：删除 TKCC/PAXI 计费 fallback 分支——
-    //    合规版抽卡恒免费（合约 deprecated 计费字段不读取、spend=0），
-    //    即使 sanguo_compliance 查询失败也不允许走任何计费路径。
+    // 🟢 外部审计 #12：合规版抽卡恒免费，即使合规查询失败也不走任何计费路径。
     showBusy(t('draw_doing'));
     try {
       await sanguoExec('SanguoDraw', { tap_index: 0, pack3 }, {
@@ -3360,8 +3187,6 @@
             ${troopLine}${skillLine}${bondLine}
           </div>
           <div class="sg-cult-acts">
-            <!-- 🟢 合规化：TKCC 升星路径已移除（合约 upgrade_fees 已 deprecated、恒按碎片扣），
-                 仅保留碎片升星，杜绝 TKCC 触点 -->
             <button class="btn btn-sm btn-ghost" data-act="star_frag" data-cid="${c.card_id}">${t('starup_btn')}·F</button>
             <button class="btn btn-sm btn-ghost" data-act="upgrade" data-cid="${c.card_id}">${t('upgrade_btn')}</button>
             <button class="btn btn-sm btn-ghost" data-act="decompose" data-cid="${c.card_id}">${t('decompose_btn')}</button>
@@ -3397,27 +3222,17 @@
   //    全部被合约拒绝 → 白烧 gas（链上实测：两笔 sanguo_star_up 报
   //    "Card already at maximum star"，每笔白扣手续费）。
   //    数值必须与合约一致：
-  //    · src/sanguo/state.rs::upgrade_fees = [50000,150000,400000,1000000]（TKCC，50% 销毁）
   //    · 升星碎片路径 = STAR_UP_FRAGMENT_COST[稀有度] → [50,100,200,500]（按稀有度，与星级无关，与升级碎片同表）
   //    · 升级每级碎片 = 同表 50/100/200/500（按稀有度）
   //    · 分解返还 = 5/10/20/50（按稀有度）
   // 🟢 3A：养成常量兜底（链上读不到时用），正常路径从 paramsCache 派生
   const SG_CONST_FALLBACK = {
-    upgrade_fees_raw: [50_000_000_000n, 150_000_000_000n, 400_000_000_000n, 1_000_000_000_000n],
     craft_cost: [30, 60, 150, 400],
     decompose_frag_back: [5, 10, 20, 50],
     star_up_frag_cost: [50, 100, 200, 500],
   };
   const _RI = { common: 0, rare: 1, epic: 2, legend: 3 };
 
-  /** 升星 TKCC 费用（raw BigInt 数组），优先链上，失败回退 */
-  function sgUpgradeFeesRaw() {
-    const p = paramsCache;
-    if (p && Array.isArray(p.upgrade_fees) && p.upgrade_fees.length === 4) {
-      try { return p.upgrade_fees.map((s) => BigInt(s)); } catch (e) {}
-    }
-    return SG_CONST_FALLBACK.upgrade_fees_raw;
-  }
   /** 合成消耗碎片数（按稀有度字符串） */
   function sgCraftCost(rarity) {
     const ri = _RI[rarity]; if (ri == null) return 0;
@@ -3450,13 +3265,6 @@
     return token ? [] : [{ denom: 'upaxi', amount: String(priceStr) }];
   }
 
-  // 查合约内 TKCC 余额（raw）。查询失败返回 null（调用方决定是否放行）。
-  async function sgInContractTkcc() {
-    try {
-      const b = await queryContract({ balance: { address: state.wallet.address, token: CONTRACTS.tkcc } });
-      return BigInt(b.amount || '0');
-    } catch (e) { return null; }
-  }
   // 查某稀有度碎片（以链上为准，顺带刷新缓存；失败退回缓存值）
   async function sgFragOf(rarity) {
     try {
@@ -3467,8 +3275,7 @@
   }
 
   async function doStarUp(cardId, useFragments) {
-    // 🟢 合规化：合约 star_up 恒按碎片扣费（upgrade_fees 已 deprecated），TKCC 路径已删，
-    //    此处强制走碎片分支（即便误传 useFragments=false 也不会触发任何 TKCC 预检）
+    // 🟢 合规化：合约 star_up 恒按碎片扣费，此处强制走碎片分支。
     useFragments = true;
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     const card = userCards.find((c) => c.card_id === cardId);
@@ -3568,13 +3375,6 @@
       renderSanguoTab();
     }
   }
-
-  // ============================================================
-  // 🟢 合规化（T24 投票全禁）：提案系统已整体下线。
-  //    合约源码已删除 SanguoProposeCard/VoteCard/ExecuteProposal/CancelProposal
-  //    执行入口与 SanguoProposals 查询；前端同步移除 renderProposal 及全部
-  //    提案调用，保证「前端有 ≡ 合约有」双向对应，零提案残留。
-  // ============================================================
 
   // ============================================================
   // 🟢 管理员：战斗参数热更面板（克制/稀有度/技能/连携强度）
@@ -4297,7 +4097,7 @@
     const aiPowers = parsePowers(ev.ai_powers && ev.ai_powers[0]);
     const roundWins = (ev.round_wins && ev.round_wins[0]) || '';
     const rewardRaw = (ev.reward && ev.reward[0]) || '';
-    // 🟢 合规化：链上 reward 现在是碎片字符串（如 "common:20,rare:0,..."），原样展示，不再按 TKCC 精度换算
+    // 🟢 链上 reward 是碎片字符串（如 "common:20,rare:0,..."），原样展示
     const fragReward = result === 'win' ? rewardRaw : '';
     // 我方出牌：优先链上出战顺序（9 张），回退前 9 张
     let orderIds = [];

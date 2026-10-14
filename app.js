@@ -707,7 +707,6 @@ async function renderHome() {
     <div class="balance-bar">
       <div class="bal-item"><div class="bal-val" id="bChain">${state.chainBalance}</div><div class="bal-lab">${hubT('bal_onchain_paxi')}</div></div>
       <div class="bal-item"><div class="bal-val" id="bGame">${state.gameBalance}</div><div class="bal-lab">${hubT('bal_incontract_paxi')}</div></div>
-      <div class="bal-item"><div class="bal-val small" id="bTkcc">${state.tkccBalance}</div><div class="bal-lab">${hubT('bal_incontract_tkcc')}</div></div>
     </div>
     ${sessHtml}
     <div class="card">
