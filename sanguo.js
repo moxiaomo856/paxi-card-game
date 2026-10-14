@@ -2226,6 +2226,9 @@
       const col = rarityColor(tp.rarity);
       return `<div class="shop-card" style="border-color:${col}">
         ${price ? `<span class="cur-tag">PAXI</span>` : ''}
+        <img src="${getCardImage(tp.name)}" alt="${esc(tp.name)}" loading="lazy" decoding="async"
+             style="width:100%;aspect-ratio:2/3;object-fit:cover;border-radius:8px;margin-bottom:4px;background:rgba(255,255,255,.04)"
+             onerror="this.style.display='none'">
         <div class="sc-nm">${esc(tp.name)}</div>
         <div class="sc-rr" style="color:${col}">${rarityLabel(tp.rarity)}</div>
         <div class="sc-price">${price ? fromRawUnits(price) + ' PAXI' : t('shop_price_na')}</div>
