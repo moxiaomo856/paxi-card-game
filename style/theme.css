@@ -325,25 +325,27 @@ body { padding-bottom: calc(72px + var(--safe-bottom)); }
 .final-result.draw { color: var(--c-gold); text-shadow: 0 0 20px rgba(251, 191, 36, .45); }
 
 /* ========== 11. 商店（商品卡 / 货币标签 / 限购角标） ========== */
-.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: var(--sp-2); margin-top: 8px; }
+/* 瘦身（20261014-9）：卡图/价格/按钮整体缩小，手机端一行三个 */
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 6px; margin-top: 8px; }
 .shop-card {
-  position: relative; border: 2px solid var(--c-line); border-radius: var(--rad);
-  padding: 10px 8px 8px; background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .18));
-  text-align: center; display: flex; flex-direction: column; gap: 3px; align-items: center;
+  position: relative; border: 2px solid var(--c-line); border-radius: var(--rad-sm);
+  padding: 6px 5px 6px; background: linear-gradient(180deg, rgba(255, 255, 255, .05), rgba(0, 0, 0, .18));
+  text-align: center; display: flex; flex-direction: column; gap: 2px; align-items: center;
   transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
 }
 .shop-card:hover { transform: translateY(-2px); box-shadow: var(--sh-2); }
-.shop-card .sc-nm { font-size: 12px; font-weight: 800; color: #fff; }
-.shop-card .sc-rr { font-size: var(--fs-xs); font-weight: 700; }
-.shop-card .sc-price { font-size: 12px; color: var(--c-gold); font-weight: 800; margin: 3px 0 4px; }
-.shop-card .btn { width: 100%; }
+.shop-card > img { border-radius: 6px !important; margin-bottom: 3px !important; }
+.shop-card .sc-nm { font-size: 11px; font-weight: 800; color: #fff; line-height: 1.15; }
+.shop-card .sc-rr { font-size: 9px; font-weight: 700; }
+.shop-card .sc-price { font-size: 10px; color: var(--c-gold); font-weight: 800; margin: 1px 0 3px; }
+.shop-card .btn { width: 100%; min-height: 28px; padding: 3px 4px; font-size: 11px; border-radius: 8px; line-height: 1.1; }
 .cur-tag, .limit-badge {
-  position: absolute; top: -8px; font-size: 9px; font-weight: 800; line-height: 1;
-  padding: 3px 7px; border-radius: var(--rad-pill); box-shadow: var(--sh-1);
+  position: absolute; top: -7px; font-size: 8px; font-weight: 800; line-height: 1;
+  padding: 2px 5px; border-radius: var(--rad-pill); box-shadow: var(--sh-1);
 }
-.cur-tag { left: 6px; background: linear-gradient(135deg, #ffd97a, #f0a52e); color: #3b2a05; }
-.limit-badge { right: 6px; background: linear-gradient(135deg, #f87171, #b91c1c); color: #fff; }
-.shop-card.skeleton { pointer-events: none; min-height: 118px; justify-content: center; }
+.cur-tag { left: 4px; background: linear-gradient(135deg, #ffd97a, #f0a52e); color: #3b2a05; }
+.limit-badge { right: 4px; background: linear-gradient(135deg, #f87171, #b91c1c); color: #fff; }
+.shop-card.skeleton { pointer-events: none; min-height: 92px; justify-content: center; }
 
 /* ========== 12. 图鉴（收集度进度条） ========== */
 .codex-progress { color: #b7a78f; }
@@ -418,11 +420,13 @@ body { padding-bottom: calc(72px + var(--safe-bottom)); }
 @media (max-width: 600px) {
   /* 卡列表 3 列 → 2 列（!important 覆盖 JS 内联 grid-template-columns） */
   #sgCardGrid, #sgCultGrid, .codex-grid { grid-template-columns: repeat(2, 1fr) !important; }
-  .shop-grid { grid-template-columns: repeat(2, 1fr); }
+  .shop-grid { grid-template-columns: repeat(3, 1fr) !important; gap: 7px; }
   .main { padding-left: calc(12px + env(safe-area-inset-left, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); }
 }
 @media (max-width: 380px) {
   #sgCardGrid, #sgCultGrid, .codex-grid { gap: 7px !important; }
+  .shop-grid { gap: 5px !important; }
+  .shop-card { padding: 5px 4px; }
 }
 
 /* 触摸目标补强（保持既有视觉语言，仅放大可点区域） */
