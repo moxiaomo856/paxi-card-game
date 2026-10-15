@@ -1292,9 +1292,32 @@
    * @param fields   业务字段（不含 round_id/session_addr/nonce/signature）
    * @param opts     { action, spend=0, funds=[] }
    */
+  // 🟢 2026-10-15：按操作类型配置 gas 上限（PVP/混战比 AI/闯关复杂，写死 600k 会被撑爆）
+  //    Cosmos 只按 gas_used 计费，未用完的 gas 上限不额外扣费；这里只是抬高【上限】避免 out of gas。
+  //    fee 由 sendTx / computeSeamlessFee 按 gasLimit×链上最低价(0.05) 同步放大，与 gas 上限成配比。
+  const SG_GAS_LIMIT = {
+    battle_ai_casual: 800_000,    // AI 休闲：实测 137k~452k，留约 1.8× 余量
+    battle_ai_ranked: 1_500_000,  // 天梯 9v9，复杂度等同 PVP
+    battle_pvp_single: 1_500_000, // 单人 PVP（create/accept/cancel/claim）
+    battle_pvp_royale: 3_000_000, // 6 人混战（join/create/settle/claim，settle 要算 54 张卡）
+    default: 800_000,
+  };
   async function sanguoExec(variant, fields, opts) {
     const action = opts.action;
     const spend = opts.spend || 0;
+
+    // 🟢 2026-10-15：按 extra 前缀推断操作类型，注入对应 gas 上限（调用方未显式传 gasLimit 时）。
+    //    extra 约定（战斗入口统一格式）：casual:battle / ranked:battle / single:* / royale:*
+    //    迁移已在调用点显式传 gasLimit → 此处 `||` 不覆盖，保持自适应。
+    if (!opts.gasLimit) {
+      const ex = opts.extra || '';
+      let gk = 'default';
+      if (ex.startsWith('casual:')) gk = 'battle_ai_casual';
+      else if (ex.startsWith('ranked:')) gk = 'battle_ai_ranked';
+      else if (ex.startsWith('single:')) gk = 'battle_pvp_single';
+      else if (ex.startsWith('royale:')) gk = 'battle_pvp_royale';
+      opts.gasLimit = SG_GAS_LIMIT[gk] || SG_GAS_LIMIT.default;
+    }
 
     // 🟢 修复（低危 2）：显式同步链上 nonce，把「调用方必须先调 requireSanguo()」
     //    这一隐式契约显式化 —— 将来新增入口若漏调 requireSanguo，这里仍能兜住。
