@@ -524,14 +524,16 @@ function updateHeader() {
   const addrEl = $('hdrAddr');
   const balEl = $('hdrBal');
   const btn = $('btnConnect');
+  // 🟢 不显示 PAXI 个数（用户要求）
+  balEl.style.display = 'none';
   if (state.connected && state.wallet) {
-    addrEl.textContent = shortAddr(state.wallet.address, 4);
+    // 🟢 只显示连接状态，不显示钱包地址（用户要求）
+    addrEl.textContent = '已连接';
     addrEl.style.display = 'inline-block';
-    balEl.style.display = 'inline-block';
     btn.style.display = 'none';
   } else {
-    addrEl.style.display = 'none';
-    balEl.style.display = 'none';
+    addrEl.textContent = '未连接';
+    addrEl.style.display = 'inline-block';
     btn.style.display = 'inline-flex';
   }
 }
@@ -576,7 +578,7 @@ function switchTab(tab) {
   window.scrollTo(0, 0);
 
   const titles = { home: hubT('title_home'), wallet: hubT('title_wallet'), me: hubT('title_me') };
-  $('pageTitle').textContent = titles[tab] || hubT('title_home');
+  // 🟢 2026-10-15：顶部品牌固定为「逐雄三国」（两行竖排），不再随 tab 覆盖
 
   if (tab === 'home') {
     // 🟢 2026-10-12：「游戏」tab——直回三国页（openSanguo 异常时才兜底渲染大厅）
@@ -1288,7 +1290,7 @@ async function openGame(gameId) {
     // 3. 渲染
     const body = g.body(ctx);
     const gname = typeof g.meta.name === 'object' ? g.meta.name[hubLang()] : g.meta.name;
-    $('pageTitle').textContent = gname;
+    // 🟢 2026-10-15：顶部品牌固定为「逐雄三国」（两行竖排），不随打开游戏覆盖
     $('main').innerHTML = `
       <div class="back-bar" onclick="switchTab('home')">${hubT('back_home')}</div>
 

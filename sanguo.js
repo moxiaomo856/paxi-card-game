@@ -65,7 +65,7 @@
   // ============================================================
   const i18n = {
     zh: {
-      'sg_title': '🀄 逐雄三国2.0',
+      'sg_title': '🀄 逐雄三国',
       'sg_subtitle': '合规休闲卡牌：免费抽卡、买卡养成、9v9 三组对战，不涉及代币博弈。',
       'tab_draw': '🎴 抽卡',
       'tab_mycards': '🃏 我的卡',
@@ -404,7 +404,7 @@
       'shop_season': '赛季通行证',
       'compliance_disabled': '🛡️ 该对战玩法暂不可用。合规版 AI 对战/PVP/混战均为免费入场 + 赢取碎片。',
       'tab_help': '玩法说明',
-      'help_title': '逐雄三国2.0 · 玩法说明',
+      'help_title': '逐雄三国 · 玩法说明',
       'help_intro': '本游戏为合规版本：所有奖励均为不可转让的卡牌碎片（仅游戏内使用）。PAXI 消费均为明码标价、确定获得，无任何随机赔付。',
       'help_kv_compliance': '合规状态',
       'help_kv_compliance_v': '✅ 已开启',
@@ -490,7 +490,7 @@
       'dtask_3': '购买 1 包碎片',
     },
     en: {
-      'sg_title': '🀄 Sanguo 2.0',
+      'sg_title': '🀄 Sanguo',
       'sg_subtitle': 'Compliance casual card game: free draws, buy & level up generals, 9v9 battles — no token wagering.',
       'tab_draw': '🎴 Draw',
       'tab_mycards': '🃏 My Cards',
@@ -1359,6 +1359,8 @@
         const hash = await execContract(payload, opts.funds || [], '', opts);
         const tx = await waitForTx(hash);
         Session.bumpNonce();
+        // 🟢 2026-10-15：对战/任意写操作成功后刷新顶部战绩（「总对战」等不再卡在 —）
+        refreshSanguoStats().catch(() => {});
         // tx 一并返回：调用方可以直接用 parseTxEvents 读本次交易的 attributes，
         // 不必再 poll 一次同一条交易。
         return { hash, roundId, tx };
@@ -1512,7 +1514,8 @@
 
   function renderSanguo() {
     const main = $('main');
-    $('pageTitle').textContent = t('sg_title');
+    // 🟢 2026-10-15：顶部品牌固定为「逐雄三国」（两行竖排），由 index.html 静态控制，不在此覆盖
+    refreshSanguoStats().catch(() => {});
     // 注：包裹在 .sg-page 内 —— 老版金色主题只作用于三国页内部，大厅保持中性、其他游戏不动
     main.innerHTML = `
       <div class="sg-page">
@@ -4097,12 +4100,14 @@
       const ay = ga[g] || 0, by = gb[g] || 0;
       const cls = ay > by ? 'win' : by > ay ? 'lose' : 'draw';
       const txt = ay > by ? t('group_win') : by > ay ? t('group_lose') : t('group_draw');
+      const grpLabel = tf('battle_group', { n: g + 1 });
       rows += `
         <div class="grp-row">
-          <div class="grp-side"><div class="grp-tag">${tf('battle_group', { n: g + 1 })}</div>${youGroups[g].map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
-          <div class="grp-vs">${ay}<span class="grp-colon">:</span>${by}</div>
-          <div class="grp-side">${oppGroups[g].map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
-          <div class="grp-res"><span class="grp-badge ${cls}">${txt}</span></div>
+          <div class="grp-main">
+            <div class="grp-side grp-challenger"><div class="grp-tag">${esc(opts.you.label)} · ${grpLabel}</div>${youGroups[g].map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
+            <div class="grp-side grp-defender"><div class="grp-tag">${esc(opts.opp.label)} · ${grpLabel}</div>${oppGroups[g].map(miniCardHtml).join('') || '<span class="hint">—</span>'}</div>
+          </div>
+          <div class="grp-res"><div class="grp-score">${ay}<span class="grp-colon">:</span>${by}</div><span class="grp-badge ${cls}">${txt}</span></div>
         </div>`;
     }
     const totalA = ga[0] + ga[1] + ga[2], totalB = gb[0] + gb[1] + gb[2];
@@ -4335,13 +4340,23 @@
   }
   window.__sgSyncWallet = sgSyncWallet;
 
+  // 🟢 2026-10-15：重新拉取链上战绩并刷新顶部统计（进页面 / 每笔对战成功后调用，确保「总对战」不卡在 —）
+  async function refreshSanguoStats() {
+    if (!state.connected || !state.wallet) return;
+    try {
+      const s = await queryContract({ sanguo_ai_stats: { address: state.wallet.address } });
+      if (s) { sgAiStats = s; sgSyncWallet(); }
+    } catch (e) { /* 忽略：统计查询失败不阻断界面 */ }
+  }
+  window.__sgRefreshStats = refreshSanguoStats;
+
   // ============================================================
   // 注册到大厅（关键：否则大厅不显示三国卡片）
   // ============================================================
   const SanguoGame = {
     meta: {
       id: 'sanguo',
-      name: { zh: '逐雄三国2.0', en: 'Sanguo 2.0' },
+      name: { zh: '逐雄三国', en: 'Sanguo' },
       icon: '🀄',
       desc: { zh: '免费抽卡·买卡买碎片·9v9 三组对战', en: 'Free draw · buy cards · 9v9 group battles' },
       type: 'sanguo',

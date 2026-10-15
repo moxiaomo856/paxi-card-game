@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Paxi 逐雄三国2.0</title>
+<title>逐雄三国</title>
 <meta name="description" content="Paxi 逐雄三国2.0（免费抽卡 / 买卡买碎片 / 9v9 三组对战，不涉及代币博弈）">
 <meta name="theme-color" content="#0b0f1a">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%236ee7b7'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%230b0f1a'>G</text></svg>">
@@ -51,7 +51,8 @@ body {
   display: flex; align-items: center; justify-content: center;
   font-size: 16px; flex-shrink: 0;
 }
-.brand-name { font-size: 15px; font-weight: 800; white-space: nowrap; }
+.brand-name { font-size: 14px; font-weight: 800; line-height: 1.04; display: flex; flex-direction: column; align-items: flex-start; }
+.brand-name .bn1, .brand-name .bn2 { display: block; }
 .hdr-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .chip {
   font-size: 11px; padding: 4px 8px; border-radius: 999px;
@@ -491,12 +492,15 @@ td.num { font-family: ui-monospace, monospace; text-align: right; white-space: n
 /* Q3：9v9 三组分组亮牌 */
 .battle-arena .grp-head { display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#8a7a6a; padding:4px 2px; margin-bottom:4px; }
 .battle-arena .grp-head .grp-score { color:#ffd700; font-weight:bold; font-size:13px; }
-.battle-arena .grp-row { display:grid; grid-template-columns:1fr 34px 1fr 56px; align-items:center; gap:6px; padding:8px 4px; border-bottom:1px solid rgba(200,160,100,0.12); }
+.battle-arena .grp-row { display:flex; align-items:stretch; gap:10px; padding:8px 4px; border-bottom:1px solid rgba(200,160,100,0.12); }
+.battle-arena .grp-main { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:8px; }
 .battle-arena .grp-side { min-width:0; display:flex; gap:4px; flex-wrap:wrap; }
-.battle-arena .grp-tag { font-size:10px; color:#8a7a6a; text-align:center; margin-bottom:3px; }
+.battle-arena .grp-challenger { border-top:2px solid rgba(76,175,80,0.55); padding-top:4px; }
+.battle-arena .grp-defender { border-top:1px dashed rgba(255,255,255,0.14); padding-top:4px; }
+.battle-arena .grp-tag { font-size:10px; color:#8a7a6a; margin-bottom:3px; }
 .battle-arena .grp-vs { text-align:center; font-size:11px; color:#ffd700; font-weight:bold; }
 .battle-arena .grp-colon { opacity:.6; margin:0 1px; }
-.battle-arena .grp-res { text-align:center; }
+.battle-arena .grp-res { flex:0 0 58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
 .battle-arena .grp-badge { display:inline-block; font-size:10px; font-weight:bold; padding:3px 6px; border-radius:10px; border:1px solid currentColor; }
 .battle-arena .grp-badge.win { color:#4caf50; }
 .battle-arena .grp-badge.lose { color:#f44336; }
@@ -677,7 +681,7 @@ td.num { font-family: ui-monospace, monospace; text-align: right; white-space: n
 </style>
 
 <!-- ============ 视觉主题层 theme.css（20261013-2，纯离线） ============ -->
-<link rel="stylesheet" href="style/theme.css?v=20261015-3" />
+<link rel="stylesheet" href="style/theme.css?v=20261015-4" />
 
 <!-- ============ P2-14 PWA（20260929） ============ -->
 <link rel="manifest" href="manifest.json" />
@@ -697,7 +701,7 @@ td.num { font-family: ui-monospace, monospace; text-align: right; white-space: n
 <header class="header">
   <div class="brand">
     <div class="logo">🎮</div>
-    <div class="brand-name" id="pageTitle">Paxi 逐雄三国2.0</div>
+    <div class="brand-name" id="pageTitle"><span class="bn1">逐雄</span><span class="bn2">三国</span></div>
   </div>
   <div class="hdr-right">
     <span class="chip bal" id="hdrBal" style="display:none">—</span>
@@ -961,14 +965,14 @@ td.num { font-family: ui-monospace, monospace; text-align: right; white-space: n
     }
   })();
 </script>
-<script>window.HUB_BUILD = '20261015-3';</script>
+<script>window.HUB_BUILD = '20261015-4';</script>
 <script src="shared.js?v=20261014-5"></script>      <!-- 网络/交易基础 -->
 <script src="session.js?v=20261014-5"></script>     <!-- 无感签名（依赖 shared） -->
 <!-- 🟢 合规版：games.js 已清空下注游戏注册表（猜数字/轮盘/骰宝/卡牌全部下线） -->
 <script src="games.js?v=20261014-5"></script>       <!-- 空注册表 stub -->
-<script src="sanguo.js?v=20261015-3"></script>      <!-- 三国：唯一保留游戏（合规玩法，合约 code_id 36 配套） -->
+<script src="sanguo.js?v=20261015-4"></script>      <!-- 三国：唯一保留游戏（合规玩法，合约 code_id 36 配套） -->
 <!-- 🟢 合规版：crazydice.js（疯狂骰子，TKCC 下注）已删除，不再加载 -->
-<script src="app.js?v=20261015-3"></script>         <!-- 入口/UI（本次改动：只保留三国 + 启动直进三国 + 设置面板移除旧游戏限额 + 钱包改为合规版） -->
+<script src="app.js?v=20261015-4"></script>         <!-- 入口/UI（本次改动：只保留三国 + 启动直进三国 + 设置面板移除旧游戏限额 + 钱包改为合规版） -->
 <script>console.log('[PaxiGameHub] build =', window.HUB_BUILD);</script>
 
 <!-- 🟢 三国·卡牌：连接钱包后同步统计（仅当三国页已打开时刷新）；底部 Tab 高亮同步。
