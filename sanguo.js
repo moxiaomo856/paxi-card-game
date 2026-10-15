@@ -3623,7 +3623,7 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'cancel', match_id: matchId }, { action: 'battle_pvp', spend: 0, extra: 'single:cancel:' + matchId });
+      await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'cancel', match_id: matchId, card_ids: [] }, { action: 'battle_pvp', spend: 0, extra: 'single:cancel:' + matchId });
       showToast(t('cancel_ok'), 'success');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
@@ -3633,7 +3633,7 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      const res = await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'claim', match_id: matchId }, { action: 'battle_pvp', spend: 0, extra: 'single:claim:' + matchId });
+      const res = await sanguoExec('SanguoBattlePvp', { mode: 'single', action: 'claim', match_id: matchId, card_ids: [] }, { action: 'battle_pvp', spend: 0, extra: 'single:claim:' + matchId });
       sgClaimToast(res.tx, 'claim_ok');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
@@ -3725,7 +3725,7 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      const res = await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'settle', royale_id: royaleId }, { action: 'battle_pvp', spend: 0, extra: 'royale:settle:' + royaleId });
+      const res = await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'settle', royale_id: royaleId, card_ids: [] }, { action: 'battle_pvp', spend: 0, extra: 'royale:settle:' + royaleId });
       captureSkillLogFromTx('royale:' + royaleId, res); // V2.1：缓存技能触发回放（多场聚合）
       showToast(t('settle_ok'), 'success');
       // 🟢 前端新增：混战竞技场（多方出牌 + 胜者）
@@ -3738,7 +3738,7 @@
     try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
     showBusy(t('doing'));
     try {
-      const res = await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'claim', royale_id: royaleId }, { action: 'battle_pvp', spend: 0, extra: 'royale:claim:' + royaleId });
+      const res = await sanguoExec('SanguoBattlePvp', { mode: 'royale', action: 'claim', royale_id: royaleId, card_ids: [] }, { action: 'battle_pvp', spend: 0, extra: 'royale:claim:' + royaleId });
       sgClaimToast(res.tx, 'claim_ok');
       renderSanguoTab();
     } catch (e) { showToast(t('fail_prefix') + (e.message || e), 'error'); }
