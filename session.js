@@ -594,15 +594,12 @@ Session._sendTxWithSessionCore = async function(messages, memo = '', gasLimitOpt
   if (!v.ok) throw new Error(`无感通道不可用：${v.reason}`);
   let plan = v.fee;
 
-  // 🟢 迁移等重操作可以带更高的 gas 上限（老合约迁移要批量铸造全部卡牌，
-  //    管理员钱包有 15 张 → 600k 默认上限会被撑爆报 out of gas）。
-  //    这里必须【连同手续费一起重算】：只改 gasLimit 而 fee.amount 仍按 600k 算的话，
-  //    链上会判 "insufficient fees"（手续费低于 gasLimit × 链下限 0.05）。
-  //    只换 fee plan，不动验签/付费方/granter 逻辑。
-  if (gasLimitOpt && Number(gasLimitOpt) > 0) {
-    plan = await computeSeamlessFee(Number(gasLimitOpt));
-    console.log(`[无感] 本次使用自定义 gas 上限=${plan.gasLimit}，手续费=${plan.amount}${plan.denom}`);
-  }
+  // 🟢 动态 simulate 估算真实 gas（×1.5 缓冲），失败回退到调用方给定上限
+  //    （默认 SEAMLESS_GAS_LIMIT=600k；迁移等重操作传更高值，避免 600k 被撑爆）。
+  //    只用于估 gas，不影响验签/付费方/granter 逻辑；simulate 成功/失败都不阻断广播。
+  const simGas = await estimateGasLimit(messages, memo, Number(gasLimitOpt) || SEAMLESS_GAS_LIMIT);
+  plan = await computeSeamlessFee(simGas);
+  console.log(`[无感] 本次 gas 上限=${plan.gasLimit}，手续费=${plan.amount}${plan.denom}`);
 
   // 2. 取会话账户 accNum/seq（LCD REST，不走 RPC）
   const acctRes = await lcdGet(`${NETWORK.lcd}/cosmos/auth/v1beta1/accounts/${state.sessAddr}`);

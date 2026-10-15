@@ -649,6 +649,37 @@ async function simulateGas(messages, memo, accountNumber, sequence, wallet) {
 }
 
 /**
+ * 动态估算 gas 上限（复用 simulateGas）：
+ *   - 调节点 simulate 拿到真实 gas_used，×1.5 缓冲作为 gas_limit；
+ *   - 任何失败（LCD 不可达 / simulate 路由被墙 / 节点不支持）都【静默回退】到 fallback，
+ *     绝不阻断广播；fallback 由调用方按操作类型给定（见 sanguo.js 的 SG_GAS_LIMIT 表）。
+ * ⚠️ 安全边界：simulate 用零签名跑、跳过验签层，所以【只用于估 gas】，
+ *    绝不把它当作"交易合法"的依据——真正的合法性由广播时的钱包签名决定。
+ *    这就是之前动态 simulate 漏掉签名层 bug 的根因：当时用 simulate 成功来"证明"
+ *    交易能上链，而 simulate 不验签。现已隔离：simulate 成功/失败都不影响广播路径，
+ *    签名流程原样保留，simulate 仅在 gas 维度提供精确值。
+ */
+async function estimateGasLimit(messages, memo = '', fallback = 600_000) {
+  try {
+    if (!window.paxihub || !window.paxihub.paxi) throw new Error('钱包未就绪');
+    const sender = await window.paxihub.paxi.getAddress();
+    const acctRes = await lcdGet(`${NETWORK.lcd}/cosmos/auth/v1beta1/accounts/${sender.address}`);
+    if (!acctRes.ok) throw new Error(`获取账户失败 HTTP ${acctRes.status}`);
+    const acctData = await acctRes.json();
+    const acct = acctData.account?.base_account || acctData.account;
+    const accountNumber = Number(acct.account_number);
+    const sequence = Number(acct.sequence);
+    const gasUsed = await simulateGas(messages, memo, accountNumber, sequence, state.wallet);
+    const gasLimit = Math.ceil(Number(gasUsed) * 1.5);
+    console.log(`[gas] simulate gasUsed=${gasUsed} → limit=${gasLimit} (×1.5 buffer), fee=${Math.ceil(gasLimit * 0.05)}upaxi`);
+    return gasLimit;
+  } catch (e) {
+    console.warn('[gas] simulate 失败，回退固定上限:', e && e.message);
+    return Number(fallback) || 600_000;
+  }
+}
+
+/**
  * 构造一笔 MsgExecuteContract 交易并签名广播
  * @returns txhash
  */
@@ -772,13 +803,15 @@ async function approvePrc20(tokenContract, amount, spender) {
 }
 
 /**
- * 通用：构造 + 钱包签名 + 广播
- * ✅ 完全复刻老板旧版 buildAndSendTx（生产验证），移除所有动态 simulate
- * ✅ 固定 600000 gas + 0.05 upaxi/gas = 30000 upaxi fee
+ * 通用：构造 + 钱包签名 + 广播（主钱包通道）
+ * ✅ 复刻老板旧版 buildAndSendTx 的签名/广播路径（生产验证）
+ * ✅ gas 改为【动态 simulate 估算 ×1.5 缓冲】；simulate 不可用时回退到调用方给定
+ *    上限（默认 600000 gas，迁移等重操作传更高值），fee 始终 = gasLimit × 0.05
  * ✅ 公钥直接从钱包 paxihub.getAddress() 拿（Uint8Array），不用 state 里缓存的
  *
  * @param {Array} messages  Any[] protobuf 消息数组
  * @param {string} memo    备注
+ * @param {number} [gasLimitOpt]  simulate 失败时的回退 gas 上限（由 sanguo.js 按操作类型给定）
  * @returns {Promise<string>} txhash
  */
 async function sendTx(messages, memo = '', gasLimitOpt) {
@@ -802,11 +835,13 @@ async function sendTx(messages, memo = '', gasLimitOpt) {
   // 4. TxBody
   const txBody = PaxiCosmJS.TxBody.fromPartial({ messages, memo });
 
-  // 5. Fee — 老板旧版固定值（30000 upaxi + 600000 gas）
-  //    🟢 gasLimit 可被调用方覆盖（迁移等重操作传更高上限，避免 600k 被撑爆）；
-  //       不传则维持 600k，其余玩法手续费不变（Cosmos 未用完 gas 会退还，实际只按 gasUsed 计费）。
+  // 5. Fee — 优先动态 simulate 估算真实 gas（×1.5 缓冲），失败回退到调用方给定的
+  //    上限（迁移等重操作传更高值，避免 600k 被撑爆；其余玩法走默认 600k）。
+  //    ⚠️ 实测 Cosmos 未用完 gas 会退还，实际只按 gasUsed 计费；
+  //       但 Feegrant 代付额度按【声明 fee】扣减，所以声明值不宜过大——
+  //       动态 simulate 让每笔只声明真实所需，最省代付额度，也不会再 out of gas。
   const gasPrice = 0.05;
-  const gasLimit = Number(gasLimitOpt) || 600_000;
+  const gasLimit = await estimateGasLimit(messages, memo, Number(gasLimitOpt) || 600_000);
   const feeAmount = Math.ceil(gasLimit * gasPrice);
   const fee = {
     amount: [PaxiCosmJS.coins(String(feeAmount), NETWORK.denom)[0]],
