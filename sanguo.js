@@ -2368,6 +2368,30 @@
   // ============================================================
   // 🆕 关卡挑战（PVE）：9 张卡编队，链下打、链上复算，通关发碎片
   // ============================================================
+  // 🟢 2026-10-15：关卡已通关本地缓存 + 防重提交
+  // 合约无"每玩家已通关列表"查询（query_stages 仅返回关卡定义），且关卡设计为每玩家每关仅一次（STAGE_CLEARED 防重放）。
+  // 重复提交会被合约 SanguoAlreadyClaimed 拒绝，但失败交易仍扣 gas（线上曾烧 40000 upaxi）。
+  // 故前端用本地缓存记录已通关关卡，并在提交中加锁，从源头杜绝重复上链。
+  let sgStageSubmitting = false;
+  let sgStageCleared = {};
+  function sgLoadStageCleared(addr) {
+    sgStageCleared = {};
+    try {
+      const raw = localStorage.getItem('sg_stage_cleared_' + (addr || ''));
+      if (raw) sgStageCleared = JSON.parse(raw) || {};
+    } catch (e) {}
+    return sgStageCleared;
+  }
+  function sgSaveStageCleared(addr) {
+    try { localStorage.setItem('sg_stage_cleared_' + (addr || ''), JSON.stringify(sgStageCleared)); } catch (e) {}
+  }
+  function sgMarkStageClearedDom(stageId) {
+    try {
+      const btn = document.querySelector('button[data-stage="' + stageId + '"]');
+      if (btn) { btn.disabled = true; btn.textContent = t('stage_cleared_already'); btn.classList.remove('btn-primary'); btn.classList.add('btn-ghost'); }
+    } catch (e) {}
+  }
+
   async function renderStage(body) {
     if (state.wallet) await loadSanguoCards();
     sanguoPicked = [];
@@ -2376,8 +2400,7 @@
       const r = await queryContract({ sanguo_stages: {} });
       stages = (r && r.stages) || [];
     } catch (e) { stages = []; }
-    const cleared = {};
-    // 已通关信息合约不直接提供列表查询；重复提交会被合约 SanguoAlreadyClaimed 拦截（兜底）
+    const cleared = sgLoadStageCleared(state.wallet ? state.wallet.address : '');
 
     body.innerHTML = `
       <div class="card">
@@ -2400,6 +2423,7 @@
       listEl.innerHTML = stages.map((s) => {
         const rw = s.reward || {};
         const totalFrag = Number(rw.common || 0) + Number(rw.rare || 0) + Number(rw.epic || 0) + Number(rw.legend || 0);
+        const done = !!cleared[s.id];
         return `<div class="card" style="border-color:#b8860b">
           <div class="card-title">🗺️ ${esc(s.name || ('Stage #' + s.id))}</div>
           <div class="kv"><span class="k">${t('stage_reward')}</span>
@@ -2408,7 +2432,7 @@
               ${totalFrag ? '' : '—'}
             </span>
           </div>
-          <button class="btn btn-primary" data-stage="${s.id}" style="margin-top:8px;width:100%">${t('stage_submit')}</button>
+          <button class="btn ${done ? 'btn-ghost' : 'btn-primary'}" data-stage="${s.id}" ${done ? 'disabled' : ''} style="margin-top:8px;width:100%">${done ? t('stage_cleared_already') : t('stage_submit')}</button>
         </div>`;
       }).join('');
       listEl.querySelectorAll('button[data-stage]').forEach((b) => {
@@ -2430,11 +2454,15 @@
   }
 
   async function doSubmitStage(stageId) {
+    // 🟢 2026-10-15：防重提交（避免重复上链烧 gas）
+    if (sgStageSubmitting) { showToast(t('stage_submitting'), 'error'); return; }
+    if (sgStageCleared[stageId]) { showToast(t('stage_cleared_already'), 'error'); return; }
     if (sanguoPicked.length !== 9) {
       showToast(t('stage_need9'), 'error');
       return;
     }
-    try { await requireSanguo(); } catch (e) { showToast(e.message, 'error'); return; }
+    sgStageSubmitting = true;
+    try { await requireSanguo(); } catch (e) { sgStageSubmitting = false; showToast(e.message, 'error'); return; }
     showBusy(t('stage_submitting'));
     try {
       const batchId = 'stage_' + Date.now() + '_' + Math.floor(Math.random() * 1e6);
@@ -2443,6 +2471,8 @@
         batch_id: batchId,
         card_ids: sanguoPicked.slice(),
       }, { action: 'submit_stage', spend: 0 });
+      if (state.wallet) { sgStageCleared[stageId] = true; sgSaveStageCleared(state.wallet.address); }
+      sgMarkStageClearedDom(stageId);
       showToast(t('stage_ok'), 'success');
       const log = $('sgStageLog');
       // V2.1：技能触发回放（A=我方，B=关卡敌军）
@@ -2452,10 +2482,19 @@
         if (sl) log.insertAdjacentHTML('beforeend', skillLogTimelineHtml(sl, t('battle_you'), t('battle_opp')));
       }
     } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
       const log = $('sgStageLog');
-      if (log) log.innerHTML = `<div class="hint err">❌ ${esc(e.message || e)}</div>`;
-      showToast(t('stage_fail') + (e.message || e), 'error');
-    } finally { hideBusy(); }
+      // 🟢 命中"已通关"：记缓存并禁用按钮，避免同浏览器再烧一次 gas
+      if (/already claimed/i.test(msg)) {
+        if (state.wallet) { sgStageCleared[stageId] = true; sgSaveStageCleared(state.wallet.address); }
+        sgMarkStageClearedDom(stageId);
+        showToast(t('stage_cleared_already'), 'error');
+        if (log) log.innerHTML = `<div class="hint ok">✅ ${t('stage_cleared_already')}</div>`;
+      } else {
+        if (log) log.innerHTML = `<div class="hint err">❌ ${esc(msg)}</div>`;
+        showToast(t('stage_fail') + msg, 'error');
+      }
+    } finally { sgStageSubmitting = false; hideBusy(); }
   }
 
   // ============================================================
