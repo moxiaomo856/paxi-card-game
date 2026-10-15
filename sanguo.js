@@ -176,6 +176,9 @@
       'cult_title': '养成',
       'cult_desc': '升星 / 分解 / 升级 / 合成 / 出战顺序',
       'frag_title': '碎片',
+      'frag_unified_label': '统一碎片余额',
+      'frag_unified_hint': '合约仅记一本统一碎片账：普通×1 / 稀有×5 / 史诗×20 / 传说×80 折算后合并入账（详见奖励处的折算说明）。',
+      'stage_reward_hint': '奖励按「普通×1 / 稀有×5 / 史诗×20 / 传说×80」折算为统一碎片入账，并非分桶各自到账。',
       'rarity_common': '普通',
       'rarity_rare': '稀有',
       'rarity_epic': '史诗',
@@ -601,6 +604,9 @@
       'cult_title': 'Cultivate',
       'cult_desc': 'Star up / Decompose / Upgrade / Craft / Battle order',
       'frag_title': 'Fragments',
+      'frag_unified_label': 'Unified fragments',
+      'frag_unified_hint': 'Contract keeps one unified fragment balance: common×1 / rare×5 / epic×20 / legend×80 converted and merged into a single pool.',
+      'stage_reward_hint': 'Rewards convert to unified fragments at common×1 / rare×5 / epic×20 / legend×80, not credited to separate buckets.',
       'rarity_common': 'Common',
       'rarity_rare': 'Rare',
       'rarity_epic': 'Epic',
@@ -2435,6 +2441,7 @@
               ${totalFrag ? '' : '—'}
             </span>
           </div>
+          <div class="desc" style="font-size:11px;color:#9fb3d1;margin-top:4px">${t('stage_reward_hint')}</div>
           <button class="btn ${done ? 'btn-ghost' : 'btn-primary'}" data-stage="${s.id}" ${done ? 'disabled' : ''} style="margin-top:8px;width:100%">${done ? t('stage_cleared_already') : t('stage_submit')}</button>
         </div>`;
       }).join('');
@@ -3137,10 +3144,8 @@
       </div>
       <div class="card">
         <div class="card-title">${t('frag_title')}</div>
-        <div class="kv"><span class="k">${t('rarity_common')}</span><span class="v" id="sgFragC">0</span></div>
-        <div class="kv"><span class="k">${t('rarity_rare')}</span><span class="v" id="sgFragR">0</span></div>
-        <div class="kv"><span class="k">${t('rarity_epic')}</span><span class="v" id="sgFragE">0</span></div>
-        <div class="kv"><span class="k">${t('rarity_legend')}</span><span class="v" id="sgFragL">0</span></div>
+        <div class="kv"><span class="k">🧩 ${t('frag_unified_label')}</span><span class="v" id="sgFragBal" style="color:#ffd700;font-weight:700">0</span></div>
+        <div class="desc" style="font-size:11px;color:#9fb3d1;margin-top:6px">${t('frag_unified_hint')}</div>
       </div>
       <div class="card">
         <div class="card-title">${t('order_title')} <span style="font-size:12px;color:#9fb3d1">(${t('order_max')})</span></div>
@@ -3150,11 +3155,9 @@
       <div class="card" id="sgCraftCard">
         <div class="card-title">✨ ${t('craft_btn')}</div>
         <div class="desc">${t('craft_desc')}</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin:8px 0 10px;font-size:12px">
-          <span style="color:#b9a58f">🟤 ${t('rarity_common')} <b id="craftFragCommon">0</b></span>
-          <span style="color:#4a9eff">🔵 ${t('rarity_rare')} <b id="craftFragRare">0</b></span>
-          <span style="color:#b14aff">🟣 ${t('rarity_epic')} <b id="craftFragEpic">0</b></span>
-          <span style="color:#ffd700">🟡 ${t('rarity_legend')} <b id="craftFragLegend">0</b></span>
+        <div style="margin:8px 0 10px;font-size:13px">
+          🧩 ${t('frag_unified_label')}：<b id="sgFragBal2" style="color:#ffd700">0</b>
+          <span style="font-size:11px;color:#9fb3d1">（合成按统一碎片计价：普通 ${sgCraftCost('common')} / 稀有 ${sgCraftCost('rare')} / 史诗 ${sgCraftCost('epic')} / 传说 ${sgCraftCost('legend')}）</span>
         </div>
         <div style="display:flex;flex-direction:column;gap:8px">
           <button class="btn btn-secondary" data-craft="common">${tf('craft_common', { cost: sgCraftCost('common') })}</button>
@@ -3171,18 +3174,13 @@
       try {
         const f = await queryContract({ sanguo_fragments: { address: state.wallet.address } });
         if (f) {
-          $('sgFragC').textContent = f.common; $('sgFragR').textContent = f.rare;
-          $('sgFragE').textContent = f.epic; $('sgFragL').textContent = f.legend;
-          const sum = (Number(f.common) || 0) + (Number(f.rare) || 0) + (Number(f.epic) || 0) + (Number(f.legend) || 0);
-          sgFragCache = sum; sgSyncWallet();
-          // 合成区（老版样式）里的四档碎片余额同步刷新
-          sgFrags = {
-            common: Number(f.common) || 0, rare: Number(f.rare) || 0,
-            epic: Number(f.epic) || 0, legend: Number(f.legend) || 0,
-          };
-          const setF = (id, v) => { const el = $(id); if (el) el.textContent = v; };
-          setF('craftFragCommon', sgFrags.common); setF('craftFragRare', sgFrags.rare);
-          setF('craftFragEpic', sgFrags.epic); setF('craftFragLegend', sgFrags.legend);
+          // 🟢 统一碎片：四桶合并展示（rare/epic/legend 桶链上恒为 0，避免误导）
+          const unified = (Number(f.common) || 0) + (Number(f.rare) || 0) + (Number(f.epic) || 0) + (Number(f.legend) || 0);
+          sgFragCache = unified; sgSyncWallet();
+          const setBal = (id, v) => { const el = $(id); if (el) el.textContent = v; };
+          setBal('sgFragBal', unified); setBal('sgFragBal2', unified);
+          // sgFrags 保留兼容（getFragments 等），统一账下仅 common 有值
+          sgFrags = { common: unified, rare: 0, epic: 0, legend: 0 };
         }
       } catch (e) {}
     }
@@ -3398,7 +3396,8 @@
     rarity = rarity || 'common';
     // 前端先校验碎片（与合约 CRAFT_COST 一致，链上派生），不够就直接拦下，不浪费一次签名
     const cost = sgCraftCost(rarity);
-    const have = (sgFrags && sgFrags[rarity]) || 0;
+    // 🟢 统一碎片账：预检比对统一余额 sgFragCache（分桶 rare/epic/legend 链上恒为 0，否则合成稀有/史诗/传说会被误拦）
+    const have = (sgFragCache != null ? sgFragCache : 0);
     if (have < cost) {
       showToast(tf('craft_insufficient', { need: cost, have }), 'error');
       return;
