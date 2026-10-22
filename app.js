@@ -67,7 +67,8 @@ const HUB_I18N = {
     reset_session: '清除本地会话密钥',
     dep_btn: '充值', wd_btn: '提现', save_btn: '保存并刷新',
     menu_deposit: '💰 充值', menu_withdraw: '💳 提现',
-    menu_pump: '🚀 个性化发币', menu_burn: '🔥 燃烧代币', menu_reset: '🔄 重置数据',
+    // menu_pump / menu_burn 已注释（2026-10-22）：设置菜单移除「个性化发币 / 燃烧代币」入口
+    menu_reset: '🔄 重置数据',
     menu_economy: '📖 玩法及经济说明',
     // —— 玩法及经济说明弹窗 / 卡牌弹窗（静态 UI 文案）——
     menu_settings: '设置',
@@ -255,7 +256,8 @@ const HUB_I18N = {
     reset_session: 'Clear Local Session Key',
     dep_btn: 'Deposit', wd_btn: 'Withdraw', save_btn: 'Save & Reload',
     menu_deposit: '💰 Deposit', menu_withdraw: '💳 Withdraw',
-    menu_pump: '🚀 Personal Token', menu_burn: '🔥 Burn Token', menu_reset: '🔄 Reset Data',
+    // menu_pump / menu_burn commented out (2026-10-22): "Personal Token / Burn Token" entries removed from settings menu
+    menu_reset: '🔄 Reset Data',
     menu_economy: '📖 Gameplay & economy',
     // —— economy / card modals (static UI text) ——
     menu_settings: 'Settings',
@@ -469,9 +471,9 @@ function switchLang(lang) {
   if (!document.getElementById('sgBody')) switchTab(currentTab);
 }
 
-// 个性化发币 / 燃烧代币（参照原三国设置外链）
-function openPump() { window.open('https://moxiaomo856.github.io/paxi-pump/', '_blank'); }
-function openBurn() { window.open('https://moxiaomo856.github.io/paxi-burn/', '_blank'); }
+// 个性化发币 / 燃烧代币（参照原三国设置外链）—— 已注释（2026-10-22）
+// function openPump() { window.open('https://moxiaomo856.github.io/paxi-pump/', '_blank'); }
+// function openBurn() { window.open('https://moxiaomo856.github.io/paxi-burn/', '_blank'); }
 
 // 玩法及经济说明（设置菜单入口）：纯静态说明，不发起任何链上请求
 function openEconomyInfo() {

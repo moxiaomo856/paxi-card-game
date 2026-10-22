@@ -4,7 +4,7 @@
 //     ② service-worker.js: const BUILD = '20261015-4';
 //   这样 SW 文件字节变化 → 重装 → CACHE 名变化 → 旧缓存清空 → 干净拉新。
 //   （20261014-5：配套合约 code_id 36 上线——合并 BattlePvp/BattleAi、碎片统一、零费锁定）
-const BUILD = '20261015-4';
+const BUILD = '20261022-1';
 const V = '?v=' + BUILD;
 const CACHE = 'paxihub-' + BUILD;
 const SHELL = [

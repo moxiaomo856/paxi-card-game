@@ -716,8 +716,10 @@ td.num { font-family: ui-monospace, monospace; text-align: right; white-space: n
         <button class="menu-item" data-i18n="menu_economy" onclick="openEconomyInfo();toggleSettingsMenu()">📖 玩法及经济说明</button>
         <button class="menu-item" onclick="window.open('card-upload.html','_blank');toggleSettingsMenu()">🃏 加卡上传工具</button>
         <div class="menu-divider"></div>
+        <!-- 已注释（2026-10-22）：移除「个性化发币 / 燃烧代币」设置菜单入口
         <button class="menu-item" data-i18n="menu_pump" onclick="openPump();toggleSettingsMenu()">🚀 个性化发币</button>
         <button class="menu-item" data-i18n="menu_burn" onclick="openBurn();toggleSettingsMenu()">🔥 燃烧代币</button>
+        -->
         <div class="menu-divider"></div>
         <button class="menu-item danger" data-i18n="menu_reset" onclick="hardReset();toggleSettingsMenu()">🔄 重置数据</button>
       </div>
@@ -965,14 +967,14 @@ td.num { font-family: ui-monospace, monospace; text-align: right; white-space: n
     }
   })();
 </script>
-<script>window.HUB_BUILD = '20261015-6';</script>
+<script>window.HUB_BUILD = '20261022-1';</script>
 <script src="shared.js?v=20261014-5"></script>      <!-- 网络/交易基础 -->
 <script src="session.js?v=20261014-5"></script>     <!-- 无感签名（依赖 shared） -->
 <!-- 🟢 合规版：games.js 已清空下注游戏注册表（猜数字/轮盘/骰宝/卡牌全部下线） -->
 <script src="games.js?v=20261014-5"></script>       <!-- 空注册表 stub -->
 <script src="sanguo.js?v=20261015-6"></script>      <!-- 三国：唯一保留游戏（合规玩法，合约 code_id 36 配套） -->
 <!-- 🟢 合规版：crazydice.js（疯狂骰子，TKCC 下注）已删除，不再加载 -->
-<script src="app.js?v=20261015-4"></script>         <!-- 入口/UI（本次改动：只保留三国 + 启动直进三国 + 设置面板移除旧游戏限额 + 钱包改为合规版） -->
+<script src="app.js?v=20261022-1"></script>         <!-- 入口/UI（本次改动：只保留三国 + 启动直进三国 + 设置面板移除旧游戏限额 + 钱包改为合规版） -->
 <script>console.log('[PaxiGameHub] build =', window.HUB_BUILD);</script>
 
 <!-- 🟢 三国·卡牌：连接钱包后同步统计（仅当三国页已打开时刷新）；底部 Tab 高亮同步。
