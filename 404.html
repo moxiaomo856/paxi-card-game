@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>逐雄三国 · 正在前往新站点</title>
+<!--
+  GitHub Pages 的 404 页。
+  作用：玩家访问 /paxi-card-game/任意子路径（如深链 /about.html）时，
+        GitHub Pages 会返回 404.html —— 这里同样做跳转，
+        避免玩家撞到 GitHub 的默认 404 页以为站点挂了。
+  目标地址与 index.html 保持一致（由 setup-redirect.sh 统一替换）。
+-->
+<meta http-equiv="refresh" content="0; url=https://paxi-sanguo.pages.dev/">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b0f1a">
+<style>
+  :root { --bg:#0b0f1a; --text:#e5e7eb; --muted:#8b98ad; --accent:#6ee7b7; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:24px; line-height:1.7; text-align:center;
+  }
+  .box { max-width:460px; width:100%; }
+  .logo {
+    width:56px; height:56px; margin:0 auto 20px; border-radius:14px; background:var(--accent);
+    display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:800; color:var(--bg);
+  }
+  h1 { font-size:19px; font-weight:800; margin-bottom:8px; }
+  p { font-size:13.5px; color:var(--muted); margin:8px 0; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .btn { display:inline-block; margin-top:22px; padding:11px 24px; border-radius:10px;
+         background:var(--accent); color:#052e1e; font-size:14px; font-weight:700; }
+</style>
+</head>
+<body>
+  <div class="box">
+    <div class="logo">G</div>
+    <h1>页面不存在</h1>
+    <p>你访问的路径已随站点迁移变更，正在前往新站点…</p>
+    <a class="btn" id="jumpBtn" href="https://paxi-sanguo.pages.dev/">立即前往新站点</a>
+  </div>
+<script>
+(function () {
+  var TARGET = 'https://paxi-sanguo.pages.dev/';
+  function buildUrl() {
+    try {
+      var u = new URL(TARGET, location.href);
+      if (location.search && location.search.length > 1) {
+        location.search.slice(1).split('&').forEach(function (kv) {
+          if (!kv) return;
+          var i = kv.indexOf('=');
+          var k = i < 0 ? kv : kv.slice(0, i);
+          var v = i < 0 ? '' : kv.slice(i + 1);
+          if (!u.searchParams.has(k)) u.searchParams.append(k, v);
+        });
+      }
+      return u.toString();
+    } catch (e) { return TARGET; }
+  }
+  var url = buildUrl();
+  var btn = document.getElementById('jumpBtn');
+  if (btn) btn.href = url;
+  var r = document.querySelector('meta[http-equiv="refresh"]');
+  if (r) r.setAttribute('content', '0; url=' + url);
+  location.replace(url);
+})();
+</script>
+</body>
+</html>
