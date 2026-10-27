@@ -3,118 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>逐雄三国 · 正在前往新站点</title>
-<meta name="description" content="逐雄三国已迁移至 Cloudflare 边缘部署，正在自动跳转。">
-<!--
-  ============================================================================
-  GitHub Pages → Cloudflare Workers 跳转页
-  ----------------------------------------------------------------------------
-  用途：`https://moxiaomo856.github.io/paxi-card-game/` 保持对外地址不变，
-        实际内容由 Cloudflare Workers 提供。本页负责引导跳转。
-
-  跳转目标请修改下方 TARGET 常量（勿改其余部分）。
-  建议使用完整 URL（含 https://），例如：
-      const TARGET = 'https://paxi-sanguo.pages.dev/';
-  ============================================================================
--->
 <meta http-equiv="refresh" content="0; url=https://paxi-sanguo.pages.dev/">
 <link rel="canonical" href="https://paxi-sanguo.pages.dev/">
 <meta name="robots" content="noindex,follow">
-<meta name="theme-color" content="#0b0f1a">
-<style>
-  :root { --bg:#0b0f1a; --card:#151c2c; --border:#2a3654; --text:#e5e7eb; --muted:#8b98ad; --accent:#6ee7b7; }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
-    background:var(--bg); color:var(--text); min-height:100vh;
-    display:flex; align-items:center; justify-content:center; padding:24px; line-height:1.7;
-  }
-  .box { max-width:460px; width:100%; text-align:center; }
-  .logo {
-    width:56px; height:56px; margin:0 auto 20px; border-radius:14px; background:var(--accent);
-    display:flex; align-items:center; justify-content:center;
-    font-size:26px; font-weight:800; color:var(--bg);
-  }
-  h1 { font-size:19px; font-weight:800; margin-bottom:8px; }
-  p { font-size:13.5px; color:var(--muted); margin:8px 0; }
-  .spinner {
-    width:26px; height:26px; margin:22px auto 0;
-    border:2.5px solid rgba(110,231,183,.2); border-top-color:var(--accent);
-    border-radius:50%; animation:spin .8s linear infinite;
-  }
-  @keyframes spin { to { transform:rotate(360deg); } }
-  a { color:var(--accent); text-decoration:none; }
-  a:hover { text-decoration:underline; }
-  .btn {
-    display:inline-block; margin-top:22px; padding:11px 24px; border-radius:10px;
-    background:var(--accent); color:#052e1e; font-size:14px; font-weight:700;
-  }
-  .note {
-    margin-top:26px; padding-top:18px; border-top:1px solid var(--border);
-    font-size:11.5px; color:#5c6a80; line-height:1.8;
-  }
-  .note b { color:var(--muted); font-weight:600; }
-</style>
+<title>逐雄三国</title>
 </head>
 <body>
-  <div class="box">
-    <div class="logo">G</div>
-    <h1>逐雄三国</h1>
-    <p>站点已迁移至 Cloudflare 边缘部署，正在自动前往…</p>
-
-    <div class="spinner"></div>
-
-    <a class="btn" id="jumpBtn" href="https://paxi-sanguo.pages.dev/">立即前往新站点</a>
-
-    <div class="note">
-      <b>逐雄三国</b> — 非托管的 Paxi 休闲卡牌前端。不是投资。无收益承诺。<br>
-      不面向中国大陆居民提供。私钥由你掌控。自担风险参与。<br><br>
-      若页面未自动跳转，请点击上方按钮，或直接访问：<br>
-      <a href="https://paxi-sanguo.pages.dev/">https://paxi-sanguo.pages.dev/</a>
-    </div>
-  </div>
-
 <script>
-/**
- * 跳转逻辑
- * - 优先用 location.replace()：不留下历史记录，玩家按「后退」不会又跳回来。
- * - meta refresh 作为兜底（禁 JS 时生效）。
- * - 保留原页面的查询参数（如 ?contract=paxi1…）到新站点。
- */
 (function () {
   var TARGET = 'https://paxi-sanguo.pages.dev/';
-
-  function buildUrl() {
-    try {
-      var u = new URL(TARGET, location.href);
-      // 透传查询参数（合约地址等深链参数不能丢）
-      if (location.search && location.search.length > 1) {
-        location.search.slice(1).split('&').forEach(function (kv) {
-          if (!kv) return;
-          var i = kv.indexOf('=');
-          var k = i < 0 ? kv : kv.slice(0, i);
-          var v = i < 0 ? '' : kv.slice(i + 1);
-          if (!u.searchParams.has(k)) u.searchParams.append(k, v);
-        });
-      }
-      return u.toString();
-    } catch (e) {
-      return TARGET;
+  try {
+    var u = new URL(TARGET, location.href);
+    if (location.search && location.search.length > 1) {
+      location.search.slice(1).split('&').forEach(function (kv) {
+        if (!kv) return;
+        var i = kv.indexOf('=');
+        var k = i < 0 ? kv : kv.slice(0, i);
+        var v = i < 0 ? '' : kv.slice(i + 1);
+        if (!u.searchParams.has(k)) u.searchParams.append(k, v);
+      });
     }
+    location.replace(u.toString());
+  } catch (e) {
+    location.replace(TARGET);
   }
-
-  var url = buildUrl();
-
-  // 同步更新按钮与 canonical 链接
-  var btn = document.getElementById('jumpBtn');
-  if (btn) btn.href = url;
-  var canon = document.querySelector('link[rel="canonical"]');
-  if (canon) canon.href = url;
-  var refresh = document.querySelector('meta[http-equiv="refresh"]');
-  if (refresh) refresh.setAttribute('content', '0; url=' + url);
-
-  // 立即跳转
-  location.replace(url);
 })();
 </script>
 </body>
