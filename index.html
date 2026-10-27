@@ -2,1007 +2,120 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>逐雄三国</title>
-<meta name="description" content="Paxi 逐雄三国2.0（免费抽卡 / 买卡买碎片 / 9v9 三组对战，不涉及代币博弈）">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>逐雄三国 · 正在前往新站点</title>
+<meta name="description" content="逐雄三国已迁移至 Cloudflare 边缘部署，正在自动跳转。">
+<!--
+  ============================================================================
+  GitHub Pages → Cloudflare Workers 跳转页
+  ----------------------------------------------------------------------------
+  用途：`https://moxiaomo856.github.io/paxi-card-game/` 保持对外地址不变，
+        实际内容由 Cloudflare Workers 提供。本页负责引导跳转。
+
+  跳转目标请修改下方 TARGET 常量（勿改其余部分）。
+  建议使用完整 URL（含 https://），例如：
+      const TARGET = 'https://paxi-sanguo.pages.dev/';
+  ============================================================================
+-->
+<meta http-equiv="refresh" content="0; url=https://paxi-sanguo.pages.dev/">
+<link rel="canonical" href="https://paxi-sanguo.pages.dev/">
+<meta name="robots" content="noindex,follow">
 <meta name="theme-color" content="#0b0f1a">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%236ee7b7'/><text x='16' y='23' font-size='18' text-anchor='middle' fill='%230b0f1a'>G</text></svg>">
 <style>
-/* ========== 变量 ========== */
-:root {
-  --bg: #0b0f1a;
-  --card: #151c2c;
-  --card-2: #1c2438;
-  --border: #2a3654;
-  --text: #e5e7eb;
-  --muted: #8b98ad;
-  --accent: #6ee7b7;
-  --accent-2: #60a5fa;
-  --gold: #fbbf24;
-  --danger: #f87171;
-  --radius: 14px;
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-top: env(safe-area-inset-top, 0px);
-}
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { -webkit-text-size-adjust: 100%; }
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  line-height: 1.5;
-  overscroll-behavior-y: none;
-  padding-bottom: calc(64px + var(--safe-bottom));
-}
-
-/* ========== Header ========== */
-.header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(21,28,44,.92);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--border);
-  padding: calc(10px + var(--safe-top)) 14px 10px;
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-}
-.brand { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.logo {
-  width: 30px; height: 30px; border-radius: 9px; background: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; flex-shrink: 0;
-}
-.brand-name { font-size: 14px; font-weight: 800; line-height: 1.04; display: flex; flex-direction: column; align-items: flex-start; }
-.brand-name .bn1, .brand-name .bn2 { display: block; }
-.hdr-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-.chip {
-  font-size: 11px; padding: 4px 8px; border-radius: 999px;
-  background: var(--card-2); border: 1px solid var(--border);
-  color: var(--muted); font-family: ui-monospace, monospace;
-  max-width: 104px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.chip.bal { color: var(--accent); border-color: #14532d; }
-
-/* ========== 主区 ========== */
-.main { max-width: 520px; margin: 0 auto; padding: 14px 14px 8px; }
-
-/* ========== 卡片 ========== */
-.card {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
-}
-.card-title {
-  font-size: 14px; font-weight: 700; margin-bottom: 10px;
-  display: flex; align-items: center; gap: 6px;
-}
-.desc { font-size: 12px; color: var(--muted); line-height: 1.6; word-break: break-word; }
-.desc code, code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px; background: rgba(0,0,0,.05);
-  padding: 1px 5px; border-radius: 4px; word-break: break-all;
-}
-
-/* ========== 余额条 ========== */
-.balance-bar {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  margin-bottom: 12px;
-}
-.bal-item {
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 10px 6px; text-align: center;
-}
-.bal-val { font-size: 15px; font-weight: 800; color: var(--accent); font-family: ui-monospace, monospace; }
-.bal-val.small { font-size: 13px; }
-.bal-lab { font-size: 10px; color: var(--muted); margin-top: 2px; }
-
-/* ========== 游戏网格（2 列，手机最舒服） ========== */
-.game-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.game-card {
-  background: var(--card-2); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px 10px;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  cursor: pointer; transition: transform .12s;
-  min-height: 104px; justify-content: center; text-align: center;
-}
-.game-card:active { transform: scale(.96); background: #223052; }
-.game-card.disabled { opacity: .45; pointer-events: none; }
-.game-icon { font-size: 32px; line-height: 1.1; }
-.game-name { font-size: 13px; font-weight: 700; }
-.game-desc { font-size: 10px; color: var(--muted); line-height: 1.35; }
-.game-tag {
-  font-size: 10px; color: var(--accent); margin-top: 3px;
-  font-family: ui-monospace, monospace;
-}
-
-/* ========== 返回栏 ========== */
-.back-bar {
-  display: inline-flex; align-items: center; gap: 4px;
-  color: var(--muted); font-size: 13px; margin-bottom: 10px;
-  padding: 6px 0; cursor: pointer;
-}
-.back-bar:active { color: var(--text); }
-
-/* ========== 表单 ========== */
-.field { margin-bottom: 12px; }
-.label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; font-weight: 600; }
-input[type="text"], input[type="number"], select {
-  width: 100%; padding: 11px 12px;
-  background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
-  color: var(--text); font-size: 15px;
-  -webkit-appearance: none; appearance: none;
-  transition: border-color .15s;
-}
-input:focus, select:focus { outline: none; border-color: var(--accent); }
-select { font-family: inherit; cursor: pointer; }
-input.mono { font-family: ui-monospace, monospace; }
-.row { display: flex; gap: 8px; align-items: center; }
-.row .grow { flex: 1 1 auto; min-width: 0; }
-
-/* 快捷金额 */
-.quick-row { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
-.quick {
-  padding: 5px 10px; font-size: 11px; border-radius: 999px;
-  background: var(--card-2); border: 1px solid var(--border); color: var(--muted);
-}
-.quick:active { background: var(--accent); color: #052e1e; }
-
-/* ========== 按钮 ========== */
-.btn {
-  padding: 12px 18px; border-radius: 10px; border: none;
-  font-size: 15px; font-weight: 700; cursor: pointer;
-  min-height: 46px; width: 100%;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  transition: transform .1s;
-}
-.btn:active { transform: scale(.97); }
-.btn:disabled { opacity: .45; }
-.btn-primary { background: var(--accent); color: #052e1e; }
-.btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); font-weight: 600; }
-.btn-gold { background: var(--gold); color: #3b2a05; }
-.btn-sm {
-  width: auto; min-height: 34px; padding: 7px 14px;
-  font-size: 13px; border-radius: 8px;
-}
-
-/* ========== 下注选项 ========== */
-.opt-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 7px; }
-.opt-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
-.opt {
-  padding: 12px 4px; border-radius: 10px; font-size: 14px; font-weight: 600;
-  background: var(--card-2); border: 1px solid var(--border); color: var(--text);
-  min-height: 48px;
-}
-.opt:active { transform: scale(.96); }
-.opt.sel { background: var(--accent); color: #052e1e; border-color: var(--accent); }
-.opt small { display: block; font-size: 10px; opacity: .8; margin-top: 2px; font-weight: 500; }
-.opt:disabled { opacity: .35; }
-.opt.dim { opacity: .55; }
-
-/* ========== 骰子 / 卡牌结果 ========== */
-.result-stage {
-  background: var(--bg); border: 1px solid var(--border); border-radius: 12px;
-  padding: 16px; text-align: center; margin-bottom: 10px; min-height: 72px;
-  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 8px;
-}
-.dice-face {
-  width: 46px; height: 46px; border-radius: 10px;
-  background: var(--card-2); border: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px; font-weight: 800;
-}
-.pcard {
-  width: 44px; height: 62px; border-radius: 8px; background: #f8fafc;
-  color: #0f172a; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; font-weight: 800; font-size: 17px;
-  border: 1px solid #cbd5e1;
-}
-.pcard.red { color: #dc2626; }
-.pcard small { font-size: 15px; font-weight: 600; }
-.big-result { font-size: 34px; font-weight: 800; color: var(--accent); }
-.placeholder-txt { color: var(--muted); font-size: 12px; }
-
-/* ========== 赔率表 ========== */
-.odds-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; min-width: 300px; }
-th {
-  text-align: left; padding: 6px 6px; color: var(--muted); font-weight: 600;
-  border-bottom: 1px solid var(--border); font-size: 10px; white-space: nowrap;
-}
-td { padding: 6px 6px; border-bottom: 1px solid var(--border); }
-td.num { font-family: ui-monospace, monospace; text-align: right; white-space: nowrap; }
-.warn-txt { color: var(--gold); }
-.ok-txt { color: var(--accent); }
-
-/* ========== 键值行 ========== */
-.kv { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 12px; }
-.kv + .kv { border-top: 1px solid rgba(42,54,84,.5); }
-.kv .k { color: var(--muted); flex: 0 0 auto; }
-.kv .v { font-family: ui-monospace, monospace; text-align: right; word-break: break-all; max-width: 62%; }
-
-/* ========== 提示条 ========== */
-.hint {
-  background: rgba(251,191,36,.09); border: 1px solid var(--gold);
-  color: var(--gold); border-radius: 10px; padding: 10px 12px;
-  font-size: 12px; margin-bottom: 12px; line-height: 1.6;
-}
-.hint.err { background: rgba(248,113,113,.09); border-color: var(--danger); color: var(--danger); }
-.hint.ok { background: rgba(110,231,183,.09); border-color: var(--accent); color: var(--accent); }
-
-/* ========== 日志 ========== */
-.log {
-  font-family: ui-monospace, monospace; font-size: 11px;
-  background: #06090f; border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px; max-height: 180px; overflow: auto;
-  white-space: pre-wrap; word-break: break-all; color: #cbd5e1;
-}
-.log div { padding: 1px 0; }
-.log .ok { color: #86efac; }
-.log .err { color: #fca5a5; }
-.log .info { color: #93c5fd; }
-
-/* ========== 底部 Tab ========== */
-.tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
-  background: rgba(21,28,44,.96);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border);
-  display: flex; padding-bottom: var(--safe-bottom);
-}
-.tab {
-  flex: 1; padding: 9px 0 8px; text-align: center; cursor: pointer;
-  color: var(--muted); font-size: 10px; font-weight: 600;
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-}
-.tab .ti { font-size: 19px; line-height: 1; }
-.tab.active { color: var(--accent); }
-.tab:active { opacity: .7; }
-
-/* ========== Toast ========== */
-.toast {
-  position: fixed; bottom: calc(78px + var(--safe-bottom)); left: 50%;
-  transform: translateX(-50%);
-  background: var(--card-2); border: 1px solid var(--border);
-  padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600;
-  z-index: 300; max-width: 88vw; text-align: center;
-  box-shadow: 0 6px 24px rgba(0,0,0,.45);
-  animation: slideUp .25s ease;
-}
-@keyframes slideUp { from { transform: translate(-50%, 14px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-.toast.success { border-color: var(--accent); color: var(--accent); }
-.toast.error { border-color: var(--danger); color: var(--danger); }
-
-/* ========== 遮罩 ========== */
-.mask {
-  position: fixed; inset: 0; z-index: 400;
-  background: rgba(6,9,15,.72);
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column; gap: 10px; color: var(--muted); font-size: 13px;
-}
-.spinner {
-  width: 26px; height: 26px; border: 2px solid var(--border);
-  border-top-color: var(--accent); border-radius: 50%;
-  animation: spin .7s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ========== 桌面微调（依然是窄栏，手机为主） ========== */
-@media (min-width: 768px) {
-  .main { padding: 18px 14px 8px; }
-  .game-grid { grid-template-columns: repeat(3, 1fr); }
-  .game-icon { font-size: 36px; }
-}
-@media (max-width: 340px) {
-  .game-grid { gap: 8px; }
-  .game-card { padding: 12px 6px; min-height: 92px; }
-  .game-icon { font-size: 26px; }
-  .chip { max-width: 78px; font-size: 10px; }
-}
-
-/* ========== 设置菜单（大厅暗色主题） ========== */
-.settings-wrap { position: relative; }
-.settings-btn {
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--card-2); border: 1px solid var(--border);
-  color: var(--text); font-size: 17px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: transform .3s, background .15s, color .15s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-.settings-btn:hover { background: rgba(110,231,183,.15); transform: rotate(90deg); color: var(--accent); }
-.settings-menu {
-  display: none; position: absolute; top: 42px; right: 0;
-  background: var(--card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
-  min-width: 188px; flex-direction: column; gap: 2px; z-index: 400;
-}
-.settings-menu.open { display: flex; animation: sgFadeIn .18s ease; }
-@keyframes sgFadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-.settings-menu .menu-item {
-  background: transparent; border: none; color: var(--text);
-  padding: 9px 12px; font-size: 13px; font-family: inherit; cursor: pointer;
-  border-radius: 8px; text-align: left; transition: background .15s, color .15s;
-  display: flex; align-items: center; gap: 6px; white-space: nowrap;
-}
-.settings-menu .menu-item:hover { background: var(--card-2); color: var(--accent); }
-.settings-menu .menu-item .check { color: var(--accent); font-weight: 700; width: 14px; display: inline-block; }
-.settings-menu .menu-item.danger:hover { background: rgba(248,113,113,.15); color: var(--danger); }
-.settings-menu .menu-divider { height: 1px; background: var(--border); margin: 4px 8px; }
-
-/* ============================================================
-   三国·卡牌 老版金色主题
-   作用域限定在 .sg-page 与专属类（.sg-card/.codex-card/.battle-arena/
-   弹窗），不污染大厅中性布局，其他游戏外观与逻辑一律不动。
-   ============================================================ */
-:root { --sg-card-h: 200px; }
-
-/* 三国页包裹器：仅此容器内套用老版字体/金色风 */
-.sg-page { font-family: '华文行楷','STKaiti','KaiTi','SimSun',serif; }
-.sg-page .card { background: rgba(255,255,255,0.04); border:1px solid rgba(200,160,100,0.12); border-radius:14px; padding:12px; margin-bottom:10px; }
-.sg-page .card-title { font-size:14px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; color:#e8d5b8; }
-.sg-page .desc { font-size:12px; color:#8a7a6a; line-height:1.6; word-break:break-word; }
-.sg-page .kv { display:flex; justify-content:space-between; gap:10px; padding:6px 0; font-size:12px; }
-.sg-page .kv + .kv { border-top:1px solid rgba(200,160,100,0.06); }
-.sg-page .kv .k { color:#8a7a6a; flex:0 0 auto; }
-.sg-page .kv .v { font-family: ui-monospace, monospace; text-align:right; word-break:break-all; max-width:62%; color:#e8d5b8; }
-.sg-page .hint { background: rgba(255,200,50,0.09); border:1px solid #b8860b; color:#ffd700; border-radius:10px; padding:10px 12px; font-size:12px; margin-bottom:10px; line-height:1.6; }
-.sg-page .hint.err { background: rgba(248,113,113,0.09); border-color:#f44336; color:#f44336; }
-.sg-page .hint.ok { background: rgba(110,231,183,0.09); border-color:#4caf50; color:#4caf50; }
-.sg-page .back-bar { display:inline-flex; align-items:center; gap:4px; color:#8a7a6a; font-size:13px; margin-bottom:10px; padding:6px 0; cursor:pointer; font-family:inherit; }
-.sg-page .back-bar:active { color:#e8d5b8; }
-.sg-page input[type="text"], .sg-page input[type="number"], .sg-page select { width:100%; padding:10px 12px; border:1px solid rgba(200,160,100,0.3); background: rgba(30,20,10,0.6); color:#e8d5b8; border-radius:8px; font-size:13px; outline:none; box-sizing:border-box; font-family:inherit; margin-top:6px; }
-.sg-page input:focus, .sg-page select:focus { border-color:#ffd700; }
-.sg-page label { font-size:12px; color:#8a7a6a; }
-.sg-page .btn-primary { background:#8b2f1a; color:#f5efe0; }
-.sg-page .btn-gold { background:#ffd700; color:#0d0a0c; }
-.sg-page .btn-success { background:#2a6a3a; color:#f5efe0; }
-.sg-page .btn-ghost { background:rgba(255,255,255,0.08); color:#e8d5b8; }
-.sg-page .btn-danger { background:#6a2a2a; color:#f5efe0; }
-
-/* 三国页内统计卡（4 张横排） */
-.sg-stats { display:flex; gap:6px; margin-bottom:10px; }
-.sg-stat { flex:1; background: rgba(255,255,255,0.04); border:1px solid rgba(200,160,100,0.12); border-radius:12px; padding:8px 6px; text-align:center; font-size:12px; }
-.sg-stat .ic { font-size:16px; }
-.sg-stat .num { display:block; font-size:15px; font-weight:bold; color:#ffd700; margin-top:2px; }
-.sg-stat .lb { display:block; font-size:10px; color:#8a7a6a; margin-top:2px; }
-
-/* 三国页内标签条（抽卡/对战/我的卡牌…） */
-/* 🟢 2026-09-29：页签改为两行自动换行（手机不用横向滑动）；每行约 4 个 */
-#sgTabs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; background: rgba(0,0,0,0.25); padding:6px; border-radius:14px; border:1px solid rgba(200,160,100,0.12); }
-.sg-tab { flex:1 1 calc(25% - 6px); min-width:0; width:auto; min-height:auto; background:transparent; border:none; color:#8a7a6a; padding:9px 4px; font-size:13px; font-family:inherit; cursor:pointer; border-radius:10px; transition:.2s; white-space:nowrap; text-align:center; overflow:hidden; text-overflow:ellipsis; }
-.sg-tab:hover { color:#e8d5b8; background: rgba(255,255,255,0.04); }
-.sg-tab.active { background: linear-gradient(135deg, rgba(184,134,11,0.35), rgba(255,200,50,0.2)); color:#ffd700; box-shadow:0 2px 10px rgba(255,200,50,0.15); }
-
-/* 我的卡牌网格（3 列，高度一致） */
-#sgCardGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
-.sg-card {
-  position:relative; border:2px solid #555; border-radius:10px; overflow:hidden;
-  background:#0d1322; aspect-ratio:auto; height: var(--sg-card-h);
-  display:flex; flex-direction:column; cursor:pointer; transition: filter .2s;
-}
-.sg-card:hover { filter: brightness(1.12); z-index:3; }
-.sg-card:active { filter: brightness(.92); }
-/* 出战顺序序号徽标（养成页 picker：第 1 个先出，第 2 个第二出…） */
-.sg-pick-ord {
-  position:absolute; top:-7px; left:-7px; z-index:4;
-  min-width:18px; height:18px; padding:0 4px; border-radius:9px;
-  background:linear-gradient(135deg,#ffd700,#ff9d2e); color:#3a2400;
-  font-size:11px; font-weight:800; line-height:18px; text-align:center;
-  box-shadow:0 1px 4px rgba(0,0,0,.5); border:1px solid #ffe9a8;
-}
-.sg-card .sg-card-img {
-  flex:3; min-height:0; display:flex; align-items:center; justify-content:center;
-  background: radial-gradient(ellipse at 50% 80%, rgba(60,40,20,0.2), transparent 70%);
-  overflow:hidden; padding:2px;
-}
-.sg-card .sg-card-img img { width:100%; height:100%; object-fit:cover; }
-.sg-card .sg-card-foot {
-  flex:1; border-top:1px dashed rgba(100,80,60,0.4); padding:3px 4px; text-align:center;
-  background: linear-gradient(0deg, rgba(0,0,0,.6), transparent); font-size:10px; line-height:1.2;
-}
-.sg-card .sg-card-foot .nm { font-weight:700; color:#fff; font-size:11px; }
-.sg-card .sg-card-foot .rr { color:#ffd700; font-size:9px; }
-.sg-card .sg-card-lv {
-  position:absolute; top:3px; right:3px; background:rgba(0,0,0,.65); color:#ffd54f;
-  padding:1px 5px; border-radius:4px; font-size:10px; font-weight:700; z-index:2;
-}
-/* 养成页卡牌格：小卡图 + 参数 + 下方四个养成按钮（与「我的卡牌」区分开） */
-.sg-cult-card {
-  border:2px solid #555; border-radius:10px; overflow:hidden; background:#0d1322;
-  padding:5px; display:flex; flex-direction:column; gap:4px;
-}
-.sg-cult-card .sg-cult-img {
-  width:100%; aspect-ratio:3/4; display:flex; align-items:center; justify-content:center;
-  background:radial-gradient(ellipse at 50% 80%, rgba(60,40,20,.25), transparent 70%);
-  border-radius:6px; overflow:hidden;
-}
-.sg-cult-card .sg-cult-img img { width:100%; height:100%; object-fit:cover; }
-.sg-cult-card .sg-cult-info .nm { font-size:11px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.sg-cult-card .sg-cult-info .rr { font-size:9px; }
-.sg-cult-card .sg-cult-acts { display:flex; flex-wrap:wrap; gap:3px; }
-.sg-cult-card .sg-cult-acts .btn { flex:1 1 calc(50% - 3px); min-width:0; padding:3px 2px; font-size:10px; line-height:1.1; }
-.rarity-legend { border-color:#ffd700 !important; }
-.rarity-epic   { border-color:#ab47bc !important; }
-.rarity-rare   { border-color:#4fc3f7 !important; }
-.rarity-common { border-color:#9e9e9e !important; }
-
-/* ===== 卡牌动感（移植自老版三国前端，保证界面一致性） ===== */
-@keyframes sg-glow-common { 0%,100% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 0 rgba(158,158,158,0); } 50% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 10px rgba(158,158,158,.4); } }
-@keyframes sg-glow-rare   { 0%,100% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 0 rgba(79,195,247,0); } 50% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 14px rgba(79,195,247,.55); } }
-@keyframes sg-glow-epic   { 0%,100% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 0 rgba(171,71,188,0); } 50% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 18px rgba(171,71,188,.65); } }
-@keyframes sg-glow-legend { 0%,100% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 0 rgba(255,215,0,0); } 35% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 22px rgba(255,215,0,.85); } 50% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 28px rgba(255,215,0,.95); } 65% { box-shadow:0 2px 10px rgba(0,0,0,.45), 0 0 22px rgba(255,215,0,.85); } }
-@keyframes sg-float-common { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
-@keyframes sg-float-rare   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1.5px); } }
-@keyframes sg-float-epic   { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
-@keyframes sg-float-legend { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-2.5px); } }
-.sg-card.rarity-common, .codex-card.rarity-common { animation: sg-glow-common 3.5s ease-in-out infinite, sg-float-common 3.5s ease-in-out infinite; }
-.sg-card.rarity-rare,   .codex-card.rarity-rare   { animation: sg-glow-rare   3.0s ease-in-out infinite, sg-float-rare   3.0s ease-in-out infinite; }
-.sg-card.rarity-epic,   .codex-card.rarity-epic   { animation: sg-glow-epic   2.5s ease-in-out infinite, sg-float-epic   2.5s ease-in-out infinite; }
-.sg-card.rarity-legend, .codex-card.rarity-legend { animation: sg-glow-legend 2.0s ease-in-out infinite, sg-float-legend 2.0s ease-in-out infinite; }
-#sgCardGrid, #codexContent { perspective: 900px; }
-@keyframes sg-flip-in {
-  0%   { transform: translateY(80px) rotateX(90deg) scale(.6); opacity: 0; }
-  60%  { transform: translateY(-5px) rotateX(-10deg) scale(1.05); opacity: 1; }
-  100% { transform: translateY(0) rotateX(0) scale(1); opacity: 1; }
-}
-.sg-card.new-card .sg-card-img, .codex-card.new-card .cc-img { animation: sg-flip-in .7s cubic-bezier(.22,1,.36,1) both; }
-@keyframes sg-gold-burst {
-  0%   { transform: scale(0); opacity: .9; }
-  60%  { transform: scale(1.6); opacity: .35; }
-  100% { transform: scale(2.4); opacity: 0; }
-}
-.gold-burst {
-  position:absolute; inset:-8%; pointer-events:none; z-index:99; border-radius:50%;
-  background: radial-gradient(circle, rgba(255,215,0,.95) 0%, rgba(255,180,0,.65) 25%, rgba(255,215,0,.25) 50%, transparent 75%);
-  animation: sg-gold-burst .9s cubic-bezier(.22,1,.36,1) forwards;
-}
-.draw-burst { position:relative; overflow:hidden; }
-
-/* 卡牌选择面板（出战顺序 / PVP / 混战） */
-.sg-pick {
-  border:2px solid #2a3756; border-radius:8px; padding:4px; cursor:pointer;
-  background:#0d1322; text-align:center; font-size:11px;
-}
-.sg-pick .pn { font-weight:700; color:#fff; }
-.sg-pick .pr { font-size:9px; }
-
-/* 对战竞技场（胜/负 + 双方出牌） */
-.battle-arena {
-  background: rgba(0,0,0,0.5); border-radius:14px; padding:12px; margin:10px 0;
-  border:1px solid rgba(200,160,100,0.1); display:none; min-height:120px;
-}
-.battle-arena.show { display:block; }
-.battle-arena .vs-banner {
-  text-align:center; font-size:22px; color:#ffd700; letter-spacing:6px;
-  padding:6px 0; font-weight:bold; text-shadow:0 0 30px rgba(255,215,0,0.2);
-}
-.battle-arena .side-label { font-size:12px; color:#8a7a6a; text-align:center; margin:6px 0 2px; }
-.battle-arena .side-cards { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:6px; }
-.battle-arena .mini-card {
-  width:54px; border:2px solid #555; border-radius:8px; overflow:hidden; background:#0d1322; position:relative;
-}
-.battle-arena .mini-card img { width:100%; height:62px; object-fit:cover; display:block; }
-.battle-arena .mini-card .mc-nm { font-size:9px; text-align:center; color:#fff; padding:1px 0; }
-.battle-arena .final-result {
-  text-align:center; font-size:20px; font-weight:bold; padding:8px 0; margin-top:4px;
-  border-top:1px solid rgba(200,160,100,0.1);
-}
-.final-result.win { color:#4caf50; }
-.final-result.lose { color:#f44336; }
-.final-result.draw { color:#ffd700; }
-/* Q3：9v9 三组分组亮牌 */
-.battle-arena .grp-head { display:flex; align-items:center; justify-content:space-between; font-size:12px; color:#8a7a6a; padding:4px 2px; margin-bottom:4px; }
-.battle-arena .grp-head .grp-score { color:#ffd700; font-weight:bold; font-size:13px; }
-.battle-arena .grp-row { display:flex; align-items:stretch; gap:10px; padding:8px 4px; border-bottom:1px solid rgba(200,160,100,0.12); }
-.battle-arena .grp-main { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:8px; }
-.battle-arena .grp-side { min-width:0; display:flex; gap:4px; flex-wrap:wrap; }
-.battle-arena .grp-challenger { border-top:2px solid rgba(76,175,80,0.55); padding-top:4px; }
-.battle-arena .grp-defender { border-top:1px dashed rgba(255,255,255,0.14); padding-top:4px; }
-.battle-arena .grp-tag { font-size:10px; color:#8a7a6a; margin-bottom:3px; }
-.battle-arena .grp-vs { text-align:center; font-size:11px; color:#ffd700; font-weight:bold; }
-.battle-arena .grp-colon { opacity:.6; margin:0 1px; }
-.battle-arena .grp-res { flex:0 0 58px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px; }
-.battle-arena .grp-badge { display:inline-block; font-size:10px; font-weight:bold; padding:3px 6px; border-radius:10px; border:1px solid currentColor; }
-.battle-arena .grp-badge.win { color:#4caf50; }
-.battle-arena .grp-badge.lose { color:#f44336; }
-.battle-arena .grp-badge.draw { color:#ffd700; }
-.battle-arena .royale-side { border-bottom:1px solid rgba(200,160,100,0.1); padding:6px 2px; }
-.battle-arena .grp-mini { display:flex; align-items:center; gap:6px; padding:4px 0; }
-.battle-arena .grp-mini .grp-side { flex:1 1 auto; }
-
-/* V2.1：技能触发回放时间线（对战竞技场 / 关卡日志通用） */
-.skill-log-wrap { margin-top:10px; border-top:1px dashed rgba(200,160,100,0.2); padding-top:8px; }
-.skill-log-empty { font-size:12px; color:#8a7a6a; text-align:center; padding:4px 0; }
-.skill-log-list { display:flex; flex-direction:column; gap:3px; max-height:40vh; overflow-y:auto; }
-.skill-log-row {
-  display:flex; align-items:center; gap:7px; flex-wrap:wrap; font-size:11.5px;
-  padding:3px 6px; border-radius:7px; background:rgba(255,255,255,0.03); border-left:3px solid #555;
-}
-.skill-log-row.side-0 { border-left-color:#4caf50; }
-.skill-log-row.side-1 { border-left-color:#f44336; }
-.sk-side { font-size:10px; font-weight:bold; padding:1px 6px; border-radius:8px; color:#0d1322; }
-.sk-side.sk-a { background:#4caf50; }
-.sk-side.sk-b { background:#f44336; }
-.sk-card { color:#cfc0ad; }
-.sk-name { color:#ffd700; font-weight:bold; }
-.sk-trg { color:#e8b04b; }
-.sk-tgt { color:#9fd3ff; }
-.sk-bp { color:#b8a98e; font-size:10.5px; margin-left:auto; }
-
-/* 通用隐藏工具类
-   🔴 修复：此前项目里没有任何地方定义 .hidden，导致 index.html 中
-   `<div id="modalLoading" class="hidden">处理中…</div>` 的 class 完全不生效，
-   转圈 +「处理中...」常驻在卡牌详情弹窗底部。补上这条规则即可。 */
-.hidden { display: none !important; }
-
-/* 弹窗（图鉴 / 卡牌详情） */
-.modal-overlay {
-  position:fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.7);
-  backdrop-filter: blur(8px); display:none; justify-content:center; align-items:center; z-index:1000;
-}
-.modal-overlay.active { display:flex; }
-.modal {
-  background:#1a1218; border-radius:18px; padding:16px 20px; max-width:840px; width:92%;
-  max-height:85vh; overflow-y:auto; border:1px solid rgba(200,160,100,0.15); color:#e8d5b8;
-  font-family:'华文行楷','STKaiti','KaiTi','SimSun',serif;
-}
-.modal h2 { text-align:center; margin-bottom:12px; color:#ffd700; font-size:22px; letter-spacing:2px; }
-.modal .close-btn {
-  float:right; background:none; border:none; font-size:22px; color:#8a7a6a; cursor:pointer; transition:.2s;
-}
-.modal .close-btn:hover { color:#e8d5b8; }
-.codex-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
-.codex-card {
-  position:relative; border:2px solid #555; border-radius:10px; overflow:hidden; background:#0d1322;
-  height: var(--sg-card-h); display:flex; flex-direction:column; cursor:pointer; transition: filter .15s;
-}
-.codex-card:hover { filter: brightness(1.1); }
-.codex-card .cc-img { flex:4; min-height:0; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:2px; }
-.codex-card .cc-img img { width:100%; height:100%; object-fit:cover; }
-.codex-card .cc-foot { flex:1; border-top:1px dashed rgba(100,80,60,0.4); padding:3px 4px; text-align:center; font-size:10px; }
-.codex-card .cc-foot .nm { font-weight:700; color:#fff; font-size:11px; }
-.codex-card .cc-foot .rr { color:#ffd700; font-size:9px; }
-.codex-progress { margin:6px 0 10px; font-size:12px; color:#8a7a6a; }
-
-/* 玩法及经济说明弹窗 */
-.eco-modal { max-width:720px; }
-.eco-body { font-size:13px; line-height:1.65; color:#d9cbb8; font-family:inherit; }
-.eco-body h3 {
-  font-size:15px; color:#ffd700; font-weight:700; margin:16px 0 8px;
-  padding-bottom:5px; border-bottom:1px solid rgba(200,160,100,0.25); letter-spacing:1px;
-}
-.eco-body h3:first-child { margin-top:4px; }
-.eco-body h4 { font-size:13.5px; color:#e8b04b; font-weight:700; margin:12px 0 5px; }
-.eco-body p { margin:5px 0; }
-.eco-body ul { margin:5px 0 5px 18px; padding:0; }
-.eco-body li { margin:3px 0; }
-.eco-body code {
-  font-family: ui-monospace, Menlo, Consolas, monospace; font-size:12px; color:#6ee7b7;
-  background:rgba(110,231,183,0.08); padding:1px 5px; border-radius:4px; word-break:break-all;
-}
-.eco-tb { width:100%; border-collapse:collapse; margin:6px 0; font-size:12.5px; }
-.eco-tb th, .eco-tb td {
-  border:1px solid rgba(200,160,100,0.22); padding:4px 7px; text-align:left; vertical-align:top;
-}
-.eco-tb th { background:rgba(200,160,100,0.12); color:#ffd700; font-weight:700; white-space:nowrap; }
-.eco-tb tr:nth-child(even) td { background:rgba(255,255,255,0.02); }
-/* 宽表格在手机上横向滑动，不撑破弹窗 */
-.eco-scroll { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:6px 0; }
-.eco-scroll .eco-tb { margin:0; min-width:460px; }
-/* 中英文双版本内容（玩法说明等）：按当前语言切换显示，默认全隐藏，仅 .active 显示 */
-.lang-zh, .lang-en { display:none; }
-.lang-zh.active, .lang-en.active { display:block; }
-/* 卡牌详情弹窗：卡图完整 2:3 不裁切；外框收紧；参数紧凑 */
-.card-detail-modal .modal { padding:12px 14px; width:min(430px, 94%); }
-.card-detail-modal .card-preview { text-align:center; padding:2px 0 4px; }
-.card-detail-modal .card-preview img {
-  display:block; margin:0 auto; width:auto; max-width:78%; max-height:52vh;
-  border-radius:10px;
-}
-.card-detail-modal .card-name-detail { font-size:18px; font-weight:bold; margin-top:4px; line-height:1.2; }
-.card-detail-modal .card-sub-detail { font-size:12px; color:#8a7a6a; line-height:1.2; }
-.card-detail-modal .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:2px 12px; margin:6px 0 0; }
-.card-detail-modal .info-grid .ig {
-  display:flex; align-items:baseline; justify-content:space-between; gap:6px;
-  font-size:13px; line-height:1.45; border-bottom:1px dashed rgba(200,160,100,0.12); padding:1px 0;
-}
-.card-detail-modal .info-grid .label { color:#8a7a6a; }
-.card-detail-modal .info-grid .value { font-weight:bold; color:#ffd700; }
-.card-detail-modal .card-desc { font-size:12px; color:#c9b8a8; line-height:1.35; margin-top:4px; padding-top:4px; border-top:1px solid rgba(200,160,100,0.1); }
-.card-detail-modal .star-actions { display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:10px; padding-top:10px; border-top:1px solid rgba(200,160,100,0.1); }
-.card-detail-modal .star-actions .btn { min-width:80px; }
-
-/* 响应式：手机一致卡高 */
-@media (max-width: 600px) { :root { --sg-card-h: 180px; } }
-@media (max-width: 380px) { :root { --sg-card-h: 150px; } }
-</style>
-
-<!-- ============ P2-12 增强主题与动效（20260929） ============ -->
-<style id="hub-enhance">
-  /* P2-13：内联 SVG 图标统一基线 */
-  .hub-ico { vertical-align: -4px; margin-right: 6px; color: inherit; }
-  .tab .hub-ico { margin-right: 4px; }
-  /* 渐变描边（卡牌 / 卡片 / 浮层） */
-  .card, .sg-card, .codex-card, .modal {
-    position: relative;
-    border: 1px solid transparent;
-    background-image: linear-gradient(#0d1322, #0d1322), linear-gradient(135deg, #2a5cff33, #6ee7b733, #b8860b33);
-    background-origin: border-box; background-clip: padding-box, border-box;
+  :root { --bg:#0b0f1a; --card:#151c2c; --border:#2a3654; --text:#e5e7eb; --muted:#8b98ad; --accent:#6ee7b7; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+    background:var(--bg); color:var(--text); min-height:100vh;
+    display:flex; align-items:center; justify-content:center; padding:24px; line-height:1.7;
   }
-  /* 按钮：悬停缩放 + 发光 */
-  .btn { transition: transform .12s ease, box-shadow .2s ease, filter .2s ease; }
-  .btn:hover { transform: translateY(-1px) scale(1.03); box-shadow: 0 4px 16px #00000066; }
-  .btn:active { transform: scale(.97); }
-  .btn-primary { box-shadow: 0 0 0 1px #2a5cff55, 0 0 14px #2a5cff33; }
-  .btn-gold { box-shadow: 0 0 0 1px #b8860b55, 0 0 14px #b8860b33; }
-  .btn-danger:hover { box-shadow: 0 0 14px #ff5a5a55; }
-  /* 余额数字变化微动 */
-  @keyframes balPulse { 0%{transform:scale(1)} 40%{transform:scale(1.12);color:#6ee7b7} 100%{transform:scale(1)} }
-  .bal-pulse { animation: balPulse .5s ease; display:inline-block; }
-  /* 骨架屏 */
-  @keyframes skel { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
-  .skeleton { color: transparent !important; border-radius: 6px;
-    background: linear-gradient(90deg,#1a2238 25%,#243150 37%,#1a2238 63%);
-    background-size: 400px 100%; animation: skel 1.2s infinite linear; }
-  /* Toast 队列：靠下居中、可堆叠、自动淡出 */
-  #toastWrap { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%);
-    display: flex; flex-direction: column; gap: 8px; z-index: 9999; pointer-events: none; }
-  .toast { pointer-events: auto; max-width: 86vw; padding: 10px 14px; border-radius: 10px;
-    font-size: 13px; line-height: 1.4; color: #fff; box-shadow: 0 6px 22px #00000066;
-    background: #1b2540; border: 1px solid #2a3756; animation: toastIn .2s ease; }
-  .toast.ok, .toast.success { background: #16351f; border-color: #2f7d4a; }
-  .toast.err, .toast.error { background: #3a1a1a; border-color: #b14b4b; }
-  .toast { transition: opacity .25s ease, transform .25s ease; }
-  .toast-out { opacity: 0; transform: translateY(8px); }
-  @keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  /* 卡牌翻牌 / 骰子 / 通用淡入（P1-11 / P1-9 / P2-12） */
-  @keyframes sgFadeIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
-  .sg-fade-in { animation: sgFadeIn .35s ease both; }
-  @keyframes resultPop { 0%{transform:scale(.6);opacity:0} 60%{transform:scale(1.12)} 100%{transform:scale(1);opacity:1} }
-  .result-pop { animation: resultPop .4s cubic-bezier(.2,.8,.3,1.2) both; }
-  @keyframes diceRoll { 0%{transform:rotate(0) scale(.7);opacity:0} 50%{transform:rotate(180deg) scale(1.1)} 100%{transform:rotate(360deg) scale(1);opacity:1} }
-  .dice-roll { animation: diceRoll .55s ease both; }
-  @keyframes flipIn { 0%{transform:rotateY(90deg);opacity:0} 100%{transform:rotateY(0);opacity:1} }
-  .flip { animation: flipIn .45s ease both; transform-origin: center; }
-  /* 🟢 卡面阵营行（2026-09-29）：我的卡与图鉴显示一致，颜色随阵营（魏蓝/蜀红/吴绿/汉金/群紫） */
-  .sg-card .ff { font-size:10px; line-height:1.15; margin-top:1px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; letter-spacing:.5px; }
-
-  /* ===== P1-9 图鉴工具栏 + 批量分解栏 ===== */
-  .codex-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 4px; }
-  .codex-search { flex: 1 1 160px; min-width: 120px; padding: 7px 10px; border-radius: 8px;
-    border: 1px solid #2a3756; background: #0d1322; color: #e8eefc; font-size: 13px; }
-  .codex-filters { display: flex; gap: 4px; flex-wrap: wrap; }
-  .codex-fbtn { padding: 6px 10px; border-radius: 8px; border: 1px solid #2a3756; background: #0d1322;
-    color: #9fb3d1; font-size: 12px; cursor: pointer; transition: all .15s ease; }
-  .codex-fbtn.on { background: #2a5cff; color: #fff; border-color: #2a5cff; }
-  .codex-sort { padding: 6px 8px; border-radius: 8px; border: 1px solid #2a3756; background: #0d1322; color: #e8eefc; font-size: 12px; }
-  .sg-batch-bar { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px;
-    padding: 8px 10px; border-radius: 10px; background: #14203a; border: 1px solid #2a3756; font-size: 13px; color: #cfe; }
-  .sg-card.sg-sel { outline: 2px solid #6ee7b7; outline-offset: -2px; box-shadow: 0 0 12px #6ee7b755; }
-</style>
-
-<!-- ============ 视觉主题层 theme.css（20261013-2，纯离线） ============ -->
-<link rel="stylesheet" href="style/theme.css?v=20261015-4" />
-
-<!-- ============ P2-14 PWA（20260929） ============ -->
-<link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#0b0f1a" />
-<meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-title" content="Paxi 游戏中心" />
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js').catch((e) => console.warn('SW 注册失败:', e.message));
-    });
+  .box { max-width:460px; width:100%; text-align:center; }
+  .logo {
+    width:56px; height:56px; margin:0 auto 20px; border-radius:14px; background:var(--accent);
+    display:flex; align-items:center; justify-content:center;
+    font-size:26px; font-weight:800; color:var(--bg);
   }
-</script>
+  h1 { font-size:19px; font-weight:800; margin-bottom:8px; }
+  p { font-size:13.5px; color:var(--muted); margin:8px 0; }
+  .spinner {
+    width:26px; height:26px; margin:22px auto 0;
+    border:2.5px solid rgba(110,231,183,.2); border-top-color:var(--accent);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  .btn {
+    display:inline-block; margin-top:22px; padding:11px 24px; border-radius:10px;
+    background:var(--accent); color:#052e1e; font-size:14px; font-weight:700;
+  }
+  .note {
+    margin-top:26px; padding-top:18px; border-top:1px solid var(--border);
+    font-size:11.5px; color:#5c6a80; line-height:1.8;
+  }
+  .note b { color:var(--muted); font-weight:600; }
+</style>
 </head>
 <body>
+  <div class="box">
+    <div class="logo">G</div>
+    <h1>逐雄三国</h1>
+    <p>站点已迁移至 Cloudflare 边缘部署，正在自动前往…</p>
 
-<header class="header">
-  <div class="brand">
-    <div class="logo">🎮</div>
-    <div class="brand-name" id="pageTitle"><span class="bn1">逐雄</span><span class="bn2">三国</span></div>
-  </div>
-  <div class="hdr-right">
-    <span class="chip bal" id="hdrBal" style="display:none">—</span>
-    <span class="chip" id="hdrAddr" style="display:none">—</span>
-    <button class="btn btn-primary btn-sm" id="btnConnect" style="display:none" onclick="connectWallet()" data-i18n="btn_connect">连接</button>
-    <div class="settings-wrap">
-      <button class="settings-btn" id="btnSettings" onclick="toggleSettingsMenu()" title="设置" data-i18n-title="menu_settings">⚙️</button>
-      <div class="settings-menu" id="settingsMenu">
-        <button class="menu-item" id="langZhBtn" onclick="switchLang('zh');toggleSettingsMenu()">🇨🇳 中文</button>
-        <button class="menu-item" id="langEnBtn" onclick="switchLang('en');toggleSettingsMenu()">🇺🇸 English</button>
-        <div class="menu-divider"></div>
-        <button class="menu-item" data-i18n="menu_economy" onclick="openEconomyInfo();toggleSettingsMenu()">📖 玩法及经济说明</button>
-        <button class="menu-item" onclick="window.open('card-upload.html','_blank');toggleSettingsMenu()">🃏 加卡上传工具</button>
-        <div class="menu-divider"></div>
-        <!-- 已注释（2026-10-22）：移除「个性化发币 / 燃烧代币」设置菜单入口
-        <button class="menu-item" data-i18n="menu_pump" onclick="openPump();toggleSettingsMenu()">🚀 个性化发币</button>
-        <button class="menu-item" data-i18n="menu_burn" onclick="openBurn();toggleSettingsMenu()">🔥 燃烧代币</button>
-        -->
-        <div class="menu-divider"></div>
-        <button class="menu-item danger" data-i18n="menu_reset" onclick="hardReset();toggleSettingsMenu()">🔄 重置数据</button>
-      </div>
+    <div class="spinner"></div>
+
+    <a class="btn" id="jumpBtn" href="https://paxi-sanguo.pages.dev/">立即前往新站点</a>
+
+    <div class="note">
+      <b>逐雄三国</b> — 非托管的 Paxi 休闲卡牌前端。不是投资。无收益承诺。<br>
+      不面向中国大陆居民提供。私钥由你掌控。自担风险参与。<br><br>
+      若页面未自动跳转，请点击上方按钮，或直接访问：<br>
+      <a href="https://paxi-sanguo.pages.dev/">https://paxi-sanguo.pages.dev/</a>
     </div>
   </div>
-</header>
 
-<main class="main" id="main"></main>
-
-<!-- 🔴 启动失败提示：PaxiCosmJS（链上 SDK）未加载成功时显示，避免只看到一堆看不懂的报错 -->
-<div id="bootErr" style="display:none;position:fixed;left:0;right:0;top:0;z-index:9999;
-     background:#b00020;color:#fff;padding:14px 16px;font-size:14px;line-height:1.5;
-     box-shadow:0 2px 8px rgba(0,0,0,.3)">
-  <div class="lang-zh active">
-    ⚠️ 链上 SDK（paxi-cosmjs.umd.js）未加载成功，应用暂时无法运行。<br>
-    请：① 手机浏览器<b>强制刷新</b>本页；② 确认该文件已随仓库一起部署到 GitHub Pages。<br>
-    <span style="opacity:.85">（若网络受限，可在能联网的环境刷新一次后再用）</span>
-  </div>
-  <div class="lang-en">
-    ⚠️ The on-chain SDK (paxi-cosmjs.umd.js) failed to load, so the app can't run yet.<br>
-    Please: ① <b>hard-refresh</b> this page in your mobile browser; ② make sure the file is deployed to GitHub Pages together with the repo.<br>
-    <span style="opacity:.85">(If your network is restricted, load it once from a network that can reach the file, then retry.)</span>
-  </div>
-</div>
-
-<nav class="tabbar">
-  <!-- 🟢 2026-10-12：底部导航加回「游戏」——打开直进三国，钱包/我的可一键返回游戏界面 -->
-  <div class="tab active" data-tab="home"   onclick="switchTab('home')"><span class="ti"><svg class="hub-ico" viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M6.8 6.5h10.4a4.8 4.8 0 0 1 4.8 4.8v1.4a4.3 4.3 0 0 1-4.3 4.3c-1.5 0-2.9-.7-3.8-1.9h-3.8a4.77 4.77 0 0 1-3.8 1.9A4.3 4.3 0 0 1 2 12.7v-1.4a4.8 4.8 0 0 1 4.8-4.8z"/><rect x="6.6" y="10.1" width="4.2" height="1.5" rx=".75" fill="#0b0f1a"/><rect x="7.95" y="8.75" width="1.5" height="4.2" rx=".75" fill="#0b0f1a"/><circle cx="16.2" cy="10.2" r="1.1" fill="#0b0f1a"/><circle cx="18" cy="12.1" r="1.1" fill="#0b0f1a"/></svg></span><span data-i18n="tab_home">游戏</span></div>
-  <div class="tab"        data-tab="wallet" onclick="switchTab('wallet')"><span class="ti"><svg class="hub-ico" viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="6" width="18" height="13" rx="3" fill="currentColor"/><path d="M3 9.5h18" stroke="#0b0f1a" stroke-width="1.2"/><circle cx="17.5" cy="13" r="1.7" fill="#b8860b"/></svg></span><span data-i18n="tab_wallet">钱包</span></div>
-  <div class="tab"        data-tab="me"     onclick="switchTab('me')"><span class="ti"><svg class="hub-ico" viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4.5 20c.6-4 3.8-6 7.5-6s6.9 2 7.5 6z" fill="currentColor"/></svg></span><span data-i18n="tab_me">我的</span></div>
-</nav>
-
-<!-- ===== 玩法及经济说明弹窗（合规版：仅三国合规玩法） ===== -->
-<div class="modal-overlay" id="economyModal">
-  <div class="modal eco-modal">
-    <button class="close-btn" onclick="closeEconomyInfo()">✕</button>
-    <h2 data-i18n="eco_title">📖 玩法及经济说明（合规版）</h2>
-
-    <!-- ========== 中文版 ========== -->
-    <div class="eco-body lang-zh active">
-      <h3>一、合规说明</h3>
-      <ul>
-        <li>本应用为<b>纯休闲养成卡牌游戏</b>，不提供任何代币押注、博彩或随机返奖玩法。</li>
-        <li>游戏<b>不以任何代币作为奖励</b>；玩家的进度收益均为游戏内<b>卡牌碎片</b>（不可转让、不可提现）。</li>
-        <li>涉及代币的入口仅有两类<b>明码标价的确定性购买</b>：买成品卡、买碎片包（无随机、无赔付）。</li>
-        <li>原「猜数字 / 骰宝 / 轮盘 / 卡牌对战 / 疯狂骰子 / 抽奖」等押注类玩法已全部下线。</li>
-      </ul>
-
-      <h3>二、免费渠道（每日限次）</h3>
-      <div class="eco-scroll">
-      <table class="eco-tb">
-        <tr><th>玩法</th><th>消耗</th><th>获得</th><th>限制</th></tr>
-        <tr><td>免费抽卡</td><td>0</td><td>1 张随机卡（三连抽计 3 次）</td><td>每日 3 次</td></tr>
-        <tr><td>关卡挑战（9v9）</td><td>0</td><td>卡牌碎片（按关卡配置）</td><td>每关卡限通关 1 次</td></tr>
-        <tr><td>运营发放</td><td>0</td><td>卡牌碎片</td><td>每人每日 200 碎片硬顶</td></tr>
-      </table>
-      </div>
-
-      <h3>三、付费渠道（明码标价、确定性交付）</h3>
-      <div class="eco-scroll">
-      <table class="eco-tb">
-        <tr><th>商品</th><th>价格（PAXI）</th><th>获得</th></tr>
-        <tr><td>成品卡 · R / SR / SSR / UR</td><td>5 / 15 / 40 / 100</td><td>对应稀有度 1★ 卡牌（无随机）</td></tr>
-        <tr><td>碎片包（10 个）· R / SR / SSR / UR</td><td>1 / 4 / 12 / 30</td><td>对应稀有度碎片 ×10（无随机）</td></tr>
-      </table>
-      </div>
-
-      <h3>四、碎片养成（不涉及代币）</h3>
-      <ul>
-        <li><b>升星</b>：消耗碎片 50 / 100 / 200 / 500（按稀有度），+1 星，攻击/防御提升。</li>
-        <li><b>升级</b>：消耗碎片 50 / 100 / 200 / 500，攻击 +3、防御 +2，上限 10 级。</li>
-        <li><b>分解</b>：销毁 1 张卡，获得 5 / 10 / 20 / 50 碎片。</li>
-      </ul>
-
-      <h3>五、关卡规则（链下打、链上复算）</h3>
-      <ul>
-        <li>每关敌方为 9 个固定模板（3 组 × 3），战力 = 模板攻击 + 防御，<b>无随机数</b>。</li>
-        <li>我方上 9 张卡，同样 3 组三局两胜；组间再两胜定胜负，平局比总战力。</li>
-        <li>结果完全由链上复算，作弊提交整批拒绝且不发奖励。</li>
-      </ul>
-    </div>
-
-    <!-- ========== English ========== -->
-    <div class="eco-body lang-en">
-      <h3>1. Compliance</h3>
-      <ul>
-        <li>This is a <b>casual card-collection game</b> — no token wagering, gambling or random payouts of any kind.</li>
-        <li>No tokens are ever given out as rewards; all progress rewards are in-game <b>card fragments</b> (non-transferable, non-cashable).</li>
-        <li>Token spending is limited to two kinds of <b>fixed-price, deterministic purchases</b>: ready-made cards and fragment packs (no randomness, no payouts).</li>
-        <li>All wagering modes (Guess / Dice / Roulette / Card battles / Crazy Dice / Lottery) have been removed.</li>
-      </ul>
-
-      <h3>2. Free channels (daily limits)</h3>
-      <div class="eco-scroll">
-      <table class="eco-tb">
-        <tr><th>Mode</th><th>Cost</th><th>Reward</th><th>Limit</th></tr>
-        <tr><td>Free draw</td><td>0</td><td>1 random card (triple draw counts 3)</td><td>3 / day</td></tr>
-        <tr><td>Stage (9v9)</td><td>0</td><td>Fragments (per stage config)</td><td>1 clear per stage</td></tr>
-        <tr><td>Operator grants</td><td>0</td><td>Fragments</td><td>200 fragments / person / day</td></tr>
-      </table>
-      </div>
-
-      <h3>3. Paid channel (fixed price, deterministic)</h3>
-      <div class="eco-scroll">
-      <table class="eco-tb">
-        <tr><th>Item</th><th>Price (PAXI)</th><th>You get</th></tr>
-        <tr><td>Card · R / SR / SSR / UR</td><td>5 / 15 / 40 / 100</td><td>1-star card of that rarity (no randomness)</td></tr>
-        <tr><td>Fragment pack (10) · R / SR / SSR / UR</td><td>1 / 4 / 12 / 30</td><td>10 fragments of that rarity (no randomness)</td></tr>
-      </table>
-      </div>
-
-      <h3>4. Fragment cultivation (no tokens)</h3>
-      <ul>
-        <li><b>Star-up</b>: 50 / 100 / 200 / 500 fragments by rarity; +1 star with stat gains.</li>
-        <li><b>Level-up</b>: 50 / 100 / 200 / 500 fragments; ATK +3, DEF +2, max level 10.</li>
-        <li><b>Decompose</b>: destroy 1 card for 5 / 10 / 20 / 50 fragments.</li>
-      </ul>
-
-      <h3>5. Stage rules (play off-chain, verify on-chain)</h3>
-      <ul>
-        <li>Each stage fields 9 fixed enemy templates (3 groups × 3); power = template ATK + DEF, <b>zero randomness</b>.</li>
-        <li>You field 9 cards, best-of-3 per group, then best-of-3 across groups; ties broken by total power.</li>
-        <li>Results are recomputed on-chain; cheating submissions are rejected in full with no rewards.</li>
-      </ul>
-    </div>
-
-  </div>
-</div>
-
-<!-- ===== 卡牌图鉴弹窗（三国专用，全局浮层） ===== -->
-<div class="modal-overlay" id="codexModal">
-  <div class="modal">
-    <button class="close-btn" onclick="closeCodex()">✕</button>
-    <h2><svg class="hub-ico" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M5 4h6v16H5zM13 4h6v16h-6z" opacity=".85"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M7.5 5v14M16.5 5v14"/></svg><span data-i18n="codex_title">卡牌图鉴</span></h2>
-    <div class="codex-progress" id="codexProgress"></div>
-    <div class="codex-grid" id="codexContent"></div>
-  </div>
-</div>
-
-<!-- ===== 卡牌详情 / 升星弹窗（三国专用，全局浮层） ===== -->
-<div class="modal-overlay card-detail-modal" id="cardDetailModal">
-  <div class="modal">
-    <button class="close-btn" onclick="closeCardDetail()">✕</button>
-    <div class="card-preview">
-      <img id="detailImg" src="" alt="card" />
-      <div class="card-name-detail" id="detailName">—</div>
-      <div class="card-sub-detail" id="detailSub">—</div>
-    </div>
-    <div class="info-grid">
-      <div class="ig"><span class="label" data-i18n="detail_rarity">稀有度</span><span class="value" id="detailRarity">—</span></div>
-      <div class="ig"><span class="label" data-i18n="detail_faction">阵营</span><span class="value" id="detailIdentity">—</span></div>
-      <div class="ig"><span class="label" data-i18n="detail_atk">攻击</span><span class="value" id="detailAtk">—</span></div>
-      <div class="ig"><span class="label" data-i18n="detail_def">防御</span><span class="value" id="detailDef">—</span></div>
-      <div class="ig"><span class="label" data-i18n="detail_total">共计</span><span class="value" id="detailPower">—</span></div>
-      <div class="ig"><span class="label" data-i18n="detail_star">⭐ 星级</span><span class="value" id="detailStar">—</span></div>
-    </div>
-    <div class="card-desc" id="detailDesc"></div>
-    <div class="star-actions">
-      <button class="btn btn-gold" onclick="detailStarUp()" data-i18n="btn_star_up">⭐ 升1星</button>
-      <button class="btn btn-gold" onclick="detailStarUpFrag()" data-i18n="btn_star_frag">✨ 碎片升星</button>
-      <button class="btn btn-success" onclick="detailUpgrade()" data-i18n="btn_level_up">💠 升级</button>
-      <button class="btn btn-danger" onclick="detailDecompose()" data-i18n="btn_decompose">🔥 分解</button>
-      <button class="btn btn-ghost" onclick="closeCardDetail()" data-i18n="btn_close">关闭</button>
-    </div>
-    <div id="modalLoading" class="hidden" style="text-align:center;margin-top:8px;">
-      <span style="display:inline-block;width:14px;height:14px;border:2px solid #888;border-top-color:#b8860b;border-radius:50%;animation:spin .6s linear infinite;"></span> <span data-i18n="modal_processing">处理中...</span>
-    </div>
-  </div>
-</div>
-
-<!-- 🟢 关键修复：PaxiCosmJS 官方 UMD 改为本地自托管（同源走 GitHub Pages），不再依赖
-     第三方 mainnet-api.paxinet.io 的 2.6MB 脚本——手机钱包内置浏览器常因网络/超时
-     加载失败，导致 "PaxiCosmJS is not defined" 整个应用瘫痪。
-     该文件已随仓库部署（paxi-cosmjs.umd.js）。若仍加载失败，下方 onerror 会给出明确提示。 -->
-<script src="paxi-cosmjs.umd.js?v=20261013-2" onerror="window.__PaxiCosmJSLoadFailed=true;document.getElementById('bootErr')&&(document.getElementById('bootErr').style.display='block')"></script>
-<script src="compat.js?v=20261013-2"></script>
 <script>
-  // 🔴 守卫：若 UMD 没加载成功，立刻给出可读提示，避免后续出现一堆 "PaxiCosmJS is not defined"
-  if (typeof window.PaxiCosmJS === 'undefined') {
-    console.error('[boot] PaxiCosmJS 未加载成功（paxi-cosmjs.umd.js 缺失或被拦截）。请强刷或确认该文件已随仓库部署。');
-    window.addEventListener('DOMContentLoaded', function () {
-      var el = document.getElementById('bootErr');
-      if (el) el.style.display = 'block';
-    });
-  }
-</script>
+/**
+ * 跳转逻辑
+ * - 优先用 location.replace()：不留下历史记录，玩家按「后退」不会又跳回来。
+ * - meta refresh 作为兜底（禁 JS 时生效）。
+ * - 保留原页面的查询参数（如 ?contract=paxi1…）到新站点。
+ */
+(function () {
+  var TARGET = 'https://paxi-sanguo.pages.dev/';
 
-<!-- 🟢 无感签名：CosmJS ESM 供会话私钥直接签 Tx（与 UMD 的 PaxiCosmJS 并存） -->
-<!-- P0-3：优先加载本地 vendor/（离线可用），失败自动回退 jsdelivr CDN -->
-<script type="module">
-  window.addEventListener('load', async () => {
-    const LOCAL = ['./vendor/cosmjs-proto-signing.esm.js', './vendor/cosmjs-stargate.esm.js'];
-    const CDN = [
-      'https://cdn.jsdelivr.net/npm/@cosmjs/proto-signing@0.32.4/+esm',
-      'https://cdn.jsdelivr.net/npm/@cosmjs/stargate@0.32.4/+esm'
-    ];
+  function buildUrl() {
     try {
-      const [a, b] = await Promise.all([
-        import(LOCAL[0]).catch(() => import(CDN[0])),
-        import(LOCAL[1]).catch(() => import(CDN[1]))
-      ]);
-      window.CosmJSSigning = {
-        DirectSecp256k1Wallet: a.DirectSecp256k1Wallet,
-        SigningStargateClient: b.SigningStargateClient,
-        GasPrice: b.GasPrice
-      };
-      window.dispatchEvent(new Event('cosmjs-ready'));
+      var u = new URL(TARGET, location.href);
+      // 透传查询参数（合约地址等深链参数不能丢）
+      if (location.search && location.search.length > 1) {
+        location.search.slice(1).split('&').forEach(function (kv) {
+          if (!kv) return;
+          var i = kv.indexOf('=');
+          var k = i < 0 ? kv : kv.slice(0, i);
+          var v = i < 0 ? '' : kv.slice(i + 1);
+          if (!u.searchParams.has(k)) u.searchParams.append(k, v);
+        });
+      }
+      return u.toString();
     } catch (e) {
-      console.warn('CosmJS ESM 加载失败（本地与 CDN 均失败）:', e && e.message);
-      window.dispatchEvent(new Event('cosmjs-failed'));
-      if (typeof showToast === 'function') showToast('签名库加载失败：请检查网络或强制刷新', 'error');
+      return TARGET;
     }
-  });
-</script>
-<!-- 🟢 noble 加密库（会话密钥签名用）；⚠️ 必须注入 hmacSha256Sync -->
-<script type="module">
-  (async () => {
-    const L = {
-      secp: './vendor/noble-secp256k1.esm.js',
-      sha256: './vendor/noble-hashes-sha256.esm.js',
-      ripemd160: './vendor/noble-hashes-ripemd160.esm.js',
-      hmac: './vendor/noble-hashes-hmac.esm.js'
-    };
-    const C = {
-      secp: 'https://cdn.jsdelivr.net/npm/@noble/secp256k1@2.1.0/+esm',
-      sha256: 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.5.0/sha256/+esm',
-      ripemd160: 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.5.0/ripemd160/+esm',
-      hmac: 'https://cdn.jsdelivr.net/npm/@noble/hashes@1.5.0/hmac/+esm'
-    };
-    const imp = (k) => import(L[k]).catch(() => import(C[k]));
-    try {
-      const [secpMod, sha, rip, hm] = await Promise.all([imp('secp'), imp('sha256'), imp('ripemd160'), imp('hmac')]);
-      // 🔴 关键：noble-secp256k1 v2.x 不再内置 HMAC，必须手动注入。
-      //    不加这行，secp.sign() 会抛 "etc.hmacSha256Sync not set"。
-      secpMod.etc.hmacSha256Sync = (key, ...msgs) =>
-        hm.hmac(sha.sha256, key, secpMod.etc.concatBytes(...msgs));
-      window.nobleSecp = secpMod;
-      window.nobleSha256 = sha.sha256;
-      window.nobleRipemd160 = rip.ripemd160;
-      window.dispatchEvent(new Event('noble-ready'));
-    } catch (e) {
-      console.warn('noble 加密库加载失败（本地与 CDN 均失败）:', e && e.message);
-      window.dispatchEvent(new Event('noble-failed'));
-      if (typeof showToast === 'function') showToast('加密库加载失败：请检查网络或强制刷新', 'error');
-    }
-  })();
-</script>
-<script>window.HUB_BUILD = '20261022-1';</script>
-<script src="shared.js?v=20261014-5"></script>      <!-- 网络/交易基础 -->
-<script src="session.js?v=20261014-5"></script>     <!-- 无感签名（依赖 shared） -->
-<!-- 🟢 合规版：games.js 已清空下注游戏注册表（猜数字/轮盘/骰宝/卡牌全部下线） -->
-<script src="games.js?v=20261014-5"></script>       <!-- 空注册表 stub -->
-<script src="sanguo.js?v=20261015-6"></script>      <!-- 三国：唯一保留游戏（合规玩法，合约 code_id 36 配套） -->
-<!-- 🟢 合规版：crazydice.js（疯狂骰子，TKCC 下注）已删除，不再加载 -->
-<script src="app.js?v=20261022-1"></script>         <!-- 入口/UI（本次改动：只保留三国 + 启动直进三国 + 设置面板移除旧游戏限额 + 钱包改为合规版） -->
-<script>console.log('[PaxiGameHub] build =', window.HUB_BUILD);</script>
+  }
 
-<!-- 🟢 三国·卡牌：连接钱包后同步统计（仅当三国页已打开时刷新）；底部 Tab 高亮同步。
-     不再自动打开三国——进入站点默认是游戏大厅，点「三国」卡片才进入老版金色风界面。 -->
-<script>
-  window.addEventListener('DOMContentLoaded', function () {
-    var _ref = window.refreshBalances;
-    if (typeof _ref === 'function') {
-      window.refreshBalances = function () {
-        var r = _ref.apply(null, arguments);
-        if (window.__sgSyncWallet) window.__sgSyncWallet();
-        return r;
-      };
-    }
-  });
-  function switchTabHighlight(tab) {
-    document.querySelectorAll('.tabbar .tab').forEach(function (t) {
-      t.classList.toggle('active', t.dataset.tab === tab);
-    });
-  }
-  var _origSwitch = window.switchTab;
-  if (typeof _origSwitch === 'function') {
-    window.switchTab = function (tab) {
-      var r = _origSwitch.apply(null, arguments);
-      switchTabHighlight(tab);
-      return r;
-    };
-  }
+  var url = buildUrl();
+
+  // 同步更新按钮与 canonical 链接
+  var btn = document.getElementById('jumpBtn');
+  if (btn) btn.href = url;
+  var canon = document.querySelector('link[rel="canonical"]');
+  if (canon) canon.href = url;
+  var refresh = document.querySelector('meta[http-equiv="refresh"]');
+  if (refresh) refresh.setAttribute('content', '0; url=' + url);
+
+  // 立即跳转
+  location.replace(url);
+})();
 </script>
 </body>
 </html>
